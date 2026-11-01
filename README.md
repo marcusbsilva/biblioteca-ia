@@ -39,4 +39,4 @@ Os capítulos estão em `fonte/capitulos/` (HTML) e as figuras em `fonte/img/`.
 
 Texto e figuras próprias: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.pt_BR). As fotos do Wikimedia Commons mantêm as licenças indicadas nas legendas. Vídeos, artigos e posts citados pertencem aos respectivos autores.
 
-O conceito **AI-Driven Engineer** foi proposto por Marcus B. Silva ([@marcusbsilva](https://github.com/marcusbsilva)).
+O conceito **AI-Driven Engineer** descrito no PDF é experimental, e foi proposto por mim. Marcus B. Silva ([@marcusbsilva](https://github.com/marcusbsilva)).
