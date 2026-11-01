@@ -1,18 +1,90 @@
 <section class="chapter" id="ch01"><h1><span class="num">Capítulo 01</span>Fundamentos de IA, Machine Learning e Deep Learning</h1>
-<p class="lead">Antes dos agentes, dos LLMs e dos modelos de difusão existe uma base que não envelhece: formular problemas como busca, raciocinar com lógica e probabilidade, otimizar, aprender com dados e empilhar neurônios artificiais em redes profundas. Este capítulo percorre esse caminho em ordem, do algoritmo de busca em largura ao Q-learning rodando no navegador, apoiado no curso CS50 AI de Harvard, em vídeos do canal IBM Technology e em textos técnicos da DataCamp, da Notable Capital, do CNN Explainer e de um tutorial de TensorFlow.js.</p>
+<p class="lead">Este capítulo é a porta de entrada da coleção. A primeira parte explica, sem fórmulas, o que é inteligência artificial, onde ela aparece no dia a dia, como uma máquina “aprende” com exemplos e o que é uma rede neural. A segunda parte, opcional, mostra a base técnica que não envelhece: busca, lógica, probabilidade, otimização, gradiente e retropropagação, redes convolucionais e o Q-learning rodando no navegador, apoiada no curso CS50 AI de Harvard, em vídeos do canal IBM Technology e em textos técnicos da DataCamp, da Notable Capital, do CNN Explainer e de um tutorial de TensorFlow.js.</p>
 <div class="box intro"><b>Para começar</b> Ninguém aprende a andar de bicicleta com uma lista de regras: você tenta, cai, ajusta e, depois de muitos exemplos, o corpo “aprende”. A IA moderna funciona assim: em vez de escrever todas as regras, mostramos exemplos e o computador se ajusta. Mas antes disso a IA passou por ideias mais simples (procurar caminhos, deduzir, calcular probabilidades) que continuam dentro dos sistemas atuais.</div>
 
 <h2>O que é (e o que não é) inteligência artificial</h2>
 <div class="box intro"><b>Para começar</b> Pense em bonecas russas: a maior é a IA (qualquer técnica que faça o computador agir de modo “esperto”); dentro dela está o aprendizado de máquina (técnicas que aprendem com exemplos); dentro desta, o aprendizado profundo (redes neurais com muitas camadas).</div>
-<p>Inteligência artificial é o campo que constrói sistemas capazes de tarefas que, em humanos, exigiriam inteligência: entender linguagem, reconhecer padrões, planejar, decidir. Um jogo da velha que nunca perde é IA; um filtro de spam também; um LLM também. O que muda é <em>como</em> o comportamento é obtido. Regras escritas à mão (“se a bola está à esquerda, mova a raquete para a esquerda”) funcionam em domínios minúsculos, mas não escalam. A história da IA é, em boa parte, a troca de regras explícitas por <b>busca</b> e depois por <b>aprendizado</b>.</p>
+<p>Inteligência artificial é o campo que constrói sistemas capazes de fazer tarefas que, em pessoas, exigiriam inteligência: entender linguagem, reconhecer padrões, planejar e decidir. Um jogo da velha que nunca perde é IA; um filtro de spam também; um assistente de conversa como o ChatGPT também. O que muda é <em>como</em> o comportamento é obtido. Regras escritas à mão (“se a bola está à esquerda, mova a raquete para a esquerda”) funcionam em problemas minúsculos, mas não dão conta do mundo real. A história da IA é, em boa parte, a troca de regras escritas à mão por <b>busca</b> e, depois, por <b>aprendizado</b>.</p>
 <figure><img src="img/01_ia_ml_dl.png"><figcaption>IA contém ML, que contém DL. Busca, lógica, probabilidade e otimização são IA “clássica”, sem necessariamente aprender de dados. Fonte: elaboração própria a partir de DataCamp (Crabtree, 2024) e CS50 AI.</figcaption></figure>
 <ul>
-<li><b>IA</b>: o objetivo geral; inclui técnicas simbólicas sem aprendizado.</li>
-<li><b>Machine Learning (ML)</b>: algoritmos que <em>aprendem com dados</em> em vez de serem programados explicitamente (árvores de decisão, Naive Bayes, SVM, k-NN, k-means).</li>
-<li><b>Deep Learning (DL)</b>: ML com redes neurais de várias camadas, que aprendem representações hierárquicas (de bordas a partes a objetos).</li>
+<li><b>IA</b>: o objetivo geral; inclui técnicas que não aprendem, apenas seguem regras ou procuram soluções.</li>
+<li><b>Machine Learning (ML)</b>, o aprendizado de máquina: programas que <em>aprendem com exemplos</em> em vez de receber todas as regras prontas.</li>
+<li><b>Deep Learning (DL)</b>, o aprendizado profundo: ML feito com redes neurais de muitas camadas, que aprendem sozinhas do simples ao complexo (de bordas a partes e a objetos inteiros).</li>
+</ul>
+<div class="box fact"><b>Você sabia?</b> O termo “inteligência artificial” nasceu numa proposta de 1955 de John McCarthy, Marvin Minsky, Nathaniel Rochester e Claude Shannon para um workshop em Dartmouth, realizado em 1956. Eles apostavam num “avanço significativo” em dois meses de trabalho de dez pessoas.</div>
+
+<h2>A IA no seu dia a dia</h2>
+<p>Você provavelmente usou IA hoje sem perceber:</p>
+<ul>
+<li><b>Celular</b>: o rosto que destrava a tela e o teclado que sugere a próxima palavra.</li>
+<li><b>E-mail</b>: a mensagem suspeita que vai sozinha para a pasta de spam.</li>
+<li><b>Streaming</b>: a série “recomendada para você”, escolhida pelo que você já assistiu.</li>
+<li><b>Mapas</b>: o aplicativo que desvia do trânsito e calcula a hora de chegada.</li>
+<li><b>Banco</b>: a compra estranha no cartão que gera um alerta.</li>
+<li><b>Assistentes de conversa</b>: o chatbot que resume um texto ou responde a uma dúvida.</li>
 </ul>
 <h3>IA preditiva e IA generativa</h3>
-<p>Outra divisão, do vídeo <a href="https://www.youtube.com/watch?v=phOhGqpXss4">Predictive vs Generative AI: How They Work and When to Use Each</a>, é pela pergunta respondida. A <b>preditiva</b> responde “o que vai acontecer?” com um número, classe ou probabilidade verificável (“87% de chance de este cliente cancelar”). A <b>generativa</b> responde “como isso poderia ser?” com texto, imagem ou código, sem resposta única correta.</p>
+<p>Outra divisão útil, do vídeo <a href="https://www.youtube.com/watch?v=phOhGqpXss4">Predictive vs Generative AI: How They Work and When to Use Each</a>, olha para a pergunta que a IA responde. A <b>preditiva</b> responde “o que vai acontecer?” com um número, uma categoria ou uma chance que dá para conferir depois (“87% de chance de este cliente cancelar”). A <b>generativa</b> responde “como isso poderia ser?” criando texto, imagem ou código, sem uma única resposta certa.</p>
+<table>
+<tr><th>Aspecto</th><th>IA preditiva</th><th>IA generativa</th></tr>
+<tr><td>O que entrega</td><td>Um número, uma categoria, uma chance</td><td>Texto, imagem, áudio, código</td></tr>
+<tr><td>Exemplo</td><td>Prever se vai faltar pão na padaria amanhã</td><td>Escrever o cartaz da promoção do pão</td></tr>
+<tr><td>Como se avalia</td><td>Conferindo se a previsão aconteceu</td><td>Gosto e opinião de pessoas</td></tr>
+</table>
+<p>As duas se combinam: um modelo preditivo aponta os clientes com risco de cancelar e um generativo escreve o e-mail para tentar mantê-los. (Na seção técnica, a tabela completa traz os algoritmos de cada lado.)</p>
+
+<h2>Como uma máquina “aprende” com exemplos</h2>
+<p>No programa tradicional, a pessoa escreve as regras e o computador as segue. No aprendizado de máquina, a pessoa entrega <b>exemplos com a resposta certa</b> e o computador descobre sozinho a regra que liga uma coisa à outra.</p>
+<p>Imagine ensinar alguém a avaliar o preço de casas. Você mostra mil casas vendidas: tamanho, número de quartos, bairro e o preço final. Depois de ver muitas, a pessoa “pega o jeito” e passa a estimar o preço de uma casa nova. Um modelo de ML faz exatamente isso, só que com contas:</p>
+<ol>
+<li><b>Chuta</b> um preço para cada casa.</li>
+<li><b>Compara</b> o chute com o preço real e mede o tamanho do erro.</li>
+<li><b>Ajusta</b> um pouco seus “botões” internos para errar menos.</li>
+<li><b>Repete</b> milhares de vezes, até os erros ficarem pequenos.</li>
+</ol>
+<p>Esses “botões” se chamam <b>parâmetros</b> (ou pesos). Treinar um modelo é girar esses botões até que ele acerte bem os exemplos. O teste de verdade vem depois: ver se ele acerta casas que <em>nunca</em> viu.</p>
+<div class="box warn"><b>Atenção</b> Decorar não é aprender. Um aluno que decora as respostas da lista de exercícios vai mal na prova com perguntas novas. Com modelos acontece o mesmo, e o nome técnico é <b>overfitting</b> (sobreajuste). Por isso sempre se guarda uma parte dos exemplos só para a “prova final”.</div>
+
+<h2>Os tipos de aprendizado</h2>
+<div class="box intro"><b>Para começar</b> Há três jeitos principais de ensinar uma máquina, parecidos com os jeitos de ensinar uma pessoa: com gabarito, sem gabarito e com recompensa.</div>
+<ul>
+<li><b>Supervisionado (com gabarito)</b>: como estudar com a lista de exercícios resolvida. O modelo vê fotos marcadas como “gato” ou “cachorro” e aprende a separar. Exemplo: o filtro de spam, treinado com e-mails já marcados.</li>
+<li><b>Não supervisionado (sem gabarito)</b>: como arrumar uma gaveta de meias sem instrução, juntando as parecidas. O modelo encontra grupos sozinho. Exemplo: a loja que descobre “tipos” de clientes pelo jeito de comprar.</li>
+<li><b>Por reforço (com recompensa)</b>: como treinar um cachorro com petiscos. O programa tenta, ganha pontos quando acerta, perde quando erra e melhora com a prática. Exemplo: uma IA que aprende sozinha a jogar videogame.</li>
+<li><b>Autossupervisionado (o gabarito vem do próprio texto)</b>: como um exercício de completar lacunas. O modelo esconde a próxima palavra de uma frase e tenta adivinhá-la. É assim que os grandes modelos de linguagem aprendem a escrever.</li>
+</ul>
+<p>As palestras do CS50 (como <a href="https://www.youtube.com/watch?v=YFzkVvjiPmM">CS50x em Português - Inteligência Artificial</a>) mostram um exemplo divertido de reforço: uma IA do jogo Breakout “descobre” sozinha que furar a fileira de cima e deixar a bola quicar atrás dos tijolos dá muitos pontos. Ninguém ensinou o truque; ela o encontrou tentando.</p>
+<div class="box fact"><b>Você sabia?</b> Em 2016, o AlphaGo venceu Lee Sedol por 4 a 1. Na segunda partida, o lance 37 parecia um erro para os comentaristas e acabou decisivo: a máquina estimara que um humano jogaria ali com chance de cerca de 1 em 10 mil.</div>
+
+<h2>Uma rede neural, sem fórmulas</h2>
+<div class="box intro"><b>Para começar</b> Um comitê decide se haverá churrasco: cada membro opina (vai chover? tem dinheiro?), algumas opiniões pesam mais, e se a soma passa de um limite a resposta é “sim”. Um neurônio artificial é isso: junta várias informações, dá mais importância a umas do que a outras e decide quanto “disparar”.</div>
+<figure><img src="img/01_neuronio.png"><figcaption>Um neurônio artificial: soma ponderada das entradas mais viés, seguida de função de ativação. Fonte: elaboração própria a partir de “The Anatomy of a Neural Network” (Notable Capital) e “Inside a Neuron: The Building Blocks of a Neural Network &amp; AI” (IBM Technology).</figcaption></figure>
+<p>Um neurônio sozinho é simples demais. A força vem de ligar muitos deles em <b>camadas</b>, como uma linha de montagem. Pense numa rede que reconhece cachorros em fotos:</p>
+<ul>
+<li>a primeira camada nota coisas básicas, como manchas de cor e bordas;</li>
+<li>a seguinte junta bordas em formas: curvas, pontas, círculos;</li>
+<li>outras juntam formas em partes: focinho, orelha, pata, rabo;</li>
+<li>a última olha para tudo isso e responde “cachorro” ou “não cachorro”.</li>
+</ul>
+<p>Ninguém diz à rede o que é um focinho. No treino, ela vê milhares de fotos com a resposta certa, erra, e cada erro gira um pouquinho os pesos de todos os neurônios na direção que diminuiria aquele erro. Depois de muitas rodadas, as camadas passam a detectar sozinhas as partes que importam. Quando há muitas camadas, falamos em <b>deep learning</b> (aprendizado profundo).</p>
+
+<h2>O que dá para fazer com isso hoje</h2>
+<ul>
+<li><b>Ver</b>: reconhecer rostos, ler placas e ajudar médicos a achar sinais em exames de imagem.</li>
+<li><b>Ouvir e falar</b>: transformar voz em texto, legendar vídeos e ler textos em voz alta.</li>
+<li><b>Entender e escrever</b>: traduzir, resumir, responder perguntas e ajudar a escrever código.</li>
+<li><b>Criar imagens</b>: desenhar uma cena a partir de uma frase, como “um gato astronauta”.</li>
+<li><b>Prever</b>: estimar demanda numa loja, detectar fraude no cartão, prever o trânsito.</li>
+<li><b>Agir</b>: jogar, controlar robôs e executar tarefas em várias etapas (os “agentes” dos próximos capítulos).</li>
+</ul>
+<h3>Cuidados: viés e limites</h3>
+<p>Um modelo aprende com o que vê, inclusive com os erros dos dados. O vídeo <a href="https://www.youtube.com/watch?v=og67qeTZPYs">Algorithmic Bias in AI: What It Is and How to Fix It</a> mostra que o viés raramente nasce do algoritmo; nasce dos dados: históricos injustos, amostras que deixam grupos de fora e pistas indiretas (o CEP, por exemplo, pode “denunciar” a etnia de alguém). As defesas são dados diversos, auditorias e acompanhamento contínuo.</p>
+<div class="box key"><b>Em resumo (primeira parte)</b> IA é fazer o computador agir de modo esperto; ML é aprender com exemplos em vez de receber regras; deep learning usa redes de muitos neurônios simples em camadas. Aprende-se com gabarito, sem gabarito ou por recompensa. Se você está começando, pode pular para o próximo capítulo; a parte a seguir mostra como tudo isso funciona por dentro.</div>
+
+<h2>Aprofundamento técnico</h2>
+<div class="box warn"><b>Parte opcional para iniciantes</b> Daqui em diante aparecem fórmulas, algoritmos e código: busca, lógica, probabilidade, gradiente, backpropagation (retropropagação), funções de ativação, CNNs, Q-learning e TensorFlow.js. Nada disso é necessário para acompanhar os próximos capítulos em nível introdutório. Leia quando quiser entender os detalhes.</div>
+
+<h3>IA preditiva e IA generativa: os algoritmos</h3>
 <table>
 <tr><th>Aspecto</th><th>IA preditiva</th><th>IA generativa</th></tr>
 <tr><td>Saída</td><td>Valor, classe, probabilidade</td><td>Texto, imagem, áudio, código</td></tr>
@@ -20,8 +92,7 @@
 <tr><td>Avaliação</td><td>Contra a verdade observada</td><td>Qualidade subjetiva, preferência humana</td></tr>
 <tr><td>Algoritmos</td><td>Regressão, árvores, gradient boosting</td><td>Transformers, difusão, GANs</td></tr>
 </table>
-<p>As duas se combinam: um modelo preditivo aponta clientes com risco de cancelar e um generativo redige o e-mail de retenção. Um LLM tecnicamente <em>prevê o próximo token</em>, mas seu propósito é generativo.</p>
-<div class="box fact"><b>Você sabia?</b> O termo “inteligência artificial” nasceu numa proposta de 1955 de John McCarthy, Marvin Minsky, Nathaniel Rochester e Claude Shannon para um workshop em Dartmouth, realizado em 1956. Eles apostavam num “avanço significativo” em dois meses de trabalho de dez pessoas.</div>
+<p>Um LLM (grande modelo de linguagem) tecnicamente <em>prevê o próximo token</em> (o próximo pedaço de palavra), mas seu propósito é generativo.</p>
 
 <h2>Busca</h2>
 <div class="box intro"><b>Para começar</b> Num labirinto, resolver o problema é <em>procurar</em>: experimentar caminhos, descartar becos sem saída e escolher o melhor. Rotas de GPS, quebra-cabeças e xadrez podem ser descritos assim.</div>
@@ -50,11 +121,11 @@ repita:
 <p>Busca <em>informada</em> usa uma <b>heurística</b> h(n), estimativa do custo restante; num labirinto em grade, a distância de Manhattan |Δx|+|Δy|. A greedy segue só h(n) e cai em corredores que terminam numa parede; o <b>A*</b> soma o custo já pago, g(n). Ele é ótimo se h for <b>admissível</b> (nunca superestima o custo real). Na prática, a qualidade do A* é a qualidade da heurística, e heurísticas obtidas “relaxando” o problema (ignorar paredes) costumam ser admissíveis.</p>
 <h3>Busca adversarial: Minimax e alfa-beta</h3>
 <p>Em jogos há um adversário. O <b>Minimax</b> atribui utilidade aos estados finais (no jogo da velha: X vence = +1, empate = 0, O vence = −1); MAX escolhe a ação de maior valor, MIN a de menor, recursivamente:</p>
-<pre><code>def valor(s):
-    if terminal(s): return utilidade(s)
-    if jogador(s) == MAX:
-        return max(valor(result(s, a)) for a in acoes(s))
-    return min(valor(result(s, a)) for a in acoes(s))</code></pre>
+<pre><code>def value(s):
+    if terminal(s): return utility(s)
+    if player(s) == MAX:
+        return max(value(result(s, a)) for a in actions(s))
+    return min(value(result(s, a)) for a in actions(s))</code></pre>
 <p>A <b>poda alfa-beta</b> abandona ramos que não podem mudar a decisão e, com boa ordenação, quase dobra a profundidade alcançável. O obstáculo é a <b>explosão combinatória</b>: o jogo da velha tem 255.168 partidas possíveis; o xadrez, segundo a palestra <a href="https://www.youtube.com/watch?v=pFq5szYIWQk">CS50 for Business - Lecture 4 - Approaching Artificial Intelligence</a>, cerca de 2,4 trilhões de sequências após 9 meio-movimentos.</p>
 <figure><img src="img/01_explosao_combinatoria.png"><figcaption>Crescimento do número de sequências de jogo (escala log): jogo da velha e xadrez. Fonte: elaboração própria com dados de “CS50 for Business - Lecture 4 - Approaching Artificial Intelligence” e contagens “perft” do xadrez.</figcaption></figure>
 <p>A saída é limitar a profundidade e usar uma <b>função de avaliação</b> (por exemplo, o saldo de material no xadrez). Foi aí que o aprendizado entrou nos jogos: o AlphaGo <em>aprende</em> a avaliação e a política de jogadas e as combina com busca em árvore Monte Carlo.</p>
@@ -86,14 +157,13 @@ repita:
 </ul>
 <p>A otimização é o elo com o aprendizado: treinar uma rede neural é minimizar uma função de perda, usando o <em>gradiente</em> em vez de vizinhos discretos.</p>
 
-<h2>Aprendizado de máquina: os três paradigmas</h2>
-<div class="box intro"><b>Para começar</b> No aprendizado de máquina entregamos exemplos e o computador descobre o padrão, como uma criança que aprende a reconhecer cachorros vendo muitos cachorros. Há três jeitos de ensinar: com gabarito, sem gabarito e por recompensa.</div>
+<h2>Aprendizado de máquina em detalhe</h2>
 <table>
 <tr><th>Paradigma</th><th>Sinal de treino</th><th>Exemplos</th><th>Algoritmos típicos</th></tr>
-<tr><td>Supervisionado</td><td>Pares (entrada, rótulo)</td><td>Spam, preço de imóvel, diagnóstico</td><td>Regressão, k-NN, SVM, árvores, redes neurais</td></tr>
-<tr><td>Não supervisionado</td><td>Só entradas</td><td>Agrupar clientes, reduzir dimensão</td><td>k-means, PCA/SVD, autoencoders</td></tr>
-<tr><td>Por reforço</td><td>Recompensa após ações</td><td>Jogos, robótica, RLHF</td><td>Q-learning, PPO</td></tr>
-<tr><td>Autossupervisionado</td><td>Rótulos derivados dos próprios dados</td><td>Pré-treino de LLMs (prever o próximo token)</td><td>Modelos de linguagem, contrastivo</td></tr>
+<tr><td>Supervisionado</td><td>Pares (entrada, rótulo)</td><td>E-mail marcado como spam</td><td>Regressão, k-NN, SVM, árvores, redes neurais</td></tr>
+<tr><td>Não supervisionado</td><td>Só entradas</td><td>Separar clientes por jeito de comprar</td><td>k-means, PCA/SVD, autoencoders</td></tr>
+<tr><td>Por reforço</td><td>Recompensa após ações</td><td>Robô que aprende a andar caindo</td><td>Q-learning, PPO</td></tr>
+<tr><td>Autossupervisionado</td><td>Rótulos derivados dos próprios dados</td><td>Adivinhar a palavra seguinte da frase</td><td>Modelos de linguagem, contrastivo</td></tr>
 </table>
 <h3>Aprendizado supervisionado</h3>
 <p>Dados pares (x, y), buscamos uma função h que aproxime y = f(x): <b>classificação</b> se y é discreto, <b>regressão</b> se contínuo. Os clássicos são k-NN (voto dos vizinhos mais próximos), perceptron (fronteira linear), SVM (fronteira de máxima margem; com <i>kernels</i>, não linear), regressão logística e árvores/gradient boosting, que seguem como estado da arte em dados tabulares.</p>
@@ -125,12 +195,8 @@ print(metrics.confusion_matrix(y_te, y_pred))</code></pre>
 <p>Rotular é caro. O aprendizado <b>semissupervisionado</b> combina poucos rótulos com muitos dados sem rótulo: pseudo-rotulagem (o modelo rotula e as previsões confiantes entram no treino), clustering e <i>active learning</i> (os casos duvidosos vão para humanos). No limite, o <b>zero-shot learning</b> (<a href="https://www.youtube.com/watch?v=pVpr4GYLzAo">What is Zero-Shot Learning?</a>) classifica classes nunca vistas, por exemplo pondo imagens e descrições no mesmo espaço vetorial, a ideia do CLIP. Entre os dois extremos ficam o <i>few-shot</i> e o <i>one-shot</i>, que aprendem uma classe nova a partir de poucos exemplos ou de um só, e a geração de dados sintéticos, outra forma de contornar a falta de rótulos.</p>
 <h3>Classificação de texto como estudo de caso</h3>
 <p>A classificação de texto, tema de <a href="https://www.youtube.com/watch?v=hHiPs_wICsE">Text Classification: AI Techniques and Real-World Applications</a>, reúne quase tudo acima. Há três tipos: <b>binária</b> (spam ou não), <b>multiclasse</b> (pedido, suporte ou reclamação) e <b>multirrótulo</b> (um filme pode ser “ação” e “aventura”). O pipeline é iterativo: pré-processamento (a etapa mais demorada), extração de features por embeddings, modelo (de Naive Bayes a um LLM) e rótulos de saída. Os desafios recorrentes são desbalanceamento entre classes, ambiguidade (“manga” fruta ou de camisa) e <b>drift</b>: o sentimento sobre um tema muda com os eventos do mundo, e o modelo precisa de validação contínua.</p>
-<h3>Viés algorítmico</h3>
-<p>O viés raramente nasce do algoritmo; nasce dos dados. O vídeo <a href="https://www.youtube.com/watch?v=og67qeTZPYs">Algorithmic Bias in AI: What It Is and How to Fix It</a> aponta dados históricos enviesados, amostras não representativas e variáveis-proxy (o CEP como proxy de etnia), e defende dados diversos, auditorias e governança contínua.</p>
 
-<h2>O neurônio artificial</h2>
-<div class="box intro"><b>Para começar</b> Um comitê decide se haverá churrasco: cada membro opina (vai chover? tem dinheiro?), algumas opiniões pesam mais, e se a soma passa de um limite a resposta é “sim”. Um neurônio artificial é isso: soma entradas multiplicadas por pesos e decide quanto “disparar”.</div>
-<figure><img src="img/01_neuronio.png"><figcaption>Um neurônio artificial: soma ponderada das entradas mais viés, seguida de função de ativação. Fonte: elaboração própria a partir de “The Anatomy of a Neural Network” (Notable Capital) e “Inside a Neuron: The Building Blocks of a Neural Network &amp; AI” (IBM Technology).</figcaption></figure>
+<h2>O neurônio artificial em detalhe</h2>
 <p>Formalmente, z = <b>w·x</b> + b e ŷ = g(z). O vídeo <a href="https://www.youtube.com/watch?v=H_jD5xa1nRg">Inside a Neuron: The Building Blocks of a Neural Network & AI</a> usa preço de imóvel: entradas como área e quartos, pesos dizendo o quanto cada uma importa, viés como deslocamento. “Treinar” é ajustar pesos e viés a partir de dados.</p>
 <figure><img src="img/01_ativacoes.png"><figcaption>Funções de ativação: o degrau não é diferenciável; sigmoide e tanh saturam; a ReLU não satura para z &gt; 0. Fonte: elaboração própria.</figcaption></figure>
 <table>
@@ -227,26 +293,24 @@ sobel_x = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])  # detector de borda vertical</
 <li><b>Multimodalidade</b> (<a href="https://www.youtube.com/watch?v=J51oZYcNvP8">What is Multimodal AI? How LLMs Process Text, Images, and More</a>): um codificador de visão acoplado a um LLM ou um modelo nativo que trata imagens como sequências de patches.</li>
 </ul>
 
-<h2>Aprendizado por reforço</h2>
-<div class="box intro"><b>Para começar</b> Para treinar um cachorro, você não explica a regra: dá um petisco quando ele acerta. No aprendizado por reforço, um <b>agente</b> tenta ações, recebe pontos ou penalidades e ajusta o comportamento para ganhar mais ao longo do tempo.</div>
-<p>As palestras do CS50 (como <a href="https://www.youtube.com/watch?v=YFzkVvjiPmM">CS50x em Português - Inteligência Artificial</a>) mostram uma IA de Breakout que “descobre” sozinha que furar a fileira de cima e deixar a bola quicar atrás dos tijolos maximiza a pontuação. Formalmente, o problema é um <b>processo de decisão de Markov</b>: estados, ações, transições e recompensas. A <b>política</b> diz que ação tomar em cada estado, e o objetivo é maximizar o retorno descontado G = r₁ + γr₂ + γ²r₃ + …, com 0 ≤ γ &lt; 1.</p>
+<h2>Aprendizado por reforço e Q-learning</h2>
+<p>Voltando à IA de Breakout da primeira parte: formalmente, o problema é um <b>processo de decisão de Markov</b>, com estados, ações, transições e recompensas. A <b>política</b> diz que ação tomar em cada estado, e o objetivo é maximizar o retorno descontado G = r₁ + γr₂ + γ²r₃ + …, com 0 ≤ γ &lt; 1.</p>
 <figure><img src="img/01_rl_loop.png"><figcaption>O ciclo agente–ambiente do aprendizado por reforço. Fonte: elaboração própria a partir do CS50 e de Rouhard (2020).</figcaption></figure>
 <p>O <b>Q-learning</b> aprende Q(s, a), o valor de tomar a ação a no estado s e agir bem depois:</p>
 <p style="text-align:center"><b>Q(s,a) ← Q(s,a) + α [ r + γ · max_{a'} Q(s',a') − Q(s,a) ]</b></p>
 <p>A atualização compara a nova estimativa (recompensa mais o melhor valor futuro, a <b>equação de Bellman</b>) com a antiga. No CS50 AI, o agente joga Nim milhares de vezes contra si mesmo e termina imbatível.</p>
 <pre><code>import random
-def escolher(Q, s, acoes, eps=0.1):
+def choose_action(Q, s, actions, eps=0.1):
     if random.random() &lt; eps:                 # explorar
-        return random.choice(acoes)
-    return max(acoes, key=lambda a: Q.get((s, a), 0))   # aproveitar
+        return random.choice(actions)
+    return max(actions, key=lambda a: Q.get((s, a), 0))   # aproveitar
 
-def atualizar(Q, s, a, r, s2, acoes2, alpha=0.5, gamma=0.9):
-    futuro = max((Q.get((s2, a2), 0) for a2 in acoes2), default=0)
-    antigo = Q.get((s, a), 0)
-    Q[(s, a)] = antigo + alpha * (r + gamma * futuro - antigo)</code></pre>
+def update(Q, s, a, r, s2, actions2, alpha=0.5, gamma=0.9):
+    future = max((Q.get((s2, a2), 0) for a2 in actions2), default=0)
+    old = Q.get((s, a), 0)
+    Q[(s, a)] = old + alpha * (r + gamma * future - old)</code></pre>
 <p>O termo entre colchetes é chamado de <b>erro de diferença temporal</b>, e α é a taxa de aprendizado. A mesma lógica vale para problemas muito maiores, desde que o agente possa experimentar muitas vezes.</p>
 <p>Se o agente sempre escolher o melhor conhecido, nunca descobre alternativas, como quem sempre pede o mesmo prato no restaurante. A política <b>ε-greedy</b> escolhe uma ação aleatória com probabilidade ε e, no resto do tempo, a melhor conhecida. Quando há estados demais para uma tabela, uma rede neural estima Q: é o <b>DQN</b> da DeepMind, que aprendeu dezenas de jogos de Atari a partir dos pixels. Variantes como o PPO são usadas no RLHF, que alinha LLMs com feedback humano.</p>
-<div class="box fact"><b>Você sabia?</b> Em 2016, o AlphaGo venceu Lee Sedol por 4 a 1. Na segunda partida, o lance 37 parecia um erro para os comentaristas e acabou decisivo: a máquina estimara que um humano jogaria ali com chance de cerca de 1 em 10 mil.</div>
 
 <h2>Deep learning no navegador: TensorFlow.js</h2>
 <div class="box intro"><b>Para começar</b> Para cozinhar não é preciso fabricar o fogão. Bibliotecas como TensorFlow e PyTorch cuidam da matemática pesada e do uso da GPU, e algumas rodam até no navegador, sem enviar seus dados a servidor nenhum.</div>

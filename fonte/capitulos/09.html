@@ -35,26 +35,26 @@ int main(void)
 <p>Formalmente, T(n) ∈ O(f(n)) se existem c &gt; 0 e n<sub>0</sub> tais que T(n) ≤ c·f(n) para todo n ≥ n<sub>0</sub>. Constantes e termos de menor ordem somem: o termo dominante decide. Cuidado com a simplificação "O = pior caso, Ω = melhor caso": pior, melhor e médio são <i>cenários</i>; O, Ω e Θ são <i>tipos de limite</i> que valem para qualquer cenário. Em entrevistas, diga de qual caso está falando.</p>
 <figure><img src="img/09_crescimento.png"><figcaption>Crescimento das classes de complexidade em escala logarítmica. Com n = 40, um algoritmo O(n log n) faz cerca de 200 passos, um O(2ⁿ) cerca de 10¹² e um O(n!) passa de 10⁴⁷. Fonte: elaboração própria com dados de "CS50 for Business - Lecture 1 - Analyzing Algorithms", "Big O Notation fácil de entender!" e "Entenda FUNDAMENTOS do CURSO de CIÊNCIA da COMPUTAÇÃO".</figcaption></figure>
 <table>
-<tr><th>Classe</th><th>Nome</th><th>Exemplo típico</th><th>n = 1.000</th></tr>
-<tr><td>O(1)</td><td>constante</td><td>acesso a <code>a[i]</code>, lookup médio em hash</td><td>1</td></tr>
-<tr><td>O(log n)</td><td>logarítmica</td><td>busca binária</td><td>~10</td></tr>
-<tr><td>O(n)</td><td>linear</td><td>busca linear</td><td>1.000</td></tr>
-<tr><td>O(n log n)</td><td>log-linear</td><td>merge sort, heapsort</td><td>~10.000</td></tr>
-<tr><td>O(n²)</td><td>quadrática</td><td>laços aninhados</td><td>1.000.000</td></tr>
-<tr><td>O(2ⁿ)</td><td>exponencial</td><td>todos os subconjuntos</td><td>~10³⁰¹</td></tr>
-<tr><td>O(n!)</td><td>fatorial</td><td>todas as permutações</td><td>~4×10²⁵⁶⁷</td></tr>
+<tr><th>Classe</th><th>Nome</th><th>Exemplo do dia a dia</th><th>n = 1.000</th></tr>
+<tr><td>O(1)</td><td>constante</td><td>abrir o livro na página marcada</td><td>1</td></tr>
+<tr><td>O(log n)</td><td>logarítmica</td><td>achar uma palavra no dicionário abrindo no meio</td><td>~10</td></tr>
+<tr><td>O(n)</td><td>linear</td><td>procurar a chave olhando gaveta por gaveta</td><td>1.000</td></tr>
+<tr><td>O(n log n)</td><td>log-linear</td><td>ordenar provas dividindo em montinhos e juntando</td><td>~10.000</td></tr>
+<tr><td>O(n²)</td><td>quadrática</td><td>cada convidado cumprimenta todos os outros</td><td>1.000.000</td></tr>
+<tr><td>O(2ⁿ)</td><td>exponencial</td><td>testar todas as combinações de coberturas de pizza</td><td>~10³⁰¹</td></tr>
+<tr><td>O(n!)</td><td>fatorial</td><td>testar todas as ordens de sentar os convidados</td><td>~4×10²⁵⁶⁷</td></tr>
 </table>
 <p>Algoritmos exponenciais não ficam viáveis com hardware melhor: um computador mil vezes mais rápido acrescenta só uns 10 elementos ao maior n tratável por um O(2ⁿ). Pelo mesmo motivo a criptografia funciona: cada bit a mais na chave dobra o trabalho da força bruta.</p>
 
 <h3>Espaço e desempenho real</h3>
 <p>Memória se analisa do mesmo jeito. No vídeo <a href="https://www.youtube.com/watch?v=FR44uWofQ7o">Big O Notation fácil de entender! (Complexidade de Tempo e Espaço na Programação)</a>, achar duplicados comparando todos os pares custa O(n²) de tempo e O(1) de espaço; com um conjunto de itens já vistos, o tempo cai para O(n) ao preço de O(n) de memória.</p>
-<pre><code>def duplicados(itens):
-    vistos, dup = set(), set()
-    for x in itens:          # O(n) tempo
-        if x in vistos:      # O(1) em média
-            dup.add(x)
-        vistos.add(x)        # O(n) espaço
-    return dup</code></pre>
+<pre><code>def find_duplicates(items):
+    seen, dups = set(), set()
+    for x in items:          # O(n) tempo
+        if x in seen:        # O(1) em média
+            dups.add(x)
+        seen.add(x)          # O(n) espaço
+    return dups</code></pre>
 <p>Em <a href="https://www.youtube.com/watch?v=2ObVc2QvZG0">Quando um algoritmo ruim é melhor do que um bom...</a>, Augusto Galego lembra que Big-O mede <b>escalabilidade</b>, não velocidade absoluta. O hash map tem custos fixos (alocar, calcular hashes, tratar colisões); com poucos elementos, dois laços aninhados sobre um bloco contíguo em cache vencem.</p>
 <figure><img src="img/09_twosum.png"><figcaption>Two Sum em Go: força bruta O(n²) contra hash map O(n). Com 100 mil elementos, cerca de 2 s contra 5 ms; abaixo de 10 elementos, empate. Fonte: elaboração própria com dados de "Quando um algoritmo ruim é melhor do que um bom...".</figcaption></figure>
 <div class="box tip"><b>Dica</b> Para prever o efeito de uma mudança de escala, aplique a classe: num O(n²), dobrar n quadruplica o tempo. Se a medição não bate com a classe, o gargalo está em outro lugar (alocação, I/O, cache, GC).</div>
@@ -62,13 +62,13 @@ int main(void)
 <h2>Busca e ordenação</h2>
 <div class="box intro"><b>Para começar</b> Um dicionário de papel é rápido porque está em ordem: você abre no meio e sabe para que lado ir. Numa pilha bagunçada, só resta olhar folha por folha.</div>
 <p>A <b>busca linear</b> verifica os elementos um a um e funciona com qualquer arranjo: O(n) no pior caso, Ω(1) no melhor. A <b>busca binária</b> exige dados ordenados: olha o meio, descarta a metade que não contém o alvo e repete, em O(log n). Com um milhão de nomes bastam cerca de 20 comparações.</p>
-<pre><code>def busca_binaria(a, alvo):
+<pre><code>def binary_search(a, target):
     lo, hi = 0, len(a) - 1
     while lo &lt;= hi:
         mid = lo + (hi - lo) // 2   # evita overflow em linguagens com int fixo
-        if a[mid] == alvo:
+        if a[mid] == target:
             return mid
-        if a[mid] &lt; alvo:
+        if a[mid] &lt; target:
             lo = mid + 1
         else:
             hi = mid - 1
@@ -226,22 +226,22 @@ long fact_acc(long n, long acc) { return n &lt;= 1 ? acc : fact_acc(n - 1, n * a
 <p>No episódio <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a>, Amir Husain resolve com uma GPU barata o TSP, uma escala de equipe médica por <i>satisfação de restrições</i> e a formação de times balanceados. O argumento é que a saída de um solver é <b>determinística e verificável</b>, ao contrário de pedir a escala a um LLM; um agente pode delegar o problema ao solver.</p>
 <table>
 <tr><th>Estratégia</th><th>Garante ótimo?</th><th>Exemplo</th></tr>
-<tr><td>Força bruta</td><td>sim</td><td>até ~10–12 cidades</td></tr>
-<tr><td>Programação dinâmica</td><td>sim</td><td>Held-Karp, cerca de 25 cidades</td></tr>
-<tr><td>Branch and bound</td><td>sim (exponencial no pior caso)</td><td>Concorde, dezenas de milhares de cidades</td></tr>
-<tr><td>Aproximação</td><td>fator conhecido</td><td>Christofides: ≤ 1,5× o ótimo</td></tr>
-<tr><td>Heurísticas</td><td>não</td><td>vizinho mais próximo, 2-opt</td></tr>
-<tr><td>Solvers genéricos</td><td>depende</td><td>CP-SAT (OR-Tools), MILP</td></tr>
+<tr><td>Força bruta</td><td>sim</td><td>testar todas as rotas; só até 10–12 cidades</td></tr>
+<tr><td>Programação dinâmica</td><td>sim</td><td>anotar trechos já calculados; cerca de 25 cidades</td></tr>
+<tr><td>Branch and bound</td><td>sim (exponencial no pior caso)</td><td>descartar cedo rotas que já perdem; milhares de cidades</td></tr>
+<tr><td>Aproximação</td><td>fator conhecido</td><td>rota no máximo 1,5 vez maior que a melhor</td></tr>
+<tr><td>Heurísticas</td><td>não</td><td>ir sempre à cidade mais próxima</td></tr>
+<tr><td>Solvers genéricos</td><td>depende</td><td>programa pronto que recebe as regras e busca a solução</td></tr>
 </table>
 <p>Antes do solver vem o <b>modelo matemático</b>. Em <a href="https://www.youtube.com/watch?v=jhSejeNslP8">Unlock the Power of Data-Driven Decision Making with Decision Optimization</a>, a IBM usa uma barraca de limonada: variáveis de decisão (preço, quantidade), um objetivo (lucro) e restrições (orçamento). Uma escala de enfermagem segue o mesmo formato, com variáveis booleanas "a pessoa p trabalha no turno t":</p>
 <pre><code># esboço com OR-Tools CP-SAT
 from ortools.sat.python import cp_model
 m = cp_model.CpModel()
-x = {(p, t): m.NewBoolVar(f"x_{p}_{t}") for p in pessoas for t in turnos}
-for t in turnos:
-    m.Add(sum(x[p, t] for p in enfermeiros) &gt;= MIN_ENF)    # cobertura mínima
-for p in pessoas:
-    m.Add(sum(x[p, t] for t in turnos) &lt;= MAX_TURNOS)      # carga máxima
+x = {(p, t): m.NewBoolVar(f"x_{p}_{t}") for p in people for t in shifts}
+for t in shifts:
+    m.Add(sum(x[p, t] for p in nurses) &gt;= MIN_ENF)    # cobertura mínima
+for p in people:
+    m.Add(sum(x[p, t] for t in shifts) &lt;= MAX_TURNOS)      # carga máxima
 solver = cp_model.CpSolver(); solver.Solve(m)</code></pre>
 
 <h2>Programação dinâmica</h2>
@@ -272,12 +272,12 @@ def fib_tab(n):                 # bottom-up: tabulação, O(1) de espaço
 <div class="box intro"><b>Para começar</b> Entrevistas técnicas funcionam como uma prova prática de cozinha: um problema curto e alguém observando como você pensa. O <b>LeetCode</b> reúne milhares desses problemas para treinar.</div>
 <h3>Two Sum: a resposta depende do contexto</h3>
 <pre><code>def two_sum(nums, target):        # O(n) tempo, O(n) espaço
-    vistos = {}                   # valor -&gt; índice
+    seen = {}                     # valor -&gt; índice
     for i, x in enumerate(nums):
-        if target - x in vistos:
-            return [vistos[target - x], i]
-        vistos[x] = i</code></pre>
-<p>A força bruta (O(n²) de tempo, O(1) de espaço) não está "errada": perde em escala e ganha em memória e em entradas minúsculas. O conselho de Augusto Galego é <b>perguntar ao entrevistador</b> o tamanho e o padrão dos dados; com o array ordenado, dois ponteiros resolvem em O(n) tempo e O(1) espaço.</p>
+        if target - x in seen:
+            return [seen[target - x], i]
+        seen[x] = i</code></pre>
+<p>A força bruta (O(n²) de tempo, O(1) de espaço) não está "errada": perde em escala e ganha em memória e em entradas minúsculas. O conselho de Augusto Galego é <b>perguntar ao entrevistador</b> o tamanho e o padrão dos dados; com o array ordenado, dois ponteiros resolvem em O(n) de tempo e O(1) de espaço.</p>
 <h3>Single Number e off-by-one</h3>
 <p>No problema tratado em <a href="https://www.youtube.com/watch?v=mVcGSzGxrYM">LeetCode 136 | Explicação em Português</a>, todo número aparece duas vezes exceto um, com espaço O(1). Como x ⊕ x = 0 e x ⊕ 0 = x, aplicar XOR em todos anula os pares e sobra o número sem par.</p>
 <pre><code>from functools import reduce
@@ -302,10 +302,10 @@ def single_number(nums):
 
 <h2>Provas formais: quando testar não basta</h2>
 <div class="box intro"><b>Para começar</b> Testar uma ponte com dez caminhões mostra que ela aguentou aqueles dez; o cálculo estrutural garante qualquer carga dentro da especificação. Em software, o equivalente é a <b>prova formal</b>, conferida por um programa.</div>
-<p>Testes mostram a presença de bugs, nunca a ausência (Dijkstra). No post <a href="https://akitaonrails.com/2026/10/24/por-que-nao-fazemos-provas-formais-definitivas-de-codigo-sem-bug/">"Por que não fazemos provas formais definitivas pra ter código sem bug?"</a>, Fabio Akita discute a <b>verificação formal</b> no contexto dos agentes de IA. O exemplo canônico do custo é o microkernel <b>seL4</b>: cerca de 8.700 linhas de C exigiram cerca de 200 mil linhas de prova em Isabelle/HOL e uns 20 pessoas-ano. Em assistentes como Lean 4 e Coq, um programa que compila é uma prova da proposição expressa no seu tipo (correspondência de Curry-Howard).</p>
+<p>Testes mostram a presença de bugs, nunca a ausência (Dijkstra). No post <a href="https://akitaonrails.com/2026/10/24/por-que-nao-fazemos-provas-formais-definitivas-de-codigo-sem-bug/">"Por que não fazemos provas formais definitivas pra ter código sem bug?"</a>, Fabio Akita discute a <b>verificação formal</b> no contexto dos agentes de IA. O exemplo canônico do custo é o microkernel <b>seL4</b>: cerca de 8.700 linhas de C exigiram cerca de 200 mil linhas de prova em Isabelle/HOL e cerca de 20 pessoas-ano (20 pessoas trabalhando um ano). Em assistentes como Lean 4 e Coq, um programa que compila é uma prova da proposição expressa no seu tipo (correspondência de Curry-Howard).</p>
 <p>A virada vem das <b>provas geradas por IA</b>: um LLM pode alucinar, mas não engana um verificador. Se o Lean aceita a prova, ela vale. Escrever a prova, a parte cara, passa a ser automatizável; o humano fica com escrever a <i>especificação</i> certa.</p>
 <pre><code>-- Lean 4: a prova é verificada pelo compilador
-theorem soma_comm (a b : Nat) : a + b = b + a := by
+theorem add_comm' (a b : Nat) : a + b = b + a := by
   omega</code></pre>
 <div class="box key"><b>Em resumo</b> Solvers de restrição, verificadores de prova e verificadores de tipos seguem o mesmo princípio: o resultado pode ser checado mecanicamente. Com agentes gerando código, o valor de um componente depende cada vez mais de quão barato é <i>verificar</i> o que ele produz.</div>
 

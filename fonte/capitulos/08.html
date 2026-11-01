@@ -7,15 +7,14 @@
 <p>Na aula <a href="https://www.youtube.com/watch?v=jwBpiEoo8rI">Fundamentos de Arquitetura de Software para Backend</a>, do canal Fernanda Kipper, arquitetura é a <b>organização fundamental de um sistema</b>: componentes, relações entre eles e os princípios que guiam sua evolução. Martin Fowler prefere “o entendimento compartilhado que os desenvolvedores experientes têm do sistema”. O vídeo <a href="https://www.youtube.com/watch?v=SWgCLOW1bCE">VOCÊ NÃO SABE ARQUITETURA DE SOFTWARE (veja esse vídeo)</a>, apoiado no livro <i>Arquitetura Limpa</i>, de Robert C. Martin, a define pelo que ela não é: não decide se o sistema funciona (há muitos sistemas funcionando com arquiteturas horríveis) nem se resume a pastas. Seu objetivo é tornar o sistema <b>fácil de entender, manter e implantar</b>. Um caso citado: mudar o texto de um endpoint levou duas semanas porque ninguém achava a classe responsável.</p>
 <p>Há decisões <b>estruturais</b> (monólito ou microsserviços, eventos, serverless, nuvem, banco) e decisões de <b>design de código</b> (Clean Architecture, Hexagonal, MVC, padrões, interfaces). A <b>Lei de Conway</b> (1967) lembra que sistemas copiam a estrutura de comunicação da organização; como times mudam, é mais estável dividir o sistema por <b>responsabilidades de negócio</b> (autenticação, checkout, estoque).</p>
 <p>A mesma aula organiza o vocabulário em seis conceitos, que voltam ao longo do capítulo:</p>
-<table>
-<tr><th>Conceito</th><th>Pergunta-guia</th><th>Exemplo</th></tr>
-<tr><td>Stateful × stateless</td><td>O servidor precisa lembrar do cliente entre requisições?</td><td>Stateless é “mostrar o crachá” (token) a cada requisição, o que permite multiplicar instâncias.</td></tr>
-<tr><td>Síncrono × assíncrono</td><td>O usuário precisa do resultado <i>agora</i>?</td><td>Uma verificação que leva 30 min responde na hora e notifica depois.</td></tr>
-<tr><td>Acoplamento</td><td>A dependência é do domínio ou acidental?</td><td>Matrícula depender do pagamento é legítimo; ler tabelas internas do billing, não.</td></tr>
-<tr><td>Idempotência</td><td>Se a operação se repetir, o efeito muda?</td><td>Cobrar o cartão três vezes por três cliques.</td></tr>
-<tr><td>Cache</td><td>Quanta defasagem posso aceitar?</td><td>Post de blog, sim. Saldo bancário, não.</td></tr>
-<tr><td>Restrições</td><td>Quais limites de orçamento, prazo e time valem aqui?</td><td>Um servidor de ~€ 40/mês atende milhares de usuários; não é preciso começar com Kubernetes.</td></tr>
-</table>
+<ul>
+<li><b>Stateful × stateless</b> (com ou sem memória do cliente). <i>Pergunta:</i> o servidor precisa lembrar de mim? <i>Exemplo:</i> um caixa de padaria que não lembra de você; a cada compra você mostra a comanda de novo.</li>
+<li><b>Síncrono × assíncrono</b>. <i>Pergunta:</i> preciso da resposta agora? <i>Exemplo:</i> no balcão, o café sai na hora; a revelação de fotos avisa quando ficar pronta.</li>
+<li><b>Acoplamento</b> (o quanto uma parte depende da outra). <i>Pergunta:</i> essa dependência faz sentido? <i>Exemplo:</i> a escola exigir o pagamento para matricular é normal; mexer no caixa do financeiro, não.</li>
+<li><b>Idempotência</b> (repetir não muda o resultado). <i>Pergunta:</i> e se o pedido chegar duas vezes? <i>Exemplo:</i> apertar três vezes o botão do elevador chama um elevador só.</li>
+<li><b>Cache</b> (cópia guardada perto para ganhar tempo). <i>Pergunta:</i> posso usar uma informação um pouco velha? <i>Exemplo:</i> o cardápio impresso pode ser de ontem; o saldo da conta, não.</li>
+<li><b>Restrições</b>. <i>Pergunta:</i> quanto dinheiro, tempo e gente eu tenho? <i>Exemplo:</i> uma padaria de bairro não precisa de um sistema de rede de supermercados.</li>
+</ul>
 
 <h2>Linguagens e fundamentos</h2>
 <div class="box intro"><b>Para começar</b> O computador só entende código de máquina, então toda linguagem precisa de um tradutor: alguns traduzem tudo antes, outros na hora, outros um pouco de cada. Esta seção mostra esses modelos, o que são <b>tipos</b> e os erros clássicos de Java, JavaScript e Python.</div>
@@ -102,13 +101,11 @@ var r = List.of("Fernanda", "Ana").stream()
 <div class="box intro"><b>Para começar</b> Se o front-end é o salão, o <b>back-end</b> é a cozinha, e a <b>API</b> é o garçom: o cardápio com regras pelo qual um programa faz pedidos a outro. Veremos estilos de API, validação, cobranças em dobro, tempo real e a infraestrutura na frente do servidor.</div>
 <h3>Estilos de API</h3>
 <p>Para o vídeo <a href="https://www.youtube.com/watch?v=Qw8qVSZEWBc">What Is an API? Types, Uses, &amp; AI Integration</a>, na era da IA a API é o “canudo” que leva dados até o modelo e permite que ele aja. Três estilos dominam:</p>
-<table>
-<tr><th></th><th>REST</th><th>GraphQL</th><th>gRPC</th></tr>
-<tr><td>Modelo</td><td>Recursos + verbos HTTP</td><td>Endpoint único; o cliente escolhe os campos</td><td>Chamada de função remota, Protocol Buffers sobre HTTP/2</td></tr>
-<tr><td>Forte em</td><td>Simplicidade, <b>cache HTTP</b></td><td>Evita over/under-fetching</td><td>Payload pequeno, tipagem, streaming</td></tr>
-<tr><td>Fraco em</td><td>Várias chamadas, versionamento</td><td>Cache difícil, queries caras</td><td>Difícil de depurar, acopla os lados</td></tr>
-<tr><td>Use para</td><td>APIs públicas</td><td>Front com necessidades variadas</td><td>Microsserviços que você controla</td></tr>
-</table>
+<ul>
+<li><b>REST</b>: cada coisa tem um endereço, e os verbos HTTP dizem o que fazer. Simples e fácil de pôr em cache. Bom para APIs públicas. <i>Como pedir um prato pelo número do cardápio.</i></li>
+<li><b>GraphQL</b>: um endereço só, e o cliente diz quais campos quer, nem mais nem menos. Cache mais difícil. Bom para telas com necessidades variadas. <i>Como montar o próprio prato no self-service.</i></li>
+<li><b>gRPC</b>: chama uma função de outro servidor como se fosse local, com mensagens binárias pequenas (Protocol Buffers). Rápido, porém difícil de depurar. Bom entre serviços que você controla. <i>Como o interfone direto entre a cozinha e o caixa.</i></li>
+</ul>
 <p>O vídeo <a href="https://www.youtube.com/watch?v=Cvr0cGtq3fQ">O que fazer quando RESTful não for suficiente</a> faz uma observação que vale para o capítulo todo: quem programa com IA precisa saber <i>quando pedir</i> gRPC, filas ou CQRS, porque a IA dificilmente vai sugerir sozinha.</p>
 
 <h3>DTOs e validação</h3>
@@ -118,10 +115,10 @@ var r = List.of("Fernanda", "Ana").stream()
 <p>Uma operação é <b>idempotente</b> quando repeti-la tem o mesmo efeito de executá-la uma vez. Pela semântica HTTP, GET, PUT e DELETE devem ser; POST não. Mas os vídeos <a href="https://www.youtube.com/watch?v=YNHKO_74sLU">Todo DEV precisa entender isso: IDEMPOTÊNCIA</a> e <a href="https://www.youtube.com/watch?v=xsCOMiUwpeg">Como sistemas evitam requisições duplicadas</a> alertam: não presuma pelo verbo. Clique duplo, retry após timeout e rede instável causam <b>double submit</b>, e as defesas se empilham:</p>
 <table>
 <tr><th>Camada</th><th>Técnica</th><th>Limite</th></tr>
-<tr><td>Front</td><td>Desabilitar o botão</td><td>Contornável</td></tr>
-<tr><td>HTTP</td><td>Post/Redirect/Get (303)</td><td>Só evita reenvio com F5</td></tr>
-<tr><td>Servidor</td><td>Chave de idempotência em armazenamento <b>compartilhado</b> (Redis/banco)</td><td>Definir o que é “duplicado” e quando expira</td></tr>
-<tr><td>Banco</td><td><code>UNIQUE</code> constraint</td><td>Exige um campo realmente único</td></tr>
+<tr><td>Tela</td><td>Desabilitar o botão após o clique</td><td>Quem quiser consegue burlar</td></tr>
+<tr><td>HTTP</td><td>Post/Redirect/Get (303)</td><td>Só evita o reenvio ao apertar F5</td></tr>
+<tr><td>Servidor</td><td>Chave de idempotência (um “número do pedido”) guardada num lugar <b>compartilhado</b>, como Redis ou banco</td><td>É preciso definir o que é “repetido” e por quanto tempo</td></tr>
+<tr><td>Banco</td><td>Restrição <code>UNIQUE</code></td><td>Exige um campo realmente único, como o CPF</td></tr>
 </table>
 <p>Para cadastros, redirect + unique bastam. Para pagamentos e estoque, a chave de idempotência é obrigatória, e nunca na memória local de um servidor só.</p>
 
@@ -129,12 +126,12 @@ var r = List.of("Fernanda", "Ana").stream()
 <p>Na web comum o cliente pergunta e o servidor responde. Para o servidor avisar novidades, há opções (vídeos <a href="https://www.youtube.com/watch?v=uiT4oK19hu4">SERVER-SENT EVENTS: Aprenda a Construir Sistemas que se Comunicam em Tempo Real</a>, <a href="https://www.youtube.com/watch?v=LBTY5BaWLH0">O que é WebSocket? Entenda na prática em 20 minutos (Guia para programadores)</a> e <a href="https://www.youtube.com/watch?v=k0QTuaK6LX4">WEBHOOKS vs WEBSOCKETS (na prática)</a>):</p>
 <table>
 <tr><th>Técnica</th><th>Direção</th><th>Uso típico</th></tr>
-<tr><td>Polling / long polling</td><td>cliente → servidor</td><td>Poucos usuários; desperdiça requisições</td></tr>
-<tr><td><b>SSE</b></td><td>servidor → cliente</td><td>Resposta HTTP que não fecha (<code>text/event-stream</code>); streaming de LLM, notificações</td></tr>
-<tr><td><b>WebSocket</b></td><td>bidirecional</td><td>Upgrade HTTP (101) para canal persistente; chats, jogos</td></tr>
-<tr><td><b>Webhook</b></td><td>servidor → servidor</td><td>“API invertida”: o provedor faz POST na sua URL. Valide a assinatura (HMAC) e seja idempotente</td></tr>
+<tr><td>Polling / long polling</td><td>cliente → servidor</td><td>Perguntar “já chegou?” de tempos em tempos; serve para poucos usuários</td></tr>
+<tr><td><b>SSE</b></td><td>servidor → cliente</td><td>Uma resposta que não fecha; o texto de um chatbot aparecendo aos poucos</td></tr>
+<tr><td><b>WebSocket</b></td><td>bidirecional</td><td>Canal aberto nos dois sentidos, como numa ligação; chats e jogos</td></tr>
+<tr><td><b>Webhook</b></td><td>servidor → servidor</td><td>O outro sistema avisa você, como o banco que manda SMS quando o Pix cai</td></tr>
 </table>
-<p>Dois erros típicos com SSE: chamar <code>res.end()</code> após cada mensagem (vira polling disfarçado) e abrir uma conexão Redis por usuário quando um único assinante Pub/Sub basta.</p>
+<p>Em webhooks, confira a assinatura da mensagem (HMAC, um selo que prova quem enviou) e trate avisos repetidos sem efeito duplicado. Dois erros típicos com SSE: chamar <code>res.end()</code> após cada mensagem (vira polling disfarçado) e abrir uma conexão Redis por usuário quando um único assinante Pub/Sub basta.</p>
 <pre><code>app.get('/stream', (req, res) =&gt; {
   res.setHeader('Content-Type', 'text/event-stream');
   const onMsg = (msg) =&gt; res.write(`data: ${msg}\n\n`);
@@ -177,10 +174,10 @@ app.get('/users/:id', async (req, res) =&gt; {
 <p>Quando um banco roda em várias máquinas e a rede entre elas cai, cada lado precisa decidir: continua atendendo com dado talvez velho ou para até a linha voltar? O teorema <b>CAP</b> (Brewer, 2000) diz que, durante uma <b>partição</b>, é preciso escolher entre <b>consistência</b> e <b>disponibilidade</b>. Um banco prefere ficar indisponível a mostrar saldo errado (CP); uma rede social prefere mostrar curtidas atrasadas (AP). O <b>PACELC</b> (Abadi, 2012) completa: <i>sem</i> partição, a escolha diária é entre <b>latência</b> e consistência (replicação síncrona é consistente e lenta; assíncrona, rápida e eventual).</p>
 <table>
 <tr><th>Banco</th><th>Classificação usual</th><th>Mecanismo</th></tr>
-<tr><td>Cassandra / ScyllaDB</td><td>PA/EL (ajustável)</td><td>Consistência por consulta (ONE, QUORUM, ALL)</td></tr>
+<tr><td>Cassandra / ScyllaDB</td><td>PA/EL (ajustável)</td><td>Cada consulta escolhe quantas réplicas confirmam (ONE, QUORUM, ALL)</td></tr>
 <tr><td>MongoDB</td><td>PC/EC (padrão)</td><td>Replica set com eleição de primário</td></tr>
 <tr><td>DynamoDB</td><td>Por requisição</td><td><code>ConsistentRead</code> true/false</td></tr>
-<tr><td>CockroachDB, Spanner</td><td>PC/EC</td><td>Consenso (Raft/Paxos); Spanner usa relógios atômicos</td></tr>
+<tr><td>CockroachDB, Spanner</td><td>PC/EC</td><td>As réplicas votam antes de confirmar (Raft/Paxos)</td></tr>
 </table>
 <p>Com fator de replicação RF, se os nós lidos (R) e escritos (W) somam mais que RF, toda leitura cruza com uma réplica atualizada. Dois erros comuns: confundir o “C” de ACID (invariantes) com o do CAP (todas as réplicas devolvem a última escrita), e chamar o Postgres de “CA”. Um nó só não sofre partição; com réplicas, a escolha volta a existir.</p>
 
@@ -219,8 +216,8 @@ SELECT * FROM products
 <tr><th>Princípio</th><th>Enunciado</th><th>Violação típica</th></tr>
 <tr><td><b>S</b>RP</td><td>Um módulo tem <b>um único motivo para mudar</b></td><td>Classe que matricula, cobra e manda e-mail</td></tr>
 <tr><td><b>O</b>CP</td><td>Aberto para extensão, fechado para modificação</td><td>Cadeia de <code>if (tipo == "ICMS")</code></td></tr>
-<tr><td><b>L</b>SP</td><td>Um subtipo substitui o tipo base sem quebrar o cliente</td><td>Subclasse que exige mais ou entrega menos; <code>instanceof</code> no cliente</td></tr>
-<tr><td><b>I</b>SP</td><td>Nenhum cliente depende de métodos que não usa</td><td>Cartão lançando exceção em <code>generateQRCode</code></td></tr>
+<tr><td><b>L</b>SP</td><td>Um subtipo substitui o tipo base sem quebrar quem o usa</td><td>Um “pássaro” pinguim que lança erro ao voar</td></tr>
+<tr><td><b>I</b>SP</td><td>Nenhum cliente depende de métodos que não usa</td><td>Pagamento com cartão obrigado a ter <code>generateQRCode</code>, que só o Pix usa</td></tr>
 <tr><td><b>D</b>IP</td><td>Regras dependem de abstrações, não de detalhes</td><td><code>new StripeClient()</code> dentro da regra de negócio</td></tr>
 </table>
 <p>As visões divergem. Renato Augusto (por exemplo, em <a href="https://www.youtube.com/watch?v=f6-5ANuTkys">O Princípio SOLID mais CRÍTICO de TODOS! | Princípio de Substituição de LISKOV</a>) considera LSP e ISP os mais negligenciados. Augusto Galego, em <a href="https://www.youtube.com/watch?v=2yqHlJ2HbTo">Princípios SOLID Pelos Olhos de um Dev Sr.</a>, dá nota máxima a Liskov e é cético com ISP e DIP, que aumentam o boilerplate. Os dois concordam que os princípios <b>não devem ser seguidos à risca em software pequeno</b>. Na aula <a href="https://www.youtube.com/watch?v=5_fmI1nmWOQ">Dominando príncipios de design de código | SOLID</a>, o ganho é concreto: com um <code>Notifier</code> injetado, uma queda do e-mail deixa de bloquear matrículas, e trocar e-mail por WhatsApp não mexe na regra.</p>
@@ -240,8 +237,8 @@ product.applyDiscount(Money.of("10.00"));</code></pre>
 <tr><th>Padrão</th><th>Problema que resolve</th><th>Cuidado</th></tr>
 <tr><td>Factory</td><td>Centralizar a criação; o cliente só conhece a interface</td><td>Métodos estáticos atrapalham testes</td></tr>
 <tr><td>Singleton</td><td>Uma instância por processo (pool de conexões)</td><td>É estado global</td></tr>
-<tr><td>Adapter</td><td>Traduzir uma biblioteca externa para a sua interface</td><td>“As libs se adaptam ao nosso código”</td></tr>
-<tr><td>Strategy</td><td>Algoritmos intercambiáveis sem if/switch (impostos, descontos)</td><td>A escolha sobe para uma Factory</td></tr>
+<tr><td>Adapter</td><td>Traduzir uma biblioteca externa para a sua interface, como um adaptador de tomada</td><td>Mais uma camada para manter</td></tr>
+<tr><td>Strategy</td><td>Trocar a regra sem if/switch, como escolher o tipo de desconto</td><td>Alguém ainda precisa escolher a regra (em geral, uma Factory)</td></tr>
 <tr><td>State</td><td>Estados de um pedido como objetos com transições válidas</td><td>Mais classes; alternativa: tabela de transições</td></tr>
 <tr><td>Observer</td><td>O emissor não conhece quem escuta</td><td>Fluxo implícito, difícil de rastrear</td></tr>
 </table>
@@ -275,7 +272,7 @@ product.applyDiscount(Money.of("10.00"));</code></pre>
 <p><b>Event Sourcing</b> (<a href="https://www.youtube.com/watch?v=jzMghF8n26E">EVENT SOURCING: APRENDA A CONSTRUIR SISTEMAS QUE VÃO ALÉM DO CRUD</a>, <a href="https://www.youtube.com/watch?v=0B20k31Gyq0">CQRS  e EVENT SOURCING | Design de Software Maduro</a>) leva a ideia ao limite: o estado é a soma de eventos imutáveis (ContaAberta, DepósitoFeito…), como um extrato. Um UPDATE apaga a história; um evento a preserva. <b>Projeções</b> geram modelos de leitura, <b>snapshots</b> evitam reprocessar tudo e o <b>replay</b> permite reconstruir o passado, por exemplo para estornar tarifas declaradas indevidas. Correções são eventos inversos, nunca deleções. Ambos são decisões de <b>domínio</b> (auditoria, finanças), não modismos: num CRUD simples só multiplicam a complexidade.</p>
 
 <h2>System design: de um servidor a milhões de usuários</h2>
-<div class="box intro"><b>Para começar</b> Uma barraca de pastel atende dez clientes por hora; para mil, não basta fritar mais rápido: são precisas mais fritadeiras, uma fila organizada e talvez filiais. <b>System design</b> é planejar essa expansão para software. Veremos o roteiro de entrevista, como medir disponibilidade e três estudos de caso.</div>
+<div class="box intro"><b>Para começar</b> Uma barraca de pastel atende dez clientes por hora; para mil, não basta fritar mais rápido: são necessárias mais fritadeiras, uma fila organizada e talvez filiais. <b>System design</b> é planejar essa expansão para software. Veremos o roteiro de entrevista, como medir disponibilidade e três estudos de caso.</div>
 <h3>Roteiro e evolução típica</h3>
 <p>O vídeo <a href="https://www.youtube.com/watch?v=yaNjUYg6yY0">É isso que um SENIOR precisa saber sobre SYSTEM DESIGN</a> sugere um roteiro: requisitos funcionais e não funcionais, estimativas de capacidade, modelo de dados, API, desenho de alto nível e, por fim, gargalos. Avalia-se a capacidade de discutir <b>trade-offs</b>: se a leitura leva 60 ms e a meta é 500 ms, colocar Redis só traz custo.</p>
 <p><b>Escala vertical</b> (máquina maior) tem teto e mantém um ponto único de falha; <b>escala horizontal</b> (réplicas atrás de um load balancer) exige aplicação <b>stateless</b>. A figura a seguir resume a evolução descrita no livro <i>System Design Interview</i>, de Alex Xu, recomendado em <a href="https://www.youtube.com/watch?v=9g7twJrXqoY">System Design: Escalando uma Arquitetura do Zero a Um Milhão de Usuários | Arquitetura de Software</a>: load balancer, autoscaling, réplicas de leitura (com consistência eventual; leia do primário logo após escrever), cache, filas com workers para tarefas lentas e, por último, sharding e múltiplas regiões.</p>
@@ -305,9 +302,9 @@ product.applyDiscount(Money.of("10.00"));</code></pre>
 <p>Para o vídeo <a href="https://www.youtube.com/watch?v=GRYZR2R20FI">Code Quality in the Age of AI: Why Great Code Isn't Enough</a>, a confiança no código vem “por evidência, não por autoria”, e os testes são a prova primária. O experimento do post do AkitaOnRails citado em “Tipagem” reforça o ponto. A <b>pirâmide de testes</b> segue útil:</p>
 <table>
 <tr><th>Nível</th><th>Testa</th><th>Ferramentas</th></tr>
-<tr><td>Unitário (muitos)</td><td>Uma unidade, dependências substituídas</td><td>JUnit + Mockito, Jest/Vitest, pytest</td></tr>
-<tr><td>Integração</td><td>Repositório + banco, módulo + fila</td><td>Testcontainers</td></tr>
-<tr><td>Contrato</td><td>Acordo entre consumidor e provedor de API</td><td>Pact, OpenAPI</td></tr>
+<tr><td>Unitário (muitos)</td><td>Uma peça isolada, com dependências simuladas</td><td>JUnit + Mockito, Jest/Vitest, pytest</td></tr>
+<tr><td>Integração</td><td>Peças reais juntas, como código + banco</td><td>Testcontainers</td></tr>
+<tr><td>Contrato</td><td>Se quem chama e quem responde a API falam a mesma língua</td><td>Pact, OpenAPI</td></tr>
 <tr><td>E2E (poucos)</td><td>Jornada completa no navegador</td><td>Playwright, Cypress</td></tr>
 </table>
 
@@ -377,7 +374,7 @@ jobs:
 <li><b><code>git commit --amend</code></b> refaz o último commit (também muda o hash).</li>
 </ul>
 <figure><img src="img/08_git.png"><figcaption>Merge × rebase: o merge cria o commit M e preserva os dois ramos; o rebase reescreve X e Y como X′ e Y′ sobre C. Fonte: elaboração própria com dados do vídeo “TUTORIAL GIT | Git Rebase, Git Cherry Pick, Git Ammend, Git Rebase Interativo”.</figcaption></figure>
-<p>Regra de ouro: <b>nunca reescreva histórico público</b>. Na sua própria branch, prefira <code>--force-with-lease</code>, que recusa o push se houver commits que você não viu. Outras práticas: PRs pequenos (algumas centenas de linhas), <i>Conventional Commits</i>, <code>main</code> protegida com CI obrigatório e <b>git worktrees</b> para trabalhar em várias branches ao mesmo tempo, hoje muito usados para rodar agentes de IA em paralelo (ver Livro 3, Capítulo 1 (Programando com IA)).</p>
+<p>Regra de ouro: <b>nunca reescreva histórico público</b>. Na sua própria branch, prefira <code>--force-with-lease</code>, que recusa o push se houver commits que você não viu. Outras práticas: PRs pequenos (algumas centenas de linhas), <i>Conventional Commits</i>, <code>main</code> protegida com CI obrigatório e <b>git worktrees</b> para trabalhar em várias branches ao mesmo tempo, hoje muito usados para rodar agentes de IA em paralelo (ver Livro 3, Capítulo 1, Programando com IA).</p>
 <div class="box fact"><b>Você sabia?</b> Linus Torvalds escreveu a primeira versão do Git em abril de 2005, em poucos dias, depois que o kernel Linux perdeu a licença gratuita do BitKeeper. “Git” é gíria britânica para pessoa teimosa e desagradável, e Torvalds brincou que batiza projetos em sua própria homenagem.</div>
 
 <h2>Boas práticas, documentação e engenharia na era da IA</h2>

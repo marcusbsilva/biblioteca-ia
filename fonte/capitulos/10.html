@@ -47,10 +47,10 @@ WHERE people.name = 'Steve Carell';</code></pre>
 <p>O vídeo <a href="https://www.youtube.com/watch?v=pYK4No7ACRE">Master NoSQL: Scalable Databases for Modern Applications</a>, da IBM, desfaz um mito: NoSQL significa "<i>not only SQL</i>", e bancos de documentos também têm índices e junções. O princípio é <b>modelar para o padrão de acesso</b>: gastar mais lógica na escrita para tornar a leitura barata.</p>
 <table>
 <tr><th>Cenário</th><th>Padrão em documentos</th></tr>
-<tr><td>Catálogo heterogêneo</td><td>Campos comuns + subobjeto variável, sem migração</td></tr>
-<tr><td>Sensores/IoT</td><td>Agrupar leituras em <i>buckets</i> por janela de tempo</td></tr>
-<tr><td>Post com comentários</td><td>Aninhar os primeiros; excedente em documento de <i>overflow</i></td></tr>
-<tr><td>Contagens</td><td>Pré-calcular e incrementar a cada escrita</td></tr>
+<tr><td>Loja que vende TVs e camisetas</td><td>Campos comuns a todos e uma parte livre para cada tipo</td></tr>
+<tr><td>Termômetro que mede a cada segundo</td><td>Juntar as leituras de cada hora num só documento</td></tr>
+<tr><td>Post com comentários</td><td>Guardar os primeiros comentários dentro do post; o resto, à parte</td></tr>
+<tr><td>Curtidas de um post</td><td>Somar 1 ao total a cada curtida, em vez de contar tudo de novo</td></tr>
 </table>
 <p>É o oposto da normalização relacional, que otimiza integridade e flexibilidade de consulta. Se você ainda não sabe quais consultas fará, comece relacional (o Postgres tem colunas <code>JSONB</code> indexáveis) e migre quando a junção for o gargalo medido.</p>
 
@@ -60,11 +60,11 @@ WHERE people.name = 'Steve Carell';</code></pre>
 <p>Um pipeline ETL (<i>extract, transform, load</i>) move dados de A para B. Em <a href="https://www.youtube.com/watch?v=A6x5y8yQRHY">Scaling Data Pipelines: Memory Optimization &amp; Failure Control</a>, a IBM parte de um caso realista: o tráfego triplica e o pipeline estoura a memória. As práticas para memória são ler e escrever em blocos (<i>chunking</i>), converter strings repetitivas para o tipo <code>category</code> e trocar laços por operações vetorizadas. Para falhas, a mentalidade é "o pipeline <em>vai</em> falhar": validar o schema na entrada, repetir cada fase algumas vezes antes de desistir e gravar um <b>checkpoint</b> fora do pipeline para retomar do ponto onde parou.</p>
 <pre><code>import pandas as pd
 ckpt = load_checkpoint()            # ex.: último id gravado externamente
-for chunk in pd.read_csv("vendas.csv", chunksize=200_000,
-                         dtype={"regiao": "category"}):
+for chunk in pd.read_csv("sales.csv", chunksize=200_000,
+                         dtype={"region": "category"}):
     chunk = chunk[chunk.id &gt; ckpt]
     chunk = validate_schema(chunk)   # descarta linhas inválidas cedo
-    agg = chunk.groupby("produto", observed=True)["valor"].sum()
+    agg = chunk.groupby("product", observed=True)["amount"].sum()
     with_retry(lambda: write(agg), tries=3)
     save_checkpoint(chunk.id.max())</code></pre>
 <div class="box key"><b>Em resumo</b> Pipelines robustos são <b>idempotentes</b> (rodar duas vezes dá o mesmo resultado), <b>retomáveis</b> e <b>defensivos</b>. Polars, DuckDB ou Spark resolvem problemas de memória, mas não substituem esses princípios.</div>
@@ -73,9 +73,10 @@ for chunk in pd.read_csv("vendas.csv", chunksize=200_000,
 <p>Em <a href="https://www.youtube.com/watch?v=vWVOMV_vxxs">Big Data vs Fast Data: Optimize Your AI Strategy</a>, a pergunta-chave é se você otimiza para profundidade ou para velocidade. Big data extrai valor da <b>agregação ao longo do tempo</b> (treinar modelos, histórico); fast data extrai valor <b>no momento</b> (fraude, personalização). Os dois coexistem: <b>modelos são treinados com big data e aplicados a fast data</b>.</p>
 <table>
 <tr><th></th><th>Big data</th><th>Fast data</th></tr>
-<tr><td>Ingestão</td><td>Batch</td><td>Streaming (Kafka, MQTT)</td></tr>
-<tr><td>Processamento</td><td>Spark, warehouse</td><td>Flink, processadores leves</td></tr>
-<tr><td>Consumo</td><td>BI, treino de IA</td><td>Alertas, decisões automáticas</td></tr>
+<tr><td>Chegada dos dados</td><td>Batch (em lotes, de tempos em tempos)</td><td>Streaming (contínuo)</td></tr>
+<tr><td>Processamento</td><td>Grandes cálculos agendados</td><td>Cada evento analisado ao chegar</td></tr>
+<tr><td>Uso</td><td>Relatórios, treino de IA</td><td>Alertas, decisões automáticas</td></tr>
+<tr><td>Exemplo</td><td>Relatório de vendas do mês</td><td>Bloquear na hora um cartão roubado</td></tr>
 </table>
 <p>Em <a href="https://www.youtube.com/watch?v=aBIxpJ1_EyY">What Is Real-Time Data Streaming? AI &amp; Machine Learning Applications</a>, a tese central é que <b>o valor do dado decai com o tempo</b>. O processador filtra, <b>enriquece</b> (junta ao registro qual máquina, onde, em que operação) e analisa; e não convém ser um "acumulador de dados": persista anomalias e pontos de interesse, não cada leitura bruta. Conceitos essenciais de streaming incluem tempo de evento versus tempo de processamento, janelas e semântica de entrega (<i>at-least-once</i>, <i>exactly-once</i>).</p>
 <p>O Apache Hadoop, tema de <a href="https://www.youtube.com/watch?v=JWX5Inb--ig">What is Apache Hadoop?</a>, popularizou o processamento distribuído em hardware comum, com HDFS (blocos replicados), YARN (recursos) e MapReduce (processamento). O MapReduce grava resultados intermediários em disco; o Spark os mantém em memória e é bem mais rápido em ML iterativo. Hoje o HDFS muitas vezes deu lugar a object storage com Spark ou motores SQL, mas a ideia de processar onde o dado está e tolerar falhas de nós permanece.</p>
@@ -87,13 +88,13 @@ for chunk in pd.read_csv("vendas.csv", chunksize=200_000,
 <div class="box intro"><b>Para começar</b> Ninguém lê uma planilha de 100 mil linhas. Resumos como "a idade média é 34" ou "metade das compras fica abaixo de R$ 80" são o primeiro passo diante de qualquer dado novo, como o médico que mede a pressão antes de pedir exames.</div>
 <p>O "Data Desk" mostrado em <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a> ilustra o fluxo exploratório: carrega-se uma planilha e a ferramenta calcula estatísticas descritivas, frequências, correlações, PCA, agrupamentos e anomalias. É o roteiro que vale para qualquer dataset novo.</p>
 <table>
-<tr><th>Medida</th><th>Quando usar / armadilha</th></tr>
-<tr><td>Média</td><td>Sensível a outliers: um bilionário na sala distorce a média salarial</td></tr>
-<tr><td>Mediana</td><td>Robusta; prefira para renda, latência, preços</td></tr>
-<tr><td>Moda</td><td>Única medida de centro para dados categóricos</td></tr>
-<tr><td>Desvio padrão</td><td>s² = Σ(x<sub>i</sub> − x̄)² / (n − 1); o n − 1 corrige o viés amostral</td></tr>
-<tr><td>Quartis, IQR</td><td>Base do boxplot e da regra de outlier de Tukey</td></tr>
-<tr><td>Percentis (p95, p99)</td><td>Padrão para latência: a média esconde a cauda</td></tr>
+<tr><th>Medida</th><th>O que é, num exemplo</th></tr>
+<tr><td>Média</td><td>Soma dividida pelo total; um bilionário na sala distorce a média salarial</td></tr>
+<tr><td>Mediana</td><td>O valor do meio; prefira para salários e preços</td></tr>
+<tr><td>Moda</td><td>O valor mais comum, como o tamanho de camiseta mais vendido</td></tr>
+<tr><td>Desvio padrão</td><td>Quanto os valores se espalham; notas 7, 7 e 7 têm desvio zero</td></tr>
+<tr><td>Quartis, IQR</td><td>Dividem os dados em quatro partes iguais; base do boxplot</td></tr>
+<tr><td>Percentis (p95, p99)</td><td>p95: 95% das páginas abrem mais rápido que esse tempo</td></tr>
 </table>
 <p>A correlação de Pearson mede associação <em>linear</em> entre −1 e 1; a de Spearman, aplicada aos postos, capta relações monotônicas. Correlação não é causalidade, r ≈ 0 não significa independência (uma parábola tem r ≈ 0), e duas séries temporais com tendência quase sempre parecem correlacionadas: correlacione as <em>variações</em>, não os níveis.</p>
 <div class="box warn"><b>Atenção</b> O quarteto de Anscombe (1973) tem quatro conjuntos com médias, variâncias e correlação idênticas e gráficos completamente diferentes. Sempre plote os dados.</div>
@@ -104,27 +105,27 @@ for chunk in pd.read_csv("vendas.csv", chunksize=200_000,
 <pre><code>import numpy as np
 Xs = (X - X.mean(0)) / X.std(0)
 U, S, Vt = np.linalg.svd(Xs, full_matrices=False)
-explicada = S**2 / (S**2).sum()
+explained = S**2 / (S**2).sum()
 Z = Xs @ Vt[:2].T                  # coordenadas em CP1, CP2
 recon = Z @ Vt[:2]                 # volta ao espaço original
-erro = ((Xs - recon)**2).sum(1)    # erro de reconstrução por linha</code></pre>
+error = ((Xs - recon)**2).sum(1)    # erro de reconstrução por linha</code></pre>
 <figure><img src="img/10_pca.png"><figcaption>Esquerda: variância explicada por componente num conjunto sintético de 4 variáveis correlacionadas. Direita: projeção em CP1×CP2, com os pontos de maior erro de reconstrução marcados como anomalias. Fonte: elaboração própria, ilustrando o fluxo do "Data Desk" do VectorFall Ep. 3.</figcaption></figure>
 <p>A PCA é linear e sensível a outliers. Para estruturas não lineares, t-SNE e UMAP visualizam melhor, mas distorcem distâncias globais. Para agrupar, k-means após PCA é um combo clássico. E a fatoração de matrizes dos recomendadores é, essencialmente, uma SVD truncada.</p>
 
 <h2>Detecção de anomalias</h2>
 <div class="box intro"><b>Para começar</b> Uma <b>anomalia</b> é um dado que destoa do resto, como uma compra de R$ 30 mil num cartão que gasta R$ 200. Detectá-las é como o porteiro que conhece os moradores e repara no rosto estranho.</div>
 <table>
-<tr><th>Família</th><th>Método</th><th>Ideia</th></tr>
-<tr><td>Estatística</td><td>Z-score robusto, regra de Tukey</td><td>Ponto longe do centro em unidades de dispersão</td></tr>
-<tr><td>Distância/densidade</td><td>Mahalanobis, LOF</td><td>Ponto em região pouco densa, considerando correlações</td></tr>
-<tr><td>Reconstrução</td><td>PCA, autoencoder</td><td>Ponto mal reconstruído pela estrutura principal</td></tr>
-<tr><td>Isolamento</td><td>Isolation Forest</td><td>Anomalias se isolam com poucos cortes aleatórios</td></tr>
-<tr><td>Séries temporais</td><td>Resíduo de previsão, EWMA</td><td>Desvio em relação à previsão ou à sazonalidade</td></tr>
+<tr><th>Família</th><th>Método</th><th>Exemplo do dia a dia</th></tr>
+<tr><td>Estatística</td><td>Z-score robusto, regra de Tukey</td><td>Conta de luz dez vezes maior que a de costume</td></tr>
+<tr><td>Distância/densidade</td><td>Mahalanobis, LOF</td><td>Carro potente e levíssimo: cada dado é normal, a combinação não</td></tr>
+<tr><td>Reconstrução</td><td>PCA, autoencoder</td><td>Peça que não se encaixa no padrão do quebra-cabeça</td></tr>
+<tr><td>Isolamento</td><td>Isolation Forest</td><td>Quem está sozinho num canto da festa é achado logo</td></tr>
+<tr><td>Séries temporais</td><td>Resíduo de previsão, EWMA</td><td>Loja vazia numa sexta-feira que costuma lotar</td></tr>
 </table>
 <p>O z-score clássico tem um defeito: o próprio outlier infla a média e o desvio, mascarando-se. A versão robusta usa mediana e MAD. A distância de Mahalanobis considera correlações: um carro potente e pesado é normal; potente e levíssimo, não. Lembre que "anomalia" é estatística e "problema" é de negócio: a Black Friday é anômala e legítima.</p>
 
 <h3>Da probabilidade à decisão: classificadores calibrados</h3>
-<p>Detectores produzem <em>pontuações</em>; o negócio precisa de <em>decisões</em>. Os vídeos da IBM sobre o Jev, da startup TypeSafe (<a href="https://www.youtube.com/watch?v=YGgNBcIgI4s">What Is Jev? The AI Model That Doesn't Generate Text</a> e <a href="https://www.youtube.com/watch?v=O4n1jtWzt30">New frontier AI models, TypeSafe’s Jev AI, &amp; NASA’s IBM collab</a>), tornam essa ponte explícita. Um <b>classificador</b> escolhe entre respostas pré-definidas em vez de gerar texto. Para um e-mail "fui cobrado duas vezes", o Jev devolve de uma vez: reembolso? 0,9; equipe? billing 0,85; urgência? alta.</p>
+<p>Detectores produzem <em>pontuações</em>; o negócio precisa de <em>decisões</em>. Os vídeos da IBM sobre o Jev, da startup TypeSafe (<a href="https://www.youtube.com/watch?v=YGgNBcIgI4s">What Is Jev? The AI Model That Doesn't Generate Text</a> e <a href="https://www.youtube.com/watch?v=O4n1jtWzt30">New frontier AI models, TypeSafe’s Jev AI, &amp; NASA’s IBM collab</a>), tornam essa ponte explícita. Um <b>classificador</b> escolhe entre respostas pré-definidas em vez de gerar texto. Para um e-mail "fui cobrado duas vezes", o Jev devolve de uma vez: reembolso? 0,9; equipe? financeiro 0,85; urgência? alta.</p>
 <p>O argumento técnico é a <b>calibração</b>: um modelo é calibrado se, entre os casos em que diz "80%", acerta cerca de 80%. Segundo a TypeSafe, LLMs de chat tendem a ser sobreconfiantes; recompensar o modelo com uma <b>regra de pontuação própria</b> (log-loss ou Brier) é o que incentiva calibração.</p>
 <figure><img src="img/10_calib.png"><figcaption>Diagrama de confiabilidade: a diagonal é o ideal e, abaixo dela, o modelo é sobreconfiante. As linhas verticais marcam a política de limiares: abaixo de 0,1 ignora, acima de 0,9 automatiza, no meio envia a um humano. Curvas ilustrativas. Fonte: elaboração própria a partir de "What Is Jev? The AI Model That Doesn't Generate Text".</figcaption></figure>
 <p>Com probabilidades calibradas, a política é simples: <b>acima de 0,9 automatiza, entre 0,1 e 0,9 vai para humano, abaixo de 0,1 descarta</b>. Formalmente, age-se quando p &gt; custo/(ganho + custo). Calibração se mede com o ECE e se corrige com <i>Platt scaling</i> ou <i>temperature scaling</i>. Fabio Akita, em <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a>, mostra que modelos pequenos e locais empatam ou chegam perto dos líderes hospedados em tarefas de classificação: um modelo especializado e calibrado costuma vencer um gerador grande em custo e latência.</p>
@@ -172,14 +173,14 @@ erro = ((Xs - recon)**2).sum(1)    # erro de reconstrução por linha</code></pr
 <h2>Métricas: como saber se está funcionando</h2>
 <div class="box intro"><b>Para começar</b> Um termômetro só serve se medir a coisa certa. Um detector de fraude que nunca acusa ninguém acerta 99,9% das vezes e não serve para nada.</div>
 <table>
-<tr><th>Métrica</th><th>O que mede / quando usar</th></tr>
-<tr><td>Precisão</td><td>VP / (VP + FP); alarme falso caro</td></tr>
-<tr><td>Recall</td><td>VP / (VP + FN); deixar passar caro</td></tr>
-<tr><td>PR-AUC</td><td>Preferível a ROC-AUC com classes raras</td></tr>
-<tr><td>Log-loss, Brier, ECE</td><td>Qualidade da probabilidade e calibração</td></tr>
-<tr><td>Precision@k, Recall@k</td><td>Relevantes entre os k primeiros recomendados</td></tr>
-<tr><td>NDCG@k</td><td>Pune relevantes em posições baixas</td></tr>
-<tr><td>Cobertura, diversidade, novidade</td><td>Saúde do catálogo e da experiência</td></tr>
+<tr><th>Métrica</th><th>O que mede, em palavras simples</th></tr>
+<tr><td>Precisão</td><td>Dos alarmes dados, quantos eram reais; importa quando alarme falso custa caro</td></tr>
+<tr><td>Recall</td><td>Dos casos reais, quantos foram pegos; importa quando deixar passar custa caro</td></tr>
+<tr><td>PR-AUC</td><td>Resumo de precisão e recall; melhor que ROC-AUC para casos raros</td></tr>
+<tr><td>Log-loss, Brier, ECE</td><td>Se "80% de chance" acerta mesmo 8 em cada 10 vezes</td></tr>
+<tr><td>Precision@k, Recall@k</td><td>Quantos dos 10 primeiros filmes sugeridos você queria ver</td></tr>
+<tr><td>NDCG@k</td><td>Perde pontos se o filme certo aparece lá embaixo na lista</td></tr>
+<tr><td>Cobertura, diversidade, novidade</td><td>Se as sugestões variam ou mostram sempre os mesmos sucessos</td></tr>
 </table>
 <p>No fim, o juiz são métricas online em testes A/B: CTR, conversão, retenção, receita por sessão. Defina o tamanho de amostra antes, não interrompa o teste ao primeiro p &lt; 0,05 (<i>peeking</i> infla falsos positivos) e acompanhe métricas de proteção, como latência e reclamações.</p>
 <div class="box warn"><b>Atenção</b> Recomendadores avaliados em logs sofrem <b>viés de exposição</b>: o usuário só pôde clicar no que o sistema antigo mostrou. Separe treino e teste <em>no tempo</em>, nunca aleatoriamente, e reserve tráfego de exploração.</div>

@@ -1,68 +1,57 @@
 <section class="chapter" id="ch04"><h1><span class="num">Capítulo 04</span>RAG, Embeddings e Busca</h1>
-<p class="lead">Um LLM é uma fotografia estatística do seu corpus de treino: não sabe o que aconteceu depois do corte, não conhece os documentos da sua empresa e, quando não sabe, inventa com a mesma fluência com que acerta. A Geração Aumentada por Recuperação (RAG) é a resposta de engenharia mais barata e mais usada para esse problema: antes de gerar, buscar. Este capítulo percorre o artigo que deu nome à técnica, as peças do pipeline moderno, as variantes avançadas, a avaliação e a decisão entre RAG, contexto longo, cache e fine-tuning.</p>
+<p class="lead">Um LLM só sabe o que aprendeu no treino: não conhece as notícias da semana nem os documentos da sua empresa e, quando não sabe, costuma inventar com a mesma segurança com que acerta. A Geração Aumentada por Recuperação (RAG) é a solução mais barata e mais usada para isso: antes de responder, o sistema busca a informação certa. A primeira parte deste capítulo explica a ideia em linguagem simples; a segunda mostra como construir, medir e proteger um RAG de verdade.</p>
 
-<div class="box intro"><p><b>Para começar</b> Um LLM, por padrão, faz prova "de livro fechado": depende do que decorou e, quando não lembra, chuta com confiança. <b>RAG</b> (<i>Retrieval-Augmented Generation</i>) lhe entrega o livro aberto: antes de responder, o sistema procura trechos relevantes numa base de documentos e os coloca diante do modelo. Conceitos de base sobre LLMs estão no Livro 1, Capítulo 2 (LLMs, Transformers e MoE); sobre montar bons prompts, no Capítulo 2 (Engenharia de Contexto).</p></div>
+<div class="box intro"><p><b>Para começar</b> Um LLM, por padrão, faz prova "de livro fechado": depende do que decorou e, quando não lembra, chuta com confiança. <b>RAG</b> (<i>Retrieval-Augmented Generation</i>, geração aumentada por recuperação) lhe entrega o livro aberto: antes de responder, o sistema procura trechos relevantes numa base de documentos e os coloca diante do modelo. Conceitos de base sobre LLMs estão no Livro 1, Capítulo 2 (LLMs, Transformers e MoE); sobre montar bons prompts, no Capítulo 2 (Engenharia de Contexto).</p></div>
 
-<h2>Por que recuperar: os limites da memória paramétrica</h2>
-<p>Um modelo guarda o que "sabe" nos pesos, como regularidades estatísticas, não como documentos. Daí quatro limitações:</p>
+<h2>A ideia central</h2>
+<p>Um modelo guarda o que "sabe" nos seus pesos (os números ajustados no treino), como padrões, e não como documentos que possa consultar. Isso gera quatro limites:</p>
 <ul>
-<li><b>Corte temporal.</b> O modelo está congelado na data de treino e chuta sobre fatos posteriores.</li>
-<li><b>Dados privados.</b> A política de reembolso ou a receita por região da sua empresa nunca estiveram na internet pública.</li>
-<li><b>Alucinação e falta de proveniência.</b> O modelo prevê tokens, não consulta fatos; inventa números e referências, e não distingue fonte confiável de piada (o caso da "cola na pizza" veio de um comentário satírico do Reddit).</li>
-<li><b>Atualização cara.</b> Mudar o conhecimento paramétrico exige fine-tuning, sem garantia de que o fato novo será usado.</li>
+<li><b>Data de corte.</b> O modelo parou no dia em que terminou o treino e chuta sobre o que veio depois.</li>
+<li><b>Dados privados.</b> A política de reembolso da sua loja nunca esteve na internet pública.</li>
+<li><b>Invenção.</b> O modelo prevê a próxima palavra, não consulta fatos; pode inventar números e fontes, e não distingue fonte séria de piada (o caso da "cola na pizza" veio de um comentário satírico num fórum).</li>
+<li><b>Atualização cara.</b> Ensinar um fato novo ao modelo exige retreiná-lo (<i>fine-tuning</i>), sem garantia de que ele vai usar o fato.</li>
 </ul>
-<p>O RAG separa duas memórias: a <b>paramétrica</b> (os pesos: linguagem, raciocínio, conhecimento geral) e a <b>não paramétrica</b> (um índice de documentos: fatos específicos, atualizáveis e citáveis). Na analogia de <a href="https://www.youtube.com/watch?v=qppV3n3YlF8">RAG Explained</a>, da IBM Technology, o LLM é um jornalista que consulta um bibliotecário; em <a href="https://www.youtube.com/watch?v=SWXa7z_64-g">RAG Explicado: Como Dar Conhecimento aos Seus Agentes de IA</a>, do canal Attekita Dev, é um funcionário brilhante recém-contratado que ainda não tem acesso aos sistemas da empresa.</p>
-<div class="box key"><b>Em resumo</b> RAG = <i>Retrieve</i> (buscar trechos) → <i>Augment</i> (inseri-los no prompt) → <i>Generate</i> (responder com base neles). O modelo não muda; muda o que ele vê.</div>
+<p>O RAG separa duas memórias: a do <b>modelo</b> (linguagem, raciocínio, conhecimento geral) e a de uma <b>base de documentos</b> (fatos específicos, que dá para atualizar e citar). Na analogia de <a href="https://www.youtube.com/watch?v=qppV3n3YlF8">RAG Explained</a>, da IBM Technology, o LLM é um jornalista que consulta um bibliotecário; em <a href="https://www.youtube.com/watch?v=SWXa7z_64-g">RAG Explicado: Como Dar Conhecimento aos Seus Agentes de IA</a>, do canal Attekita Dev, é um funcionário brilhante recém-contratado que ainda não tem acesso aos sistemas da empresa.</p>
+<div class="box key"><b>Em resumo</b> RAG = <i>Retrieve</i> (buscar trechos) → <i>Augment</i> (colocá-los no prompt) → <i>Generate</i> (responder com base neles). O modelo não muda; muda o que ele lê antes de responder.</div>
 
-<h2>O artigo fundador: Lewis et al. (2020)</h2>
-<div class="box intro"><p><b>Para começar</b> O termo RAG nasceu num artigo de 2020 do Facebook AI Research. Se for sua primeira leitura, guarde três ideias: o sistema tem um <b>buscador</b> e um <b>redator</b>; os dois foram treinados juntos; e trocar a base de documentos muda o que o modelo "sabe" sem retreiná-lo.</p></div>
-<p>O artigo é <i>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</i>, de Patrick Lewis e colegas (<a href="https://arxiv.org/abs/2005.11401">arxiv.org/abs/2005.11401</a>). O RAG que hoje se faz com APIs é uma versão simplificada, sem treino conjunto, do que está ali.</p>
-
-<h3>Componentes</h3>
-<ul>
-<li><b>Recuperador</b> p<sub>η</sub>(z|x): o DPR (<i>Dense Passage Retriever</i>), um <b>bi-encoder</b>. Um BERT-base codifica documentos, d(z), outro codifica a consulta, q(x), e p<sub>η</sub>(z|x) ∝ exp(d(z)<sup>T</sup> q(x)). Achar os K documentos de maior produto interno é um problema de <b>MIPS</b> (<i>Maximum Inner Product Search</i>), resolvido aproximadamente em tempo sublinear.</li>
-<li><b>Gerador</b> p<sub>θ</sub>: o BART-large (~400M parâmetros), um transformer encoder-decoder que recebe a pergunta concatenada ao documento.</li>
-</ul>
-<p>O índice era a Wikipédia de dezembro de 2018 cortada em blocos de 100 palavras: 21 milhões de passagens, indexadas com FAISS/HNSW.</p>
-<div class="box warn"><b>Atenção</b> Um erro comum, presente no próprio apêndice do artigo, é falar em vetores de 728 dimensões. O correto é 768, a saída do token [CLS] do BERT-base.</div>
-
-<h3>RAG-Sequence e RAG-Token</h3>
-<p>O documento recuperado é uma <b>variável latente</b>: não há rótulo de qual passagem é a certa, e o modelo marginaliza sobre as K candidatas.</p>
-<pre><code>RAG-Sequence:  p(y|x) ≈ Σ_{z ∈ top-k}  p_η(z|x) · Π_i p_θ(y_i | x, z, y_1:i-1)
-RAG-Token:     p(y|x) ≈ Π_i  Σ_{z ∈ top-k}  p_η(z|x) · p_θ(y_i | x, z, y_1:i-1)</code></pre>
-<p>No RAG-Sequence, um mesmo documento sustenta a resposta inteira; no RAG-Token, cada token pode "consultar" um documento diferente, o que permite combinar fatos de várias fontes. No treino, só o codificador de consultas e o BART são ajustados; o codificador de documentos e o índice ficam <b>congelados</b>, para não ter de reindexar 21 milhões de passagens.</p>
-
-<h3>Resultados e troca de índice</h3>
-<p>Com 626M de parâmetros treináveis, o RAG atingiu 44,5 de Exact Match no Natural Questions, contra 34,5 do T5-11B "de livro fechado" e 41,5 do DPR extrativo. Os ganhos se repetiram em outras tarefas:</p>
-<table>
-<tr><th>Tarefa</th><th>Métrica</th><th>RAG</th><th>Comparação</th></tr>
-<tr><td>Natural Questions</td><td>EM</td><td>44,5</td><td>T5-11B 34,5; DPR 41,5</td></tr>
-<tr><td>MS-MARCO NLG</td><td>BLEU-1</td><td>44,2</td><td>BART 41,6</td></tr>
-<tr><td>FEVER 3 classes</td><td>acurácia</td><td>72,5</td><td>76,8 com supervisão de evidência</td></tr>
-<tr><td>Jeopardy (avaliação humana)</td><td>mais factual</td><td>42,7%</td><td>BART 7,1%</td></tr>
-</table>
-<p>Em 11,8% dos acertos a resposta não estava literalmente em nenhum documento recuperado: a memória paramétrica completa o que a não paramétrica sugere. Um detalhe antecipa a busca híbrida: no FEVER, de alegações centradas em entidades, o BM25 lexical venceu o recuperador denso.</p>
-<figure><img src="img/04_hotswap.png"><figcaption>Troca de índice: com o índice da Wikipédia de 2016 o modelo acerta 70% dos líderes de 2016; com o de 2018, 68% dos de 2018. Com índice e pergunta descasados, o acerto cai para 4% e 12%. Fonte: Lewis et al., 2021.</figcaption></figure>
-<p>Este é o argumento mais forte do artigo: o conhecimento mora no índice. Em produção, "atualizar o RAG" significa reindexar, não retreinar. O próprio artigo registra limites: em geração de histórias ocorreu <b>retrieval collapse</b>, em que o recuperador passa a devolver sempre os mesmos documentos e o gerador aprende a ignorá-los.</p>
-<div class="box tip"><b>Dica</b> No RAG original, recuperador e gerador são treinados juntos. Hoje quase sempre se usa um embedding pronto e um LLM de API congelado. Perde-se o ajuste conjunto, ganha-se modularidade: dá para trocar banco vetorial, embedding ou LLM de forma independente.</div>
-
-<h2>Visão geral do pipeline moderno</h2>
-<div class="box intro"><p><b>Para começar</b> Numa biblioteca, os livros são catalogados antes de qualquer pergunta; quando o leitor chega, basta consultar o catálogo. Um RAG tem as mesmas duas fases: indexação <b>offline</b>, que roda quando os documentos mudam, e consulta <b>online</b>, a cada pergunta.</p></div>
+<h2>Um exemplo do dia a dia</h2>
+<p>Uma cliente pergunta ao chat de uma loja: "Posso devolver um tênis depois de 10 dias?". Sem RAG, o modelo responde com o que parece comum no varejo, talvez "sim, em até 30 dias", o que pode estar errado. Com RAG, o sistema faz três coisas:</p>
+<ol>
+<li>procura nos documentos da loja os trechos que falam de troca e devolução;</li>
+<li>coloca esses trechos no prompt, com a instrução "responda só com base neles";</li>
+<li>o modelo responde: "Não. A política permite devolução em até 7 dias (Política de Trocas, item 2)".</li>
+</ol>
+<p>Se a loja mudar a regra amanhã, basta trocar o documento; o modelo continua o mesmo. É como numa biblioteca: os livros são catalogados antes de qualquer pergunta (fase <b>offline</b>, quando os documentos mudam) e, quando o leitor chega, basta consultar o catálogo (fase <b>online</b>, a cada pergunta).</p>
 <figure><img src="img/04_pipeline.png"><figcaption>Pipeline RAG de produção: indexação offline (parsing, chunking com metadados e permissões, embeddings, índices vetorial e lexical) e consulta online (reescrita, busca híbrida com filtro de acesso, fusão e reranking, prompt com grounding, LLM, guardrails). Fonte: elaboração própria com dados de RAG Explicado: Como Dar Conhecimento aos Seus Agentes de IA, RAG vs. CAG: Solving Knowledge Gaps in AI Models e RAG's Evolution: From Simple Retrieval to Agentic AI.</figcaption></figure>
+
+<h2>O que dá para construir</h2>
+<ul>
+<li><b>Assistente de atendimento</b> que responde com as regras atuais da empresa e cita a fonte.</li>
+<li><b>Busca interna inteligente</b>: "como peço férias?" acha o trecho certo do manual de RH.</li>
+<li><b>Apoio a técnicos</b>: o código de erro digitado traz a página do manual com a solução.</li>
+<li><b>Pesquisa em contratos e leis</b>, com cada afirmação apontando para a cláusula de origem.</li>
+<li><b>Estudo pessoal</b>: conversar com suas próprias anotações, apostilas e PDFs.</li>
+<li><b>Agentes que consultam documentos</b> antes de agir (tema do Capítulo 4 (Agentes de IA e MCP)).</li>
+</ul>
+<div class="box warn"><b>Atenção</b> RAG <b>reduz</b>, mas não elimina, a invenção: o modelo pode ignorar o trecho ou se apoiar no trecho errado. Por isso a segunda parte do capítulo trata de avaliação e segurança.</div>
+
+<div class="box adv"><b>Parte avançada</b> Daqui em diante o capítulo fica técnico: código, fórmulas de busca, bancos vetoriais, métricas de avaliação, segurança, a comparação com contexto longo e cache e, no fim, o artigo que deu nome à técnica (Lewis et al., 2020) em detalhe. Se você só queria a ideia geral, pode pular para o Checklist final.</div>
+
+<h2>Um RAG mínimo em código</h2>
 <p>Em <a href="https://www.youtube.com/watch?v=8juRvzZg_AI">Construindo um RAG próprio do ZERO</a>, do canal Augusto Galego, a essência cabe em poucas linhas:</p>
 <pre><code>from sentence_transformers import SentenceTransformer, util
 model = SentenceTransformer("all-MiniLM-L6-v2")
 docs = ["Nossa política de reembolso é de 7 dias...", "A Torre Eiffel foi ..."]
 doc_emb = model.encode(docs, convert_to_tensor=True)   # pré-calculado (offline)
 
-def rag(pergunta, k=3):
-    q = model.encode(pergunta, convert_to_tensor=True)  # só a query, on-the-fly
+def rag(question, k=3):
+    q = model.encode(question, convert_to_tensor=True)  # só a pergunta, na hora
     scores = util.cos_sim(q, doc_emb)[0]
     top = scores.topk(min(k, len(docs))).indices.tolist()
-    contexto = "\n---\n".join(docs[i] for i in top)
+    context = "\n---\n".join(docs[i] for i in top)
     prompt = ("Responda única e exclusivamente com base nos documentos abaixo. "
               "Se a resposta não estiver neles, diga que não sabe.\n\n"
-              f"{contexto}\n\nPergunta: {pergunta}")
+              f"{context}\n\nPergunta: {question}")
     return llm(prompt)</code></pre>
 <p>O teste do autor é didático: inserir um fato falso nos documentos e ver o modelo repeti-lo prova que a resposta vem do contexto, não da memória interna. Repare na divisão de trabalho: os vetores dos documentos são calculados uma vez, offline; a cada pergunta, só a consulta é codificada, o que mantém a busca rápida mesmo com muitos documentos.</p>
 
@@ -77,16 +66,16 @@ def rag(pergunta, k=3):
 <h2>Chunking</h2>
 <div class="box intro"><p><b>Para começar</b> Quem procura uma receita não quer o livro inteiro, quer a página certa. <b>Chunking</b> é cortar os documentos em pedaços (<i>chunks</i>) que serão buscados um a um. Cortar demais separa a pergunta da resposta; cortar de menos mistura assuntos.</p></div>
 <p>Um vetor único para 50 páginas é uma média tão diluída que não representa nada, por isso se corta. Mas cortar destrói sentido. O exemplo de <a href="https://www.youtube.com/watch?v=SWXa7z_64-g">RAG Explicado</a>: um chunk termina em "o cliente tem direito a desconto." e o seguinte começa com "se tiver contrato anual renovado duas vezes". Recuperado sozinho, o primeiro produz uma resposta errada com toda a confiança.</p>
-<table>
-<tr><th>Estratégia</th><th>Como funciona</th><th>Prós</th><th>Contras</th></tr>
-<tr><td>Tamanho fixo + overlap</td><td>N tokens, com sobreposição de 10–20%</td><td>Trivial, previsível</td><td>Corta frases e tabelas</td></tr>
-<tr><td>Recursivo</td><td>Separa por parágrafo, linha, frase, palavra</td><td>Respeita o texto; padrão do LangChain</td><td>Cego à semântica</td></tr>
-<tr><td>Por estrutura</td><td>Por seção/título</td><td>Chunks coerentes, com título herdado</td><td>Depende de bom parsing</td></tr>
-<tr><td>Semântico</td><td>Corta onde a similaridade entre frases cai</td><td>Fronteiras de assunto reais</td><td>Mais caro; tamanhos irregulares</td></tr>
-<tr><td>Contextual</td><td>LLM prefixa cada chunk situando-o no documento</td><td>Recupera chunks "órfãos"</td><td>Custo de LLM na ingestão</td></tr>
-<tr><td>Parent-child</td><td>Busca no chunk pequeno, entrega a seção ao LLM</td><td>Precisão + contexto</td><td>Mais complexo</td></tr>
-</table>
-<p>Um ponto de partida razoável é 200–800 tokens com overlap de 10–20%; perguntas factuais curtas pedem chunks menores, explicações pedem maiores ou parent-child.</p>
+<p>As estratégias mais comuns, da mais simples à mais elaborada:</p>
+<ul>
+<li><b>Tamanho fixo + overlap</b> (sobreposição): pedaços de N tokens que repetem 10–20% do anterior. Simples, mas corta frases e tabelas.</li>
+<li><b>Recursivo</b>: tenta cortar por parágrafo, depois por linha e por frase. Respeita o texto, mas não entende o assunto.</li>
+<li><b>Por estrutura</b>: um pedaço por seção ou título. Fica coerente, se o parsing for bom.</li>
+<li><b>Semântico</b>: corta onde o assunto muda. Mais caro e com tamanhos irregulares.</li>
+<li><b>Contextual</b>: um LLM escreve, no início de cada pedaço, de onde ele veio. Custa chamadas na ingestão.</li>
+<li><b>Parent-child</b> (pai e filho): busca no pedaço pequeno e entrega a seção inteira ao modelo.</li>
+</ul>
+<p>Um ponto de partida razoável é 200–800 tokens com overlap de 10–20%. Perguntas factuais curtas pedem chunks menores; explicações pedem chunks maiores ou parent-child.</p>
 <div class="box tip"><b>Dica</b> Prefixe cada chunk com o caminho do documento: <code>Manual de RH &gt; Benefícios &gt; Vale-refeição</code>. Melhora o embedding, ajuda o reranker e permite citar a seção.</div>
 
 <h2>Embeddings</h2>
@@ -119,12 +108,11 @@ distância L2:      ‖q − d‖² = ‖q‖² + ‖d‖² − 2 q·d</code></p
 <tr><td>DiskANN</td><td>Grafo otimizado para SSD</td><td>Bilhões de vetores</td></tr>
 </table>
 <p>Onde guardar? <a href="https://www.youtube.com/watch?v=t9IDoenf-lo">What is a Vector Database?</a>, da IBM, situa os bancos vetoriais na sequência SQL → NoSQL → grafos → vetoriais. Já <a href="https://www.youtube.com/watch?v=m-SqTgZDiAc">Postgres é TUDO que sua IA precisa</a>, do canal Ronnald Hawk, defende o "Postgres-first": <code>pgvector</code> para vetores, <code>tsvector</code> para o ramo lexical e JSONB para metadados cobrem um RAG completo num único banco, com transações consistentes e debug mais fácil.</p>
-<table>
-<tr><th>Opção</th><th>Exemplos</th><th>Pontos fortes</th><th>Cuidado</th></tr>
-<tr><td>Extensão de banco existente</td><td>pgvector, OpenSearch kNN, MongoDB Atlas</td><td>Um sistema só; filtros SQL</td><td>Escala de bilhões exige esforço</td></tr>
-<tr><td>Banco vetorial dedicado</td><td>Milvus, Qdrant, Weaviate, Pinecone, Chroma</td><td>Escala, híbrido embutido</td><td>Mais um serviço para sincronizar</td></tr>
-<tr><td>Biblioteca</td><td>FAISS, hnswlib</td><td>Máximo controle</td><td>Sem persistência nem filtros prontos</td></tr>
-</table>
+<ul>
+<li><b>Extensão do banco que você já usa</b> (pgvector, OpenSearch kNN, MongoDB Atlas): um sistema só e filtros em SQL; escalar a bilhões de vetores dá trabalho.</li>
+<li><b>Banco vetorial dedicado</b> (Milvus, Qdrant, Weaviate, Pinecone, Chroma): escala e busca híbrida embutida; é mais um serviço para manter sincronizado.</li>
+<li><b>Biblioteca</b> (FAISS, hnswlib): controle máximo, mas sem persistência nem filtros prontos.</li>
+</ul>
 <p>Os parâmetros do HNSW (<i>M</i>, conexões por nó; <i>efSearch</i>, largura da busca) controlam o compromisso recall × latência. Meça recall@k contra uma busca exata numa amostra antes de confiar no índice.</p>
 <p>Comece com o que você já opera: até dezenas de milhões de chunks, Postgres + pgvector + full-text costuma bastar.</p>
 
@@ -227,18 +215,15 @@ nDCG@k      = DCG@k / IDCG@k,  DCG@k = Σ_{i=1..k} rel_i / log2(i+1)</code></pre
 <tr><td>Permite achar o que <i>falta</i> entre dois documentos.</td><td>Data lakes de terabytes não cabem em janela nenhuma.</td></tr>
 </table>
 <p>Conclusão: conjunto limitado com raciocínio global (um contrato, comparar dois documentos) → contexto longo; conhecimento corporativo grande e dinâmico → recuperação.</p>
-<p>A <b>CAG</b> (explicada em <a href="https://www.youtube.com/watch?v=HdafI0t3sEY">RAG vs. CAG: Solving Knowledge Gaps in AI Models</a>) processa a base inteira uma vez e guarda o <b>KV cache</b>, a "memória de trabalho" das camadas de atenção; as consultas seguintes só anexam a pergunta, com ganhos de latência relatados de ~10× a ~40×. Tudo precisa caber na janela e qualquer mudança exige recomputar. Os cenários do vídeo são um bom guia: help desk sobre um manual pouco atualizado → CAG; assistente jurídico com milhares de casos e necessidade de citação → RAG; apoio clínico → híbrido, com RAG selecionando o relevante e CAG mantendo o caso como memória de trabalho. O <b>prompt caching</b> dos provedores é a versão comercial: um prefixo idêntico é cobrado com grande desconto.</p>
+<p>A <b>CAG</b> (explicada em <a href="https://www.youtube.com/watch?v=HdafI0t3sEY">RAG vs. CAG: Solving Knowledge Gaps in AI Models</a>) processa a base inteira uma vez e guarda o <b>KV cache</b>, a "memória de trabalho" das camadas de atenção; as consultas seguintes só anexam a pergunta, com ganhos de latência relatados de ~10× a ~40×. Tudo precisa caber na janela e qualquer mudança exige recomputar. Os cenários do vídeo são um bom guia: help desk sobre um manual pouco atualizado → CAG; assistente jurídico com milhares de casos e necessidade de citação → RAG; apoio clínico → híbrido, com RAG selecionando o relevante e CAG mantendo o caso como memória de trabalho. O <b>prompt caching</b> dos provedores é a versão comercial: um início de prompt idêntico é cobrado com grande desconto.</p>
 <figure><img src="img/04_custo.png"><figcaption>Tokens de entrada cobrados em função do número de consultas sobre um manual de 250 mil tokens: contexto longo relê tudo, CAG/prompt caching paga ~10% na leitura, RAG envia só ~3 mil tokens de chunks. Modelo simplificado. Fonte: elaboração própria com dados de Is RAG Still Needed? Choosing the Best Approach for LLMs e CAG vs Long Context: How AI Models Use and Remember Information.</figcaption></figure>
 <p>Fine-tuning ensina <b>forma</b> (formato, tom, vocabulário, processo), não <b>fatos</b> voláteis: é caro de atualizar e não dá proveniência. Combina bem com RAG quando aplicado ao modelo de embedding ou ao reranker.</p>
-<table>
-<tr><th>Critério</th><th>RAG</th><th>Contexto longo</th><th>CAG / caching</th><th>Fine-tuning</th></tr>
-<tr><td>Tamanho da base</td><td>Ilimitado</td><td>Até a janela</td><td>Até a janela</td><td>Forma, não fatos</td></tr>
-<tr><td>Atualização</td><td>Reindexar</td><td>Imediata</td><td>Recomputar cache</td><td>Retreinar</td></tr>
-<tr><td>Custo por consulta</td><td>Baixo</td><td>Alto</td><td>Médio/baixo</td><td>Baixo</td></tr>
-<tr><td>Citações</td><td>Nativas</td><td>Possíveis</td><td>Possíveis</td><td>Não</td></tr>
-<tr><td>Visão global do conjunto</td><td>Fraca</td><td>Forte</td><td>Forte</td><td>—</td></tr>
-<tr><td>Principal falha</td><td>Recuperação errada silenciosa</td><td>Diluição da atenção</td><td>Cache desatualizado</td><td>Fatos alucinados</td></tr>
-</table>
+<ul>
+<li><b>RAG</b>: base de qualquer tamanho, atualiza reindexando, custo baixo por pergunta e citações naturais. Falha típica: buscar o trecho errado sem ninguém perceber.</li>
+<li><b>Contexto longo</b>: atualização imediata e boa visão do conjunto, mas caro a cada pergunta. Falha típica: o modelo "se perde" no meio do texto.</li>
+<li><b>CAG / caching</b>: rápido e mais barato que reler tudo, com limite da janela. Falha típica: cache desatualizado.</li>
+<li><b>Fine-tuning</b>: ensina forma, não fatos, e exige retreinar para mudar. Falha típica: fatos inventados.</li>
+</ul>
 <div class="box key"><b>Em resumo</b> Não é "ou", é portfólio: RAG para conhecimento grande, mutável e com permissão; contexto longo ou CAG para conjuntos pequenos, estáveis ou que pedem visão global; fine-tuning para comportamento, embeddings e rerankers.</div>
 <div class="box fact"><b>Você sabia?</b> Busca semântica não exige infraestrutura cara. Para corpora de algumas centenas de milhares de palavras, cabe tudo na memória e uma busca exata por força bruta, mesmo em CPU ou numa GPU antiga, responde instantaneamente, como mostra <a href="https://www.youtube.com/watch?v=S6_5Wfn2BkM">Forget the $7,000 RTX 5090: Real AI and Text Analysis on a $19 GPU</a>.</div>
 
@@ -252,6 +237,38 @@ nDCG@k      = DCG@k / IDCG@k,  DCG@k = Σ_{i=1..k} rel_i / log2(i+1)</code></pre
 <li><b>Drift.</b> Perguntas que não acham nada (score máximo baixo) revelam lacunas na base.</li>
 </ul>
 <div class="box warn"><b>Atenção</b> Sintomas comuns e causas: "usou a política antiga" → metadados de vigência; "não achou o código do erro" → falta ramo lexical; "resposta incompleta" → chunk cortado; "inventou a citação" → faltam IDs e verificação; "mostrou algo proibido" → filtro de ACL fora do índice.</div>
+
+<h2>Aprofundamento: o artigo fundador (Lewis et al., 2020)</h2>
+<div class="box intro"><p><b>Para começar</b> O termo RAG nasceu num artigo de 2020 do Facebook AI Research. Se for sua primeira leitura, guarde três ideias: o sistema tem um <b>buscador</b> e um <b>redator</b>; os dois foram treinados juntos; e trocar a base de documentos muda o que o modelo "sabe" sem retreiná-lo.</p></div>
+<p>O artigo é <i>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</i>, de Patrick Lewis e colegas (<a href="https://arxiv.org/abs/2005.11401">arxiv.org/abs/2005.11401</a>). O RAG que hoje se faz com APIs é uma versão simplificada, sem treino conjunto, do que está ali.</p>
+
+<h3>Componentes</h3>
+<ul>
+<li><b>Recuperador</b> p<sub>η</sub>(z|x): o DPR (<i>Dense Passage Retriever</i>), um <b>bi-encoder</b>. Um BERT-base codifica documentos, d(z), outro codifica a consulta, q(x), e p<sub>η</sub>(z|x) ∝ exp(d(z)<sup>T</sup> q(x)). Achar os K documentos de maior produto interno é um problema de <b>MIPS</b> (<i>Maximum Inner Product Search</i>), resolvido aproximadamente em tempo sublinear.</li>
+<li><b>Gerador</b> p<sub>θ</sub>: o BART-large (~400M parâmetros), um transformer encoder-decoder que recebe a pergunta concatenada ao documento.</li>
+</ul>
+<p>O índice era a Wikipédia de dezembro de 2018 cortada em blocos de 100 palavras: 21 milhões de passagens, indexadas com FAISS/HNSW.</p>
+<div class="box warn"><b>Atenção</b> Um erro comum, presente no próprio apêndice do artigo, é falar em vetores de 728 dimensões. O correto é 768, a saída do token [CLS] do BERT-base.</div>
+
+<h3>RAG-Sequence e RAG-Token</h3>
+<p>O documento recuperado é uma <b>variável latente</b>: não há rótulo de qual passagem é a certa, e o modelo marginaliza sobre as K candidatas.</p>
+<pre><code>RAG-Sequence:  p(y|x) ≈ Σ_{z ∈ top-k}  p_η(z|x) · Π_i p_θ(y_i | x, z, y_1:i-1)
+RAG-Token:     p(y|x) ≈ Π_i  Σ_{z ∈ top-k}  p_η(z|x) · p_θ(y_i | x, z, y_1:i-1)</code></pre>
+<p>No RAG-Sequence, um mesmo documento sustenta a resposta inteira; no RAG-Token, cada token pode "consultar" um documento diferente, o que permite combinar fatos de várias fontes. No treino, só o codificador de consultas e o BART são ajustados; o codificador de documentos e o índice ficam <b>congelados</b>, para não ter de reindexar 21 milhões de passagens.</p>
+
+<h3>Resultados e troca de índice</h3>
+<p>Com 626M de parâmetros treináveis, o RAG atingiu 44,5 de Exact Match (acerto exato) no Natural Questions, contra 34,5 do T5-11B "de livro fechado" e 41,5 do DPR extrativo. Os ganhos se repetiram em outras tarefas:</p>
+<table>
+<tr><th>Tarefa (métrica)</th><th>RAG</th><th>Comparação</th></tr>
+<tr><td>Natural Questions (EM)</td><td>44,5</td><td>T5-11B 34,5; DPR 41,5</td></tr>
+<tr><td>MS-MARCO NLG (BLEU-1)</td><td>44,2</td><td>BART 41,6</td></tr>
+<tr><td>FEVER 3 classes (acurácia)</td><td>72,5</td><td>76,8 com supervisão de evidência</td></tr>
+<tr><td>Jeopardy (mais factual, avaliação humana)</td><td>42,7%</td><td>BART 7,1%</td></tr>
+</table>
+<p>Em 11,8% dos acertos a resposta não estava literalmente em nenhum documento recuperado: a memória paramétrica completa o que a não paramétrica sugere. Um detalhe antecipou a busca híbrida: no FEVER, de alegações centradas em entidades, o BM25 lexical venceu o recuperador denso.</p>
+<figure><img src="img/04_hotswap.png"><figcaption>Troca de índice: com o índice da Wikipédia de 2016 o modelo acerta 70% dos líderes de 2016; com o de 2018, 68% dos de 2018. Com índice e pergunta descasados, o acerto cai para 4% e 12%. Fonte: Lewis et al., 2021.</figcaption></figure>
+<p>Este é o argumento mais forte do artigo: o conhecimento mora no índice. Em produção, "atualizar o RAG" significa reindexar, não retreinar. O próprio artigo registra limites: em geração de histórias ocorreu <b>retrieval collapse</b>, em que o recuperador passa a devolver sempre os mesmos documentos e o gerador aprende a ignorá-los.</p>
+<div class="box tip"><b>Dica</b> No RAG original, recuperador e gerador são treinados juntos. Hoje quase sempre se usa um embedding pronto e um LLM de API congelado. Perde-se o ajuste conjunto, ganha-se modularidade: dá para trocar banco vetorial, embedding ou LLM de forma independente.</div>
 
 <h2>Checklist final</h2>
 <ol>

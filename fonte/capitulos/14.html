@@ -4,6 +4,30 @@
 <div class="box key"><b>Definição</b> <b>AI-Driven Engineer</b> é quem constrói software soberano e verificável usando agentes de IA como equipe: decide o que construir e em qual linguagem cada parte vive, especifica, orquestra os agentes, exige que eles discordem, verifica cada entrega e entrega o resultado pronto para usar. O código pode ser escrito por máquinas; a responsabilidade continua humana.</div>
 <div class="box intro"><b>Para começar</b> Pense numa obra com pedreiros incansáveis e baratos (os agentes), que às vezes erguem a parede no lugar errado e garantem que está tudo pronto. Nesse canteiro, vale mais quem sabe <em>o que</em> construir, desenha a planta, inspeciona cada parede e assina o laudo. Esse é o AI-Driven Engineer.</div>
 
+<h2>De onde vem o conceito: arquitetura modular</h2>
+<p>Parte da ideia de AI-Driven Engineer vem de um estilo antigo e testado de construir software: a <b>arquitetura modular</b>. Nela, o sistema é dividido em <b>módulos</b>, peças com uma única responsabilidade. Cada módulo conversa com os outros por uma <b>interface</b> (a "porta de entrada" do módulo) que segue um <b>contrato</b> claro: o que ele recebe, o que devolve e o que promete. Dois termos resumem o objetivo:</p>
+<ul>
+<li><b>Baixo acoplamento</b>: mexer num módulo não obriga a mexer nos outros. É como trocar a lâmpada sem refazer a fiação da casa.</li>
+<li><b>Alta coesão</b>: tudo o que está dentro de um módulo trata do mesmo assunto. É como uma gaveta só de talheres.</li>
+</ul>
+<p>Exemplos conhecidos dessa forma de pensar:</p>
+<ul>
+<li><b>Filosofia Unix</b>: "faça uma coisa e faça bem". Pequenos comandos, como <code>grep</code> e <code>sort</code>, combinados em sequência.</li>
+<li><b>Plugins</b>: o editor de texto continua o mesmo; cada plugin acrescenta uma função sem mexer no núcleo.</li>
+<li><b>Microsserviços × monólito modular</b>: no primeiro, cada módulo roda como um programa separado; no segundo, tudo roda junto, mas com divisões internas bem marcadas. As duas opções são modulares; muda o custo de operar.</li>
+<li><b>Clean Architecture e Arquitetura Hexagonal</b>: a regra de negócio fica no centro, e banco de dados, telas e serviços externos ficam nas bordas, ligados por interfaces. Trocar o banco não muda a regra.</li>
+</ul>
+<h3>Por que isso combina com agentes de IA</h3>
+<ul>
+<li><b>Cada módulo cabe no contexto de um agente.</b> O agente não precisa entender o sistema inteiro, só o seu pedaço e o contrato dele.</li>
+<li><b>Contratos e testes por módulo permitem verificar o que a IA produz.</b> Se o módulo cumpre o contrato e passa nos próprios testes, a entrega está conferida.</li>
+<li><b>Cada módulo pode usar a linguagem que melhor serve ao seu papel</b>: o núcleo rápido em Rust, os dados em Python, a tela em TypeScript. É o princípio <b>Poliglota por Papel</b>, visto adiante.</li>
+<li><b>Agentes trabalham em paralelo sem pisar uns nos outros</b>, cada um no seu módulo. É a base da <b>IA como Equipe Paralela</b>.</li>
+<li><b>Trocar ou reescrever um módulo não derruba o sistema.</b> Enquanto o contrato for respeitado, dá para fazer um <b>Port Completo</b> de uma peça, ou unir projetos numa <b>Fusão de Repositórios</b>, aos poucos e com segurança.</li>
+</ul>
+<figure><img src="img/14v5_modular.png"><figcaption>Arquitetura modular com agentes: o engenheiro define contratos e revisa; cada agente cuida de um módulo, com linguagem e testes próprios; os módulos só se falam pelos contratos, por isso uma peça pode ser trocada sem derrubar as outras. Fonte: elaboração própria.</figcaption></figure>
+<div class="box tip"><b>Dica</b> Antes de pedir código a um agente, pergunte: "qual módulo é este, qual é o contrato dele e qual teste prova que ele funciona?". Se não souber responder, a tarefa ainda não está pronta para ser delegada.</div>
+
 <h2>O que é um AI-Driven Engineer</h2>
 <p>Ele <b>projeta</b> (arquitetura e limites), <b>especifica</b> (transforma intenção em requisitos verificáveis), <b>orquestra</b> (distribui tarefas e monta o contexto e as ferramentas dos agentes) e <b>verifica</b> (prova com testes, revisão e medição que o resultado está correto, seguro e barato o bastante). <b>Agente</b> é um programa baseado num LLM que executa ações em ciclo: lê arquivos, roda comandos, observa o resultado e decide o próximo passo (Livro 2, Capítulo 4 (Agentes e MCP)). Sem um "oráculo" (testes, especificação, métricas) que diga se o resultado está certo, o agente gira no vazio.</p>
 <p>Fabio Akita defende a mesma tese em <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a>: os modelos de ponta convergiram em qualidade, e o salto recente veio do <i>harness</i> agêntico (ferramentas, buscas e loops de teste em volta do modelo). Por isso, <b>engenharia tradicional (testes, processo, invariantes) é o diferencial</b>.</p>
@@ -14,8 +38,8 @@
 <tr><th>Dimensão</th><th>Programador tradicional</th><th>Vibe coder</th><th>AI-Driven Engineer</th></tr>
 <tr><td>Quem escreve o código</td><td>Ele mesmo</td><td>A IA, sem revisão</td><td>Agentes, sob especificação e revisão</td></tr>
 <tr><td>Como sabe que está pronto</td><td>Testa e revisa</td><td>"A IA disse que está pronto"</td><td>Testes automatizados, métricas, revisão humana</td></tr>
-<tr><td>Gargalo</td><td>Velocidade de digitação</td><td>Entender o que foi gerado</td><td>Clareza da spec e capacidade de verificação</td></tr>
-<tr><td>Risco típico</td><td>Lentidão</td><td>Falhas de segurança, dívida invisível</td><td>Excesso de confiança no harness; custo de tokens</td></tr>
+<tr><td>Gargalo</td><td>Velocidade de digitação</td><td>Entender o que foi gerado</td><td>Clareza do pedido e da conferência</td></tr>
+<tr><td>Risco típico</td><td>Lentidão</td><td>Falhas de segurança escondidas</td><td>Confiar demais nas ferramentas; gastar muito</td></tr>
 </table>
 <p>O canal Área Tech Brasil resume em <a href="https://www.youtube.com/watch?v=SI0le2zHTd8">COMO FICAR PERIGOSAMENTE BOM EM PROGRAMAÇÃO</a>: o "codificador de prompt" terceiriza o pensamento; o "orquestrador" chega com hipótese e critério de aceite e terceiriza só a digitação. Em <a href="https://www.youtube.com/watch?v=UOKCuEzeOAo">O jeito CERTO de usar IA para programar (ninguém te explica isso)</a>, o Sujeito programador reserva o vibe coding para POCs, usa fluxo agêntico (pesquisar, planejar, implementar) em tarefas médias e o GitHub Spec Kit em features complexas: "a IA é proporcional ao conhecimento do desenvolvedor".</p>
 <p>O que acontece sem guia aparece em <a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a>, de Augusto Galego: um app de tarefas gerado pelo Cursor sem isolamento entre usuários, <code>SELECT *</code> sem paginação, roteador reinventado sem cabeçalhos de segurança, sem migrations e com JWT sem restrição de algoritmo. Tudo "roda"; nada vai para produção.</p>
@@ -34,7 +58,7 @@
 <h3>O que dizem os estudos de produtividade</h3>
 <table>
 <tr><th>Estudo</th><th>Resultado</th><th>Leitura</th></tr>
-<tr><td>Cui, Demirer et al. (3 experimentos, 4.867 devs, Copilot)</td><td>+26% de PRs por semana; ganho maior entre menos experientes</td><td>Autocompletar ajuda em tarefas rotineiras</td></tr>
+<tr><td>Cui, Demirer et al. (4.867 devs, Copilot)</td><td>+26% de pull requests (propostas de mudança) por semana; ganho maior entre iniciantes</td><td>Autocompletar ajuda em tarefas rotineiras</td></tr>
 <tr><td>METR (2025, 16 devs experientes em open source)</td><td>Achavam ter ganhado 20%; levaram 19% <em>mais</em> tempo</td><td>A percepção de ganho engana</td></tr>
 <tr><td>Anthropic (2026, 52 engenheiros aprendendo uma biblioteca)</td><td>Compreensão de 50% com IA contra 67% sem</td><td>Delegar tudo prejudica o aprendizado</td></tr>
 </table>
@@ -43,23 +67,23 @@
 
 <h2>Os princípios do AI-Driven Engineer</h2>
 <div class="box intro"><b>Para começar</b> Os princípios respondem a três perguntas: <b>onde</b> o software roda, <b>como</b> é construído e <b>como</b> o engenheiro pensa. Cada um traz uma prática comum na indústria e o anti-padrão que evita.</div>
-<figure><img src="img/14v3_principios.png"><figcaption>Os doze princípios do AI-Driven Engineer. Fonte: elaboração própria a partir do conceito de Marcus B. Silva.</figcaption></figure>
+<figure><img src="img/14v3_principios.png"><figcaption>Os doze princípios do AI-Driven Engineer. Fonte: elaboração própria a partir do conceito apresentado neste capítulo.</figcaption></figure>
 <h3>Soberania Local (local-first)</h3>
-<p>Sempre que possível, o sistema e a IA que o constrói rodam na máquina de quem os usa. Modelos abertos servidos por llama.cpp ou Ollama eliminam a dependência de uma API, o custo por token e o envio de código a terceiros. Isso exige conhecer os limites do hardware: memória da GPU, quantização adequada (Capítulo 2 (Hardware e IA local)). <b>Na prática:</b> usar um modelo de código quantizado em 4 bits para autocompletar e tarefas rotineiras e reservar a nuvem para o que o modelo local comprovadamente não resolve. <b>Anti-padrão:</b> um produto cujo recurso central para quando a chave de API expira ou o provedor muda o preço.</p>
+<p>Sempre que possível, o sistema e a IA que o constrói rodam na máquina de quem os usa. Modelos abertos servidos por llama.cpp ou Ollama eliminam a dependência de uma API, o custo por token e o envio de código a terceiros. Isso exige conhecer os limites do hardware: memória da GPU, quantização adequada (Capítulo 2 (Hardware e IA local)). <b>Na prática:</b> usar um modelo pequeno no próprio PC para tarefas do dia a dia e a nuvem só quando ele não der conta. <b>Anti-padrão:</b> um produto cujo recurso central para quando a chave de API expira ou o provedor muda o preço.</p>
 <h3>Port Completo</h3>
 <p>Ferramentas de referência são estudadas e reescritas como versões próprias e abertas, com as funções que importam. O original serve de especificação viva. <b>Na prática:</b> como o LibreOffice diante do Microsoft Office ou o Inkscape diante do Illustrator, escrever uma alternativa aberta com a mesma experiência, sem copiar código. <b>Anti-padrão:</b> um "clone" que copia a tela e chama a mesma API fechada por baixo, ou código copiado sem licença compatível (Livro 5, Capítulo 3 (Propriedade intelectual)).</p>
 <h3>Fusão de Repositórios</h3>
-<p>Quando vários projetos resolvem pedaços do mesmo problema, eles são fundidos num sistema coeso, com uma configuração, um ponto de entrada e responsabilidades sem sobreposição. Agentes tornam viável ler e integrar bases que antes levariam meses. <b>Na prática:</b> consolidar scripts e ferramentas internas dispersas numa única CLI, preservando licenças e créditos. <b>Anti-padrão:</b> cinco repositórios clonados lado a lado e um script que reza para que todos subam na ordem certa.</p>
+<p>Quando vários projetos resolvem pedaços do mesmo problema, eles são fundidos num sistema coeso, com uma configuração, um ponto de entrada e responsabilidades sem sobreposição. Agentes tornam viável ler e integrar bases que antes levariam meses. <b>Na prática:</b> juntar vários scripts soltos num único programa de linha de comando, mantendo licenças e créditos. <b>Anti-padrão:</b> cinco repositórios clonados lado a lado e um script que reza para que todos subam na ordem certa.</p>
 <h3>Poliglota por Papel</h3>
-<p>A linguagem é escolhida pelo papel da peça: Rust ou Go no núcleo que exige desempenho, Python em dados e ML, TypeScript na interface web, Lua para scripting embutido. Pontes como PyO3 ligam Rust a Python. <b>Na prática:</b> como fizeram ferramentas Python populares (Ruff, Pydantic v2), mover o núcleo lento para Rust mantendo a mesma interface. Akita mostra em <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a> que bons testes pesam mais que a linguagem. <b>Anti-padrão:</b> tudo na única linguagem que se conhece, ou trocar de linguagem a cada modismo.</p>
+<p>A linguagem é escolhida pelo papel da peça: Rust ou Go no núcleo que exige desempenho, Python em dados e ML, TypeScript na interface web, Lua para scripting embutido. Pontes como PyO3 ligam Rust a Python. <b>Na prática:</b> reescrever em Rust só a parte lenta de um programa Python, sem mudar o jeito de usá-lo (como fizeram o Ruff e o Pydantic v2). Akita mostra em <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a> que bons testes pesam mais que a linguagem. <b>Anti-padrão:</b> tudo na única linguagem que se conhece, ou trocar de linguagem a cada modismo.</p>
 <h3>Experiência de Um Clique</h3>
 <p>O usuário vem antes: instaladores que resolvem as dependências sozinhos, um <b>launcher único</b> e uma raiz de projeto limpa, com scripts auxiliares numa pasta própria. Toda release traz um pacote pronto. <b>Na prática:</b> um comando ou instalador (como os de VS Code e Docker Desktop) que verifica e baixa o que falta e abre a aplicação. <b>Anti-padrão:</b> um README de 40 passos ou uma raiz com <code>start.bat</code>, <code>start2.bat</code> e <code>run_final_v3.bat</code>.</p>
 <h3>Conhecimento Destilado</h3>
-<p>Documentação, vídeos e decisões viram um corpus organizado e com fontes, que alimenta um RAG consultado pelos agentes (Livro 2, Capítulo 3 (RAG)). <b>Na prática:</b> indexar a documentação interna e os registros de decisão de arquitetura para o assistente de código do time. <b>Anti-padrão:</b> centenas de links "salvos para depois" ou um RAG de texto bruto, sem curadoria.</p>
+<p>Documentação, vídeos e decisões viram um corpus organizado e com fontes, que alimenta um RAG consultado pelos agentes (Livro 2, Capítulo 3 (RAG)). <b>Na prática:</b> dar ao assistente de código do time acesso à documentação interna e às decisões já tomadas. <b>Anti-padrão:</b> centenas de links "salvos para depois" ou um RAG de texto bruto, sem curadoria.</p>
 <h3>IA como Equipe Paralela</h3>
-<p>Agentes permitem várias frentes ao mesmo tempo, cada uma com contexto e especificação próprios; o engenheiro age como líder técnico. <b>Na prática:</b> um agente implementa um endpoint, outro escreve testes e um terceiro atualiza a documentação, em branches isoladas, revisadas em janelas fixas do dia. <b>Anti-padrão:</b> abrir dez frentes e não revisar nenhuma, ou misturar projetos no mesmo contexto.</p>
+<p>Agentes permitem várias frentes ao mesmo tempo, cada uma com contexto e especificação próprios; o engenheiro age como líder técnico. <b>Na prática:</b> um agente cria uma função nova, outro escreve os testes e um terceiro atualiza a documentação, cada um na sua branch (cópia separada do código), revisadas em horários fixos do dia. <b>Anti-padrão:</b> abrir dez frentes e não revisar nenhuma, ou misturar projetos no mesmo contexto.</p>
 <h3>Releases Incrementais com Marcos Explicados</h3>
-<p>O software evolui por versões pequenas e nomeadas, cada uma com um marco claro. Antes de cada passo, a IA explica o plano; depois, o changelog registra o que mudou. <b>Na prática:</b> "v0.5: login com SSO; critério: usuário entra com conta corporativa e sai sem sessão residual". O agente propõe, o engenheiro aprova, os testes provam. <b>Anti-padrão:</b> um commit gigante "versão nova" sem changelog.</p>
+<p>O software evolui por versões pequenas e nomeadas, cada uma com um marco claro. Antes de cada passo, a IA explica o plano; depois, o changelog registra o que mudou. <b>Na prática:</b> "v0.5: login com a conta da empresa; pronto quando o usuário entra e sai sem problemas". O agente propõe, o engenheiro aprova e os testes provam. <b>Anti-padrão:</b> um commit gigante "versão nova" sem changelog.</p>
 <h3>Crítica Antibajulação</h3>
 <p>Modelos tendem a concordar com quem pergunta (<i>sycophancy</i>). O prompt de sistema <b>exige</b> discordância fundamentada: falhas, riscos, alternativas (Livro 2, Capítulo 2 (Engenharia de Contexto)). <b>Na prática:</b> regra no arquivo de instruções: "Antes de implementar, liste até três objeções técnicas. Se não houver, diga por quê." <b>Anti-padrão:</b> aceitar o "Excelente ideia!" como validação.</p>
 <h3>Engenharia Reversa como Escola</h3>

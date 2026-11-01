@@ -1,20 +1,45 @@
 <section class="chapter" id="ch05"><h1><span class="num">Capítulo 05</span>Agentes de IA, MCP e Sistemas Multiagente</h1>
-<p class="lead">Um modelo de linguagem sozinho é um "cérebro num pote": sabe muita coisa, mas não abre um arquivo, não roda um teste, não consulta um banco. O que transformou os LLMs de 2023 nos agentes de 2026, que passam horas implementando uma feature e abrindo pull requests, está no que envolve o modelo: o <i>loop</i> agêntico, as ferramentas, o protocolo que as padroniza (MCP), as skills, a memória e a orquestração. Este capítulo vai do loop mínimo de poucas linhas até sistemas multiagente, passando por segurança, avaliação e casos de uso, com um olho no custo e outro no que pode dar errado.</p>
+<p class="lead">Um modelo de linguagem sozinho é um "cérebro num pote": sabe muita coisa, mas não abre um arquivo, não roda um teste, não consulta um banco de dados. Um <b>agente</b> é esse modelo com mãos: ferramentas, memória e um ciclo de trabalho que vai até a tarefa terminar. A primeira parte deste capítulo explica a ideia com exemplos simples; a segunda entra no técnico: o loop, as ferramentas, o protocolo MCP, as skills, a memória, os sistemas com vários agentes, a segurança e a avaliação.</p>
 <div class="box intro"><b>Para começar</b> Um LLM é um chef talentoso trancado numa sala sem fogão: sabe as receitas, mas não prepara nada. Um <b>agente</b> é esse chef com uma cozinha: ferramentas, um caderno de anotações (memória) e liberdade para trabalhar em várias etapas até terminar o prato. O capítulo pressupõe o que é um LLM (Livro 1, Capítulo 2 (LLMs, Transformers e MoE)) e se apoia no Capítulo 2 (Engenharia de Contexto) e no Capítulo 3 (RAG).</div>
+
+<h2>A ideia central</h2>
+<p>Um chatbot responde; um agente <b>faz</b>. Ele recebe um objetivo e trabalha em ciclos: decide o próximo passo, usa uma ferramenta (ler um arquivo, buscar na web, enviar um e-mail), olha o resultado e decide de novo, até concluir. Esse ciclo se chama <b>loop agêntico</b>.</p>
+<p>O modelo não executa nada sozinho: ele só escreve um pedido ("quero rodar este comando"). Quem executa é um programa comum em volta dele, chamado <b>harness</b> (o "arreio" do modelo), que também decide o que o agente pode ou não fazer. Para ligar o agente a serviços como agenda, banco de dados ou GitHub, existe um padrão aberto, o <b>MCP</b> (<i>Model Context Protocol</i>), que funciona como uma tomada comum para todos.</p>
+<div class="box key"><b>Em resumo</b> Agente = modelo + ferramentas + loop. O modelo pensa e pede; o harness executa, confere e devolve o resultado.</div>
+
+<h2>Um exemplo do dia a dia</h2>
+<p>Você pede: "Marque uma reunião com a Ana na quinta à tarde". Um chatbot responderia com dicas de como marcar. Um agente faz o trabalho:</p>
+<ol>
+<li>consulta a sua agenda e vê que quinta às 15h está livre;</li>
+<li>consulta a agenda da Ana e vê que ela também está livre;</li>
+<li>cria o convite e pergunta: "Posso enviar para a Ana?";</li>
+<li>com o seu "sim", envia e avisa que terminou.</li>
+</ol>
+<p>Repare no passo 3: quem age pode errar de verdade. Por isso agentes bons pedem confirmação antes de ações difíceis de desfazer, como enviar, pagar ou apagar.</p>
+
+<h2>O que dá para construir</h2>
+<ul>
+<li><b>Assistente de programação</b> que lê o projeto, altera o código, roda os testes e corrige o que falhou.</li>
+<li><b>Atendente de suporte</b> que consulta o pedido, verifica a política e abre o chamado certo.</li>
+<li><b>Pesquisador</b> que busca em várias fontes, compara e entrega um resumo com links.</li>
+<li><b>Assistente pessoal</b> que organiza agenda, e-mails e lembretes.</li>
+<li><b>Automação de escritório</b>: ler notas fiscais, conferir valores e lançar no sistema.</li>
+<li><b>Equipes de agentes</b>, em que um planeja, outros executam e um revisa.</li>
+</ul>
+<div class="box adv"><b>Parte avançada</b> Daqui em diante o capítulo fica técnico: definições formais, código de um harness, chamadas de ferramenta, os protocolos MCP e A2A, skills, memória, sistemas multiagente com a Lei de Amdahl, frameworks (LangChain, LangGraph, CrewAI), segurança e avaliação. Se você só queria a ideia geral, pode pular para o Checklist para construir agentes.</div>
 
 <h2>Do chatbot ao agente: definições que importam</h2>
 <div class="box intro"><b>Para começar</b> Um chatbot é um consultor por telefone: explica, mas quem executa é você. Um agente vai até o computador, faz o trabalho e volta com o resultado. Quem age pode errar de verdade, e por isso precisa de regras, limites e conferência.</div>
 
 <h3>A definição clássica</h3>
 <p>Na literatura de IA (Russell &amp; Norvig), agente é qualquer coisa que <b>percebe</b> o ambiente e <b>age</b> sobre ele. A taxonomia tradicional, retomada em <a href="https://www.youtube.com/watch?v=fXizBc03D7E">5 Types of AI Agents: Autonomous Functions &amp; Real-World Applications</a>, da IBM Technology, tem cinco degraus:</p>
-<table>
-<tr><th>Tipo</th><th>Mecanismo</th><th>Exemplo</th><th>Limitação</th></tr>
-<tr><td>Reflexo simples</td><td>Regras condição→ação</td><td>Termostato</td><td>Falha em ambientes parcialmente observáveis</td></tr>
-<tr><td>Baseado em modelo</td><td>Estado interno do mundo</td><td>Robô aspirador com mapa</td><td>Não planeja metas</td></tr>
-<tr><td>Baseado em objetivos</td><td>Simula futuros para atingir a meta</td><td>Carro autônomo indo ao destino</td><td>Todos os caminhos valem igual</td></tr>
-<tr><td>Baseado em utilidade</td><td>Escolhe o resultado mais desejável</td><td>Drone de entrega rápido e seguro</td><td>Exige quantificar preferências</td></tr>
-<tr><td>Que aprende</td><td>Crítico + elemento de aprendizado</td><td>Bot de xadrez</td><td>Lento e faminto por dados</td></tr>
-</table>
+<ul>
+<li><b>Reflexo simples</b>: segue regras fixas. Ex.: o termostato liga o aquecedor quando esfria.</li>
+<li><b>Baseado em modelo</b>: lembra como está o ambiente. Ex.: o robô aspirador que guarda o mapa da casa.</li>
+<li><b>Baseado em objetivos</b>: planeja para chegar a uma meta. Ex.: o GPS que traça a rota até o destino.</li>
+<li><b>Baseado em utilidade</b>: escolhe o melhor entre vários caminhos. Ex.: o GPS que prefere a rota mais rápida e sem pedágio.</li>
+<li><b>Que aprende</b>: melhora com a experiência. Ex.: o jogo de xadrez que fica mais forte a cada partida.</li>
+</ul>
 <div class="box tip"><b>Dica</b> Não confunda agentes com <i>Mixture of Experts</i> (MoE), tema de <a href="https://www.youtube.com/watch?v=4-FH09AMsp0">AI Agents vs Mixture of Experts: AI Workflows Explained</a>. Os diagramas se parecem, mas multiagente roteia <i>tarefas</i> na aplicação, enquanto MoE roteia <i>tokens</i> dentro da rede neural.</div>
 
 <h3>Workflow, agente e harness</h3>
@@ -33,7 +58,7 @@
 <li><b>2025, eficiência:</b> MoE esparso (DeepSeek-V3 com 671B de parâmetros e 37B ativos), prompt caching, janelas acima de 1M tokens.</li>
 <li><b>2026, era agêntica:</b> o MCP como virada de ecossistema.</li>
 </ul>
-<p> A distância entre o 1º e o 10º colocado do Chatbot Arena caiu de 12% para 5% em um ano. <a href="https://www.youtube.com/watch?v=ZELPNFXJ4_o">AI Model vs Agentic Harness: What Actually Drives AI</a>, da IBM, faz a mesma observação: como os benchmarks dos grandes laboratórios estão a poucos pontos uns dos outros, "IA é boa em X?" só faz sentido se especificar modelo <i>e</i> harness. O agente permite um modelo menos "enciclopédico", porque busca e testes trazem conhecimento e feedback, mas há uma condição: <b>sem um oráculo (documentação, testes, compilador), o loop gira no vazio</b>.</p>
+<p>A distância entre o 1º e o 10º colocado do Chatbot Arena caiu de 12% para 5% em um ano. <a href="https://www.youtube.com/watch?v=ZELPNFXJ4_o">AI Model vs Agentic Harness: What Actually Drives AI</a>, da IBM, faz a mesma observação: como os benchmarks dos grandes laboratórios estão a poucos pontos uns dos outros, "IA é boa em X?" só faz sentido se especificar modelo <i>e</i> harness. O agente permite um modelo menos "enciclopédico", porque busca e testes trazem conhecimento e feedback, mas há uma condição: <b>sem um oráculo (documentação, testes, compilador), o loop gira no vazio</b>.</p>
 <p>A métrica que melhor captura esse progresso é o horizonte de tarefa do <b>METR</b>: a duração, em tempo de um profissional, das tarefas que um agente completa com 50% de confiabilidade. Esse horizonte <b>dobra a cada ~7 meses</b>.</p>
 <figure><img src="img/05_metr.png"><figcaption>Projeção ilustrativa de um horizonte de tarefa que dobra a cada 7 meses (escala log), ancorada em ~1 h no início de 2025. Fonte: METR (2025), citado em Akita, "LLMs + Agentes = competente o suficiente".</figcaption></figure>
 <div class="box warn"><b>Atenção</b> Leia a curva com cuidado: é 50% de sucesso, não 99%; as tarefas são majoritariamente de software, um domínio verificável; e extrapolações exponenciais costumam saturar.</div>
@@ -53,18 +78,18 @@
                    "required": ["cmd"]}}}]
 
 msgs = [{"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": pedido}]
-for passo in range(MAX_PASSOS):              # guarda: nunca while True puro
-    r = client.chat.completions.create(model=MODELO, messages=msgs, tools=tools)
+        {"role": "user", "content": user_request}]
+for step in range(MAX_STEPS):                # guarda: nunca while True puro
+    r = client.chat.completions.create(model=MODEL, messages=msgs, tools=tools)
     m = r.choices[0].message
     msgs.append(m)
     if not m.tool_calls:                     # sem tool call = resposta final
         print(m.content); break
     for tc in m.tool_calls:
         args = json.loads(tc.function.arguments)
-        saida = executar_com_permissao(args["cmd"])   # sandbox / aprovação
+        output = run_with_permission(args["cmd"])     # sandbox / aprovação
         msgs.append({"role": "tool", "tool_call_id": tc.id,
-                     "content": saida[:10_000]})      # trunca resultados enormes
+                     "content": output[:10_000]})     # trunca resultados enormes
 </code></pre>
 <p>Compactação, skills, subagentes, hooks e modos de permissão são sofisticação em torno desse esqueleto. Note as três guardas que todo harness de produção tem: limite de passos, execução com permissão e truncamento de saída.</p>
 
@@ -76,7 +101,7 @@ for passo in range(MAX_PASSOS):              # guarda: nunca while True puro
 <tr><td>Structured output</td><td>Esquema imposto pelo provedor via decodificação restrita</td><td>Garante formato, não conteúdo</td></tr>
 <tr><td>Function calling nativo</td><td>Ferramentas com nome, descrição e JSON Schema; modelo treinado para chamá-las</td><td>Padrão atual; chamadas paralelas</td></tr>
 </table>
-<p> Um orquestrador de produção, como descreve <a href="https://www.youtube.com/watch?v=gosZ_vqXkMI">AI Tool Calling via Natural Language: LLMs, APIs &amp; Docker in Action</a>, da IBM, (1) detecta que precisa de ferramenta (dividir 233 por 7 exige calcular, não adivinhar), (2) gera a chamada a partir de um registro de funções, (3) executa isoladamente, idealmente em contêiner, e (4) reinjeta o resultado no contexto. Frameworks como o BeeAI, da IBM, automatizam esse ciclo: com um decorator, a assinatura da função vira esquema e a docstring vira descrição, e o framework valida argumentos, trata erros e timeouts e grava o resultado na memória. "O LLM é uma peça pequena; o framework cuida da orquestração."</p>
+<p>Um orquestrador de produção, como descreve <a href="https://www.youtube.com/watch?v=gosZ_vqXkMI">AI Tool Calling via Natural Language: LLMs, APIs &amp; Docker in Action</a>, da IBM, (1) detecta que precisa de ferramenta (dividir 233 por 7 exige calcular, não adivinhar), (2) gera a chamada a partir de um registro de funções, (3) executa isoladamente, idealmente em contêiner, e (4) reinjeta o resultado no contexto. Frameworks como o BeeAI, da IBM, automatizam esse ciclo: com um decorator, a assinatura da função vira esquema e a docstring vira descrição, e o framework valida argumentos, trata erros e timeouts e grava o resultado na memória. "O LLM é uma peça pequena; o framework cuida da orquestração."</p>
 <p>Erik, da Anthropic, em <a href="https://www.youtube.com/watch?v=uhJJgc-0iTQ">Building more effective AI agents</a>, aponta o erro mais comum: caprichar no prompt principal e entregar ferramentas sem documentação, com parâmetros chamados "A" e "B". A descrição da ferramenta <i>é</i> prompt. Três princípios:</p>
 <ul>
 <li><b>Aja como o modelo.</b> Leia os logs brutos e tente decidir a próxima ação só com o que o modelo vê.</li>
@@ -102,7 +127,7 @@ for passo in range(MAX_PASSOS):              # guarda: nunca while True puro
 <table>
 <tr><th>Falha</th><th>Exemplo</th><th>Mitigações</th></tr>
 <tr><td>Loop infinito</td><td>Buscar para sempre um documento inexistente</td><td>Máximo de passos; comparar ações com as anteriores; detectar ciclos</td></tr>
-<tr><td>Planejamento alucinado</td><td>Planejar com uma API de viagens que não existe</td><td>Schemas claros; verificador entre plano e execução</td></tr>
+<tr><td>Planejamento alucinado</td><td>Planejar usando um serviço de viagens que não existe</td><td>Schemas claros; verificador entre plano e execução</td></tr>
 <tr><td>Uso inseguro de ferramentas</td><td>Apagar registros ativos em vez de arquivados</td><td>Menor agência; aprovação humana; ferramentas em camadas</td></tr>
 </table>
 <p>Com modelos mais consistentes, essas falhas vêm mais do desenho do sistema (capacidades mal descritas, ausência de condição de término, privilégios demais) do que de alucinação pura, como argumenta <a href="https://www.youtube.com/watch?v=D37Ijn2o5U0">Why Agentic AI Fails: Infinite Loops, Planning Errors, and More</a>. A resposta de engenharia, atribuída a Mitchell Hashimoto: <b>a cada erro do agente, em vez de só corrigir o prompt, crie uma trava determinística no harness</b> (hook, lint, teste).</p>
@@ -124,10 +149,10 @@ for passo in range(MAX_PASSOS):              # guarda: nunca while True puro
 </table>
 <p>As mensagens são <b>JSON-RPC 2.0</b>. Há dois transports: <b>stdio</b>, em que o host lança o servidor como subprocesso (padrão local, herda as permissões do usuário), e <b>Streamable HTTP</b>, para servidores remotos, com autorização baseada em OAuth 2.1. Um servidor mínimo, como no curso <a href="https://www.youtube.com/watch?v=ZaPbP9DwBOE">Don't learn AI Agents without Learning these Fundamentals</a>:</p>
 <pre><code>from mcp.server.fastmcp import FastMCP
-mcp = FastMCP("calculadora")
+mcp = FastMCP("calculator")
 
 @mcp.tool
-def dividir(a: float, b: float) -&gt; float:
+def divide(a: float, b: float) -&gt; float:
     """Divide a por b. Use para qualquer divisão numérica exata."""
     return a / b
 
@@ -141,14 +166,14 @@ if __name__ == "__main__":
 <figure><img src="img/05_mcp_tokens.png"><figcaption>Esquerda: custo fixo de contexto das definições de ferramentas MCP. Direita: tarefa de leitura de página JS, MCP especializado vs. CLI improvisada. Fonte: CLI vs MCP: How AI Agents Choose the Right Tool for the Job.</figcaption></figure>
 <table>
 <tr><th>Use CLI quando…</th><th>Use MCP quando…</th></tr>
-<tr><td>A tarefa mapeia para comandos maduros que o modelo conhece (arquivos, Git, Docker)</td><td>Há lacuna real entre a ferramenta bruta e a necessidade</td></tr>
-<tr><td>Contexto é escasso</td><td>A autenticação precisa ser gerenciada pelo servidor (OAuth, refresh)</td></tr>
-<tr><td>Pipes resolvem</td><td>Há governança: acesso por usuário e trilha de auditoria</td></tr>
+<tr><td>O modelo já domina o comando (arquivos, Git, Docker)</td><td>Falta uma ferramenta pronta para a necessidade</td></tr>
+<tr><td>Sobra pouco espaço no contexto</td><td>O login precisa ser cuidado pelo servidor (OAuth)</td></tr>
+<tr><td>Encadear comandos no terminal resolve</td><td>É preciso controlar quem acessa e registrar tudo</td></tr>
 </table>
 <p>Harnesses modernos atenuam o custo fixo com <i>tool search</i> e carregamento sob demanda de definições.</p>
 
 <h3>Protocolos entre agentes</h3>
-<p>Para comunicação <i>entre agentes</i>, o <b>A2A</b> (Agent-to-Agent), explicado em <a href="https://www.youtube.com/watch?v=Tud9HLTk8hg">A2A Protocol (Agent2Agent) Explained: How AI Agents Collaborate</a>, foi criado pelo Google em 2025 e hoje está na Linux Foundation. Cada agente publica um <b>Agent Card</b> (JSON com identidade, capacidades, endpoint e autenticação) e conversa por JSON-RPC 2.0 sobre HTTPS. O ponto central é a <b>opacidade</b>: o agente remoto não expõe memória, lógica nem ferramentas. </p>
+<p>Para comunicação <i>entre agentes</i>, o <b>A2A</b> (Agent-to-Agent), explicado em <a href="https://www.youtube.com/watch?v=Tud9HLTk8hg">A2A Protocol (Agent2Agent) Explained: How AI Agents Collaborate</a>, foi criado pelo Google em 2025 e hoje está na Linux Foundation. Cada agente publica um <b>Agent Card</b> (JSON com identidade, capacidades, endpoint e autenticação) e conversa por JSON-RPC 2.0 sobre HTTPS. O ponto central é a <b>opacidade</b>: o agente remoto não expõe memória, lógica nem ferramentas.</p>
 <table>
 <tr><th></th><th>MCP</th><th>A2A</th></tr>
 <tr><td>Relação</td><td>Agente ↔ ferramenta (vertical)</td><td>Agente ↔ agente (horizontal)</td></tr>
@@ -168,11 +193,11 @@ if __name__ == "__main__":
 └── references/       # documentação carregada só quando necessária
 
 ---
-name: triagem-incidente
+name: incident-triage
 description: Use quando houver erro 5xx em produção ou alerta de
   latência. Checa taxa de erro, deploys recentes e decide se escala.
 ---
-1. Rode scripts/taxa_erro.py e compare com a linha de base…
+1. Rode scripts/error_rate.py e compare com a linha de base…
 ## Gotchas
 - O dashboard X mostra UTC; os logs estão em horário local.
 </code></pre>
@@ -263,7 +288,7 @@ description: Use quando houver erro 5xx em produção ou alerta de
 chain = prompt | ChatOpenAI(temperature=0) | StrOutputParser()
 chain.invoke({"tema": "SOLID"})
 </code></pre>
-<p>O <b>LangGraph</b> existe porque uma chain só avança. Como mostra <a href="https://www.youtube.com/watch?v=qAF1NjEVHhY">LangChain vs LangGraph: A Tale of Two Frameworks</a>, ele modela nós, arestas condicionais e um <b>estado</b> compartilhado, permitindo ciclos (revisar enquanto o score for baixo) e humano no meio. No <b>CrewAI</b>, demonstrado em <a href="https://www.youtube.com/watch?v=gUrENDkPw_k">How to Build a Multi Agent AI System</a>, cada agente tem papel, objetivo, história e ferramentas, e cada tarefa tem descrição, saída esperada e um responsável; no tutorial, um pesquisador com busca web gera um levantamento e um redator sem ferramentas o transforma em texto. Um bug didático do exemplo, uma tarefa apontando para o agente errado, mostra que erros de "fiação" são comuns em frameworks declarativos. o <b>Langflow</b> é um estúdio visual que consome e expõe ferramentas MCP.</p>
+<p>O <b>LangGraph</b> existe porque uma chain só avança. Como mostra <a href="https://www.youtube.com/watch?v=qAF1NjEVHhY">LangChain vs LangGraph: A Tale of Two Frameworks</a>, ele modela nós, arestas condicionais e um <b>estado</b> compartilhado, permitindo ciclos (revisar enquanto o score for baixo) e humano no meio. No <b>CrewAI</b>, demonstrado em <a href="https://www.youtube.com/watch?v=gUrENDkPw_k">How to Build a Multi Agent AI System</a>, cada agente tem papel, objetivo, história e ferramentas, e cada tarefa tem descrição, saída esperada e um responsável; no tutorial, um pesquisador com busca web gera um levantamento e um redator sem ferramentas o transforma em texto. Um bug didático do exemplo, uma tarefa apontando para o agente errado, mostra que erros de "fiação" são comuns em frameworks declarativos. O <b>Langflow</b> é um estúdio visual que consome e expõe ferramentas MCP.</p>
 <p>A recomendação mais sensata vem de <a href="https://www.youtube.com/watch?v=Hp9--P6t0QQ">LangChain (a "cola" da IA no seu código) // Dicionário do Programador</a>: <b>não comece pelo agente</b>. Suba a escada prompt + modelo → RAG → ferramentas → agentes, e não use framework para uma chamada simples. Ferramentas são "cartão corporativo para estagiário": exigem validação, permissões e limites.</p>
 <p>Entre os assistentes pessoais abertos, o <b>OpenClaw</b>, explicado em <a href="https://www.youtube.com/watch?v=L7FF8Zgab3M">What is OpenClaw? Inside AI Agents, LLMs and the Agentic Loop</a>, é um agente local com arquitetura hub-and-spoke: um gateway sempre ligado roteia mensagens de Slack, Teams ou Discord para o loop ReAct, com memória, ferramentas embutidas (navegador, terminal), skills e tarefas agendadas. Sua popularidade trouxe também o risco: milhares de instâncias ficaram expostas na internet por má configuração. <a href="https://www.youtube.com/watch?v=OlIQclp5QEg">OpenClaw 2, Hermes e Outros Agentes de IA</a> compara alternativas pelo requisito dominante: rotinas recorrentes, monitoramento, bots de grupo ou máquinas pequenas.</p>
 
@@ -316,10 +341,10 @@ chain.invoke({"tema": "SOLID"})
 <p>Em empresas, <a href="https://www.youtube.com/watch?v=4Vg2aVtrX8k">Building AI Agents for Real-World Problems &amp; Workflows</a> explica por que muitos agentes morrem ao sair da demo: problemas reais atravessam sistemas, políticas e aprovações. Os padrões que funcionam tratam o agente como <b>camada de coordenação</b>:</p>
 <table>
 <tr><th>Padrão</th><th>Exemplo</th><th>Onde entra o humano</th></tr>
-<tr><td>Orquestração multiestágio</td><td>Onboarding de funcionário</td><td>Exceções de política e prazo</td></tr>
-<tr><td>Execução governada por políticas</td><td>Suporte de TI (senhas, software)</td><td>Casos ambíguos ou arriscados</td></tr>
-<tr><td>Processo definido com exceções</td><td>Faturas e pedidos</td><td>Exceções expostas pelo agente</td></tr>
-<tr><td>Triagem de grande volume</td><td>Atendimento ao cliente</td><td>Resolução</td></tr>
+<tr><td>Processo em várias etapas</td><td>Preparar o primeiro dia de um funcionário novo</td><td>Exceções de regra e prazo</td></tr>
+<tr><td>Execução guiada por regras</td><td>Resetar a senha de um colega</td><td>Casos ambíguos ou arriscados</td></tr>
+<tr><td>Processo fixo com exceções</td><td>Conferir uma fatura contra o pedido</td><td>Quando os valores não batem</td></tr>
+<tr><td>Triagem de grande volume</td><td>Separar mensagens de clientes por assunto</td><td>Na resolução do problema</td></tr>
 </table>
 <p>Em comum, os casos que funcionam têm escopo estreito, um oráculo (testes, regras, dados de referência) e um ponto claro de entrada humana.</p>
 

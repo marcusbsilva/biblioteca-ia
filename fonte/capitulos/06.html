@@ -5,7 +5,7 @@
 
 <h2>De autocomplete a agente</h2>
 <div class="box intro"><b>Para começar</b> O GPS primeiro sugeria a próxima curva; hoje você diz o destino e ele planeja a rota. As ferramentas de IA para código seguiram o mesmo caminho: começaram completando palavras e hoje recebem um objetivo e executam vários passos sozinhas.</div>
-<p>Gerar código a partir de linguagem natural é mais um capítulo da história da <b>tradução</b> em computação: do compilador A-0 de Grace Hopper (1952), passando pelas IDEs com IntelliSense, até o GitHub Copilot (2021). O vídeo <a href="https://www.youtube.com/watch?v=oanQrXEiCy4">What is an AI Code Generator? LLM Coding, Productivity, &amp; Risk</a>, da IBM, resume: <i>a IA não aprendeu a escrever código, aprendeu a traduzi-lo</i> — inclusive no sentido inverso, explicando uma função legada ou migrando COBOL para Java.</p>
+<p>Gerar código a partir de linguagem natural é mais um capítulo da história da <b>tradução</b> em computação: do compilador A-0 de Grace Hopper (1952), passando pelas IDEs com IntelliSense, até o GitHub Copilot (2021). O vídeo <a href="https://www.youtube.com/watch?v=oanQrXEiCy4">What is an AI Code Generator? LLM Coding, Productivity, &amp; Risk</a>, da IBM, resume: <i>a IA não aprendeu a escrever código, aprendeu a traduzi-lo</i>, inclusive no sentido inverso, explicando uma função legada ou migrando COBOL para Java.</p>
 <p>Na conversa <a href="https://www.youtube.com/watch?v=vLIDHi-1PVU">Designing Claude Code</a>, a designer-chefe do Claude Code descreve quatro degraus de abstração: <b>linha</b> (autocomplete), <b>tarefa</b> (chat na IDE que edita arquivos), <b>PR</b> (agente que planeja, edita, testa e entrega uma mudança revisável) e <b>projeto</b> (vários agentes em paralelo, tarefas longas, execução em CI). O vídeo <a href="https://www.youtube.com/watch?v=FgaBdwSvOGM">Agentic Engineering vs Software Engineering: Beyond Vibe Coding</a>, da IBM, mede o mesmo espectro pela agência delegada, terminando na <b>engenharia agêntica</b>: projetar o ambiente — regras, sensores, permissões — em que agentes operam. É legítimo prototipar no modo vibe e migrar para engenharia agêntica conforme o risco sobe.</p>
 <p>O Claude Code nasceu como CLI por pragmatismo, e a escolha virou vantagem: o terminal já está no fluxo de todo desenvolvedor e “texto entra, texto sai” é a forma natural de um LLM. Hoje o mesmo motor roda em terminal, IDE, desktop, web e celular.</p>
 
@@ -19,15 +19,14 @@
 
 <h3>Os mecanismos de extensão</h3>
 <p>Os harnesses convergiram para mecanismos quase idênticos. Na nomenclatura do Claude Code (Codex e OpenCode têm equivalentes):</p>
-<table>
-<tr><th>Mecanismo</th><th>O que é</th><th>Custo de contexto</th><th>Quando usar</th></tr>
-<tr><td>CLAUDE.md / AGENTS.md</td><td>Instruções sempre carregadas, aninháveis por diretório</td><td>Sempre, integral</td><td>Convenções, comandos de build/teste, decisões arquiteturais. Alvo ≤ ~200 linhas</td></tr>
-<tr><td>Rules por caminho</td><td>Regras ativadas por padrão de path (ex.: <code>api/**</code>)</td><td>Só quando o arquivo é tocado</td><td>Regras diferentes para front e back</td></tr>
-<tr><td>Skills (<code>SKILL.md</code>)</td><td>Procedimento em Markdown com frontmatter (name, description)</td><td>Só nome+descrição até ser acionada</td><td>“Se tem passos numerados, é skill”</td></tr>
-<tr><td>Subagentes</td><td>Instância com contexto, ferramentas e modelo próprios</td><td>Só a conclusão volta</td><td>Buscas amplas, revisão independente</td></tr>
-<tr><td>Hooks</td><td>Comandos de shell disparados em eventos</td><td>Zero (determinístico)</td><td>Formatar após edição, bloquear comando perigoso</td></tr>
-<tr><td>MCP</td><td>Protocolo para ferramentas externas (GitHub, Sentry, Figma, Playwright)</td><td>Schemas das ferramentas</td><td>Integrações com autenticação/estado</td></tr>
-</table>
+<ul>
+<li><b>CLAUDE.md / AGENTS.md</b>: instruções sempre carregadas, como o manual do novato no primeiro dia. Ex.: "rode os testes com <code>npm test</code>". Ideal: até ~200 linhas.</li>
+<li><b>Rules por caminho</b>: regras que só valem em certas pastas (ex.: <code>api/**</code>). Ex.: uma regra para o site, outra para o servidor.</li>
+<li><b>Skills</b> (<code>SKILL.md</code>): uma receita passo a passo que o agente só lê quando precisa. Se tem passos numerados, é skill.</li>
+<li><b>Subagentes</b>: um ajudante com contexto próprio que devolve só a conclusão. Ex.: procurar onde um erro aparece no projeto.</li>
+<li><b>Hooks</b>: comandos que rodam sozinhos em certos momentos, sem gastar contexto. Ex.: formatar o arquivo depois de cada edição.</li>
+<li><b>MCP</b>: protocolo para ligar ferramentas externas (GitHub, Figma, navegador). Ex.: o agente abre uma issue sozinho.</li>
+</ul>
 <p><b>Plugins</b> empacotam skills, agentes, hooks e MCPs. Uma skill mínima:</p>
 <pre><code>---
 name: summarize-changes
@@ -41,14 +40,13 @@ description: Use quando o usuário pedir um resumo do que mudou no branch atual.
 <h2>Comparativo das ferramentas</h2>
 <div class="box intro"><b>Para começar</b> Escolher uma ferramenta de IA para programar lembra escolher um carro: todos andam, mas mudam conforto, consumo e personalização. O objetivo aqui não é eleger uma vencedora, e sim mostrar critérios que continuam valendo quando a liderança muda.</div>
 <p>As ferramentas copiam recursos umas das outras em semanas. O quadro em outubro de 2026:</p>
-<table>
-<tr><th>Ferramenta</th><th>Forma</th><th>Modelos</th><th>Pontos fortes</th><th>Ressalvas</th></tr>
-<tr><td><b>Claude Code</b></td><td>CLI, IDE, desktop, web; <code>claude -p</code> headless</td><td>Família Claude</td><td>Ecossistema mais maduro: skills, hooks, plugins, worktrees, rotinas</td><td>Limites do plano estouram em uso intenso</td></tr>
-<tr><td><b>Codex</b> (OpenAI)</td><td>CLI, desktop, extensão, nuvem</td><td>GPT 5.x/6</td><td>Mais horas de uso pelo mesmo preço; bom em loops com revisores</td><td>Ecossistema de extensões um pouco atrás</td></tr>
-<tr><td><b>Cursor</b></td><td>IDE (fork do VS Code) + agente de terminal</td><td>Multiprovedor</td><td>Plan mode visual, navegador embutido para validar UI</td><td>Custos variáveis por modelo</td></tr>
-<tr><td><b>OpenCode 2.0</b></td><td>Open source; terminal, desktop, web, celular</td><td>Qualquer provedor, inclusive locais</td><td>Sessão única entre interfaces, subagentes multiprovedor, plugins como guarda-corpos</td><td>Guarda-corpos de shell não cobrem efeitos da própria aplicação</td></tr>
-<tr><td><b>GitHub Copilot</b></td><td>Extensões de IDE</td><td>Vários</td><td>Barato e onipresente; modo agente</td><td>Modelos gratuitos têm limitações (ex.: sem visão)</td></tr>
-</table>
+<ul>
+<li><b>Claude Code</b> (terminal, IDE, desktop, web; modelos Claude): o ecossistema mais completo de skills, hooks e plugins. Ressalva: os limites do plano acabam rápido em uso intenso.</li>
+<li><b>Codex</b> (OpenAI; terminal, desktop, nuvem): rende mais horas pelo mesmo preço. Ressalva: menos extensões.</li>
+<li><b>Cursor</b> (editor baseado no VS Code; vários provedores): plano visual e navegador embutido para conferir a tela. Ressalva: o custo varia com o modelo.</li>
+<li><b>OpenCode 2.0</b> (open source; qualquer provedor, inclusive modelos locais): a mesma sessão no terminal, no desktop e no celular. Ressalva: as travas de segurança não cobrem tudo o que o próprio app faz.</li>
+<li><b>GitHub Copilot</b> (extensões de IDE): barato e presente em quase todo editor, com modo agente. Ressalva: os modelos gratuitos são limitados.</li>
+</ul>
 <p>O mesmo harness serve para além do código: o método CHIA, mostrado em <a href="https://www.youtube.com/watch?v=7btZsF-9UDA">transformei o Claude Code no SISTEMA OPERACIONAL da minha empresa (e mostrei como criar o teu)</a>, roda um negócio inteiro “em pastas e arquivos”, com dezenas de CLAUDE.md aninhados e skills.</p>
 <div class="box tip"><b>Dica</b> O critério que mais importa não é o benchmark do mês, e sim: (1) quanto você controla o contexto, (2) se há hooks e permissões para fechar o loop com sensores, (3) custo previsível. Um AGENTS.md bem escrito e uma boa suíte de testes migram com você de ferramenta. Desconfie de harnesses desconhecidos que pedem credenciais ou permissões amplas.</div>
 
@@ -109,7 +107,7 @@ description: Use quando o usuário pedir um resumo do que mudou no branch atual.
     }],
     "PreToolUse": [{
       "matcher": "Bash",
-      "hooks": [{ "type": "command", "command": ".claude/hooks/bloqueia-destrutivo.sh" }]
+      "hooks": [{ "type": "command", "command": ".claude/hooks/block-destructive.sh" }]
     }]
   }
 }</code></pre>
@@ -165,14 +163,14 @@ git worktree remove ../feat-login</code></pre>
 <h2>Vibe coding vs. engenharia</h2>
 <div class="box intro"><b>Para começar</b> Fazer bolo na intuição funciona em casa, não numa confeitaria. <i>Vibe coding</i> é programar com IA aceitando o que ela gera sem ler o código. Aqui vemos os erros típicos quando ninguém revisa e por que um agente pode ser enganado.</div>
 <p>O termo, cunhado por Andrej Karpathy em fevereiro de 2025, descreve “esquecer que o código existe”. A definição estrita importa: <b>vibe coding é não ler o código</b>. Tem lugar em POCs, protótipos e scripts descartáveis; é armadilha em produção e para quem está aprendendo.</p>
-<p>Em <a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a>, Augusto Galego revisa um to-do app gerado sem guia:</p>
+<p>Em <a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a>, Augusto Galego revisa um app de tarefas (to-do) gerado sem guia:</p>
 <table>
 <tr><th>Erro da IA</th><th>Por que importa</th><th>Correção</th></tr>
-<tr><td>Sem usuários: todos veem todos os to-dos</td><td>Falha de autorização</td><td>Requisitos na spec</td></tr>
-<tr><td><code>SELECT *</code> sem paginação</td><td>Desempenho e vazamento</td><td>Paginação obrigatória</td></tr>
-<tr><td>Router reinventado</td><td>Perde middlewares e headers de segurança</td><td>Prender a um framework validado</td></tr>
+<tr><td>Sem login: cada pessoa vê as tarefas de todas</td><td>Falha de autorização</td><td>Requisitos na spec</td></tr>
+<tr><td><code>SELECT *</code> sem paginação (traz tudo de uma vez)</td><td>Lentidão e vazamento de dados</td><td>Paginação obrigatória</td></tr>
+<tr><td>Router (o "roteador" de páginas) feito do zero</td><td>Perde proteções prontas</td><td>Usar um framework conhecido</td></tr>
 <tr><td>Sem migrations</td><td>Quebrou ao adicionar autenticação</td><td>Ferramenta de migrations</td></tr>
-<tr><td>JWT sem fixar algoritmo; secret padrão</td><td>Tokens forjáveis</td><td>Fixar algoritmo, secret via ambiente</td></tr>
+<tr><td>JWT (o "crachá" de login) com senha padrão</td><td>Crachás falsificáveis</td><td>Fixar algoritmo, secret via ambiente</td></tr>
 </table>
 <p>A IBM, em <a href="https://www.youtube.com/watch?v=zAe-sau06io">How AI Coding Agents Understand Your Codebase &amp; Developer Tools</a>, mostra o mesmo em escala corporativa: um endpoint que consulta o banco direto funciona, mas pula a camada de serviço. <i>“O código funciona, mas o sistema piorou.”</i> Os números de segurança apontam na mesma direção: a Veracode (2025) encontrou vulnerabilidades em ~55% do código gerado nos testes — código limpo, bem nomeado e sutilmente errado, o que a IBM chama de <b>ilusão de correção</b>. Os exemplos são os de sempre: SQL por concatenação, senha em texto puro, segredos no código. Para uso corporativo, somam-se perguntas de governança: de onde vieram os dados de treino (risco de contaminação por licenças como GPL)? para onde vai o meu código? posso auditar? há opção on-premises para exigências regulatórias?</p>
 <p>Um agente com <b>dados sensíveis</b>, <b>exposição a conteúdo externo</b> e <b>capacidade de enviar dados para fora</b> reúne a “tríade letal” (Simon Willison): basta um PR, issue ou página com instruções maliciosas (<i>prompt injection</i>) para vazar credenciais. Defesas: modo de permissão adequado, com o modo sem confirmações <b>apenas em contêiner ou VM descartável</b>; ações irreversíveis (push, deploy, apagar dados) sempre com aprovação; segredos fora do alcance do agente; MCPs e skills de terceiros revisados como dependências.</p>
@@ -183,7 +181,7 @@ git worktree remove ../feat-login</code></pre>
 <tr><th>Afirmação</th><th>Fonte</th><th>Tipo de evidência</th></tr>
 <tr><td>+35% de produtividade</td><td>IBM</td><td>Autorrelato</td></tr>
 <tr><td>66% se frustram com soluções “quase certas”</td><td>Stack Overflow Developer Survey</td><td>Pesquisa de opinião</td></tr>
-<tr><td>Airbnb: 3.500 arquivos de teste migrados em 6 semanas (vs. 1,5 ano estimado)</td><td>Relato da empresa</td><td>Tarefa mecânica</td></tr>
+<tr><td>Airbnb: 3.500 arquivos de teste migrados em 6 semanas, e não em 1,5 ano</td><td>Relato da empresa</td><td>Tarefa mecânica</td></tr>
 <tr><td>Testes: 24 vs. 16 artefatos corretos</td><td>Benchmark do Akita</td><td>Experimento (n pequeno)</td></tr>
 <tr><td>Devs experientes ~19% <b>mais lentos</b>, achando-se ~20% mais rápidos</td><td>METR (jul/2025)</td><td>Estudo controlado</td></tr>
 </table>
@@ -201,7 +199,7 @@ git worktree remove ../feat-login</code></pre>
 <li><b>Verificação</b>: testes commitados antes, hooks, CI obrigatória, branch protegida.</li>
 <li><b>Revisão independente</b>: quem implementa não valida; humano lê o que vai para produção.</li>
 <li><b>Higiene de contexto e modelo por alavancagem</b>: <code>/clear</code>, subagentes, modelo forte só para planejar.</li>
-<li><b>Paralelismo com moderação</b> e <b>segurança</b>: 2–3 agentes; permissões amplas só em sandbox.</li>
+<li><b>Paralelismo com moderação</b> e <b>segurança</b>: 2 ou 3 agentes; permissões amplas só em sandbox.</li>
 <li><b>Meça</b> tempo até merge, defeitos e custo por tarefa, não a impressão de velocidade.</li>
 </ol>
 <div class="box tip"><b>Dica</b> Comece pequeno: um CLAUDE.md, um hook de testes e o hábito do plan mode resolvem a maior parte. Acrescente SDD e review multiagente quando a dor aparecer.</div>

@@ -31,7 +31,7 @@ memória total ≈ pesos + KV cache + buffers + overhead do runtime (≈ 0,5–1
 <figure><img src="img/07_vram_precisao.png"><figcaption>Memória ocupada só pelos pesos, por tamanho de modelo e formato. As linhas tracejadas marcam capacidades típicas de VRAM. Fonte: elaboração própria com a fórmula params × bytes.</figcaption></figure>
 
 <h3>O KV cache: a parte que todo mundo esquece</h3>
-<p>Para não recalcular a atenção sobre todo o histórico a cada token, o modelo guarda as chaves (K) e valores (V) de cada camada para cada token já processado — troca computação por memória:</p>
+<p>Para não recalcular a atenção sobre todo o histórico a cada token, o modelo guarda as chaves (K) e valores (V) de cada camada para cada token já processado. É trocar cálculo por memória:</p>
 <pre><code>KV (bytes) = 2 × camadas × cabeças_KV × dim_cabeça × tokens × bytes_por_elemento × usuários</code></pre>
 <p>Um modelo de ~8B com 32 camadas, 8 cabeças KV e dimensão 128, em FP16, gasta 128 KB por token: 4 GB com 32 mil tokens de contexto e 16 GB com 128 mil — mais que os próprios pesos quantizados. Localmente, reduza o contexto ao que você usa (<code>--ctx-size</code>, <code>num_ctx</code>) ou quantize o cache. Num servidor, a VRAM se divide entre pesos e cache: um modelo de 13B ocupa ~26 GB de uma placa de 40 GB, e só o resto sobra para os usuários e seus contextos. Os comandos são simples (<code>--cache-type-k q8_0</code> no llama.cpp; <code>--kv-cache-dtype fp8</code> no vLLM). Arquiteturas novas (MLA, janelas deslizantes, camadas híbridas) reduzem o cache por construção.</p>
 <div class="box tip"><b>Dica</b> Regra de bolso: <b>pesos quantizados + 20–30% de folga</b> para KV cache e buffers. Placas de 12 GB rodam com conforto modelos densos de até ~14B em Q4 com 8–16k de contexto; 16 GB chegam a ~20–24B; 24 GB, a ~32B em Q4; 32 GB permitem ~32B em Q6/Q8 ou MoEs maiores com descarregamento.</div>
@@ -45,7 +45,7 @@ memória total ≈ pesos + KV cache + buffers + overhead do runtime (≈ 0,5–1
 <p>Não basta truncar bits: é preciso <b>mapear</b> a faixa de valores de cada grupo de pesos para a faixa do formato menor com um fator de escala e arredondar. Se os valores vão de 0 a 100 e o destino comporta 0 a 10, 53 vira 5,3, que vira 5; na reconstrução, 5 × 10 = 50, com erro de 3.</p>
 <pre><code>q = round(w / s) + z        # quantizar (s = escala, z = zero point)
 ŵ = s · (q − z)             # dequantizar na hora da conta</code></pre>
-<p>Quanto menor o bloco que compartilha uma escala, menor o erro e maior o overhead — daí os bits “fracionários” dos formatos reais. Nomes como <b>W4A16</b> ou <b>W8A8</b> dizem os bits dos pesos (W) e das ativações (A). Segundo <a href="https://www.youtube.com/watch?v=wIXr22QTEHg">LLM Compression Explained: Build Faster, Efficient AI Models</a>, em cargas <b>online</b> (chat, agentes) quantizar só os pesos acelera o decode, limitado por memória; em <b>lote</b>, vale quantizar também as ativações para usar Tensor Cores de 8 bits. A maioria usa <b>PTQ</b> (pós-treino), com algoritmos como GPTQ, AWQ e as <i>importance matrices</i> do mundo GGUF; <b>QAT</b> (durante o treino) é mais cara, mas resiste melhor a níveis agressivos.</p>
+<p>Quanto menor o bloco que compartilha uma escala, menor o erro e maior o overhead (gasto extra); daí os bits “fracionários” dos formatos reais. Nomes como <b>W4A16</b> ou <b>W8A8</b> dizem os bits dos pesos (W) e das ativações (A). Segundo <a href="https://www.youtube.com/watch?v=wIXr22QTEHg">LLM Compression Explained: Build Faster, Efficient AI Models</a>, em cargas <b>online</b> (chat, agentes) quantizar só os pesos acelera o decode, limitado por memória; em <b>lote</b>, vale quantizar também as ativações para usar Tensor Cores de 8 bits. A maioria usa <b>PTQ</b> (pós-treino), com algoritmos como GPTQ, AWQ e as <i>importance matrices</i> do mundo GGUF; <b>QAT</b> (durante o treino) é mais cara, mas resiste melhor a níveis agressivos.</p>
 <table>
 <tr><th>Formato</th><th>Bits efetivos</th><th>Onde aparece</th><th>Comentário</th></tr>
 <tr><td>BF16/FP16</td><td>16</td><td>checkpoints originais</td><td>referência de qualidade</td></tr>
@@ -93,7 +93,7 @@ llama-server -m model.gguf --port 8080 -ngl 99 -c 16384 --jinja</code></pre>
 <tr><th>Ecossistema</th><th>Pilha</th><th>Situação para LLMs (out/2026)</th></tr>
 <tr><td>NVIDIA CUDA</td><td>CUDA, cuBLAS, TensorRT-LLM</td><td>suporte universal; referência de desempenho</td></tr>
 <tr><td>AMD ROCm/HIP</td><td>ROCm, HIP (similar ao CUDA)</td><td>PyTorch e vLLM oficiais; suporte a placas de consumo irregular</td></tr>
-<tr><td>Intel oneAPI</td><td>SYCL, PyTorch XPU, OpenVINO</td><td>llama.cpp (SYCL e Vulkan), vLLM XPU, OpenVINO GenAI; bom custo por GB de VRAM</td></tr>
+<tr><td>Intel oneAPI</td><td>SYCL, PyTorch XPU, OpenVINO</td><td>roda em llama.cpp, vLLM e OpenVINO; muita VRAM pelo preço</td></tr>
 <tr><td>Apple Metal</td><td>Metal, MLX</td><td>ótimo para modelos grandes via memória unificada; banda limita velocidade</td></tr>
 <tr><td>Vulkan</td><td>compute shaders</td><td>backend “universal” do llama.cpp; às vezes vence os nativos</td></tr>
 </table>
@@ -121,14 +121,14 @@ llama-server -m model.gguf --port 8080 -ngl 99 -c 16384 --jinja</code></pre>
 <tr><th>Opção</th><th>Custo fixo</th><th>Custo marginal</th><th>Quando faz sentido</th></tr>
 <tr><td>API de fronteira</td><td>zero</td><td>por token</td><td>uso irregular; máxima qualidade</td></tr>
 <tr><td>Pod GPU alugado</td><td>US$/hora ligado</td><td>~zero até saturar</td><td>equipe com uso contínuo; dados sensíveis</td></tr>
-<tr><td>GPU própria</td><td>compra</td><td>energia</td><td>uso diário individual, privacidade, estudo</td></tr>
+<tr><td>GPU própria</td><td>compra</td><td>energia</td><td>uso diário, privacidade, estudo</td></tr>
 <tr><td>Memória unificada</td><td>compra</td><td>energia baixa</td><td>modelos grandes onde velocidade não é crítica</td></tr>
 </table>
 <p>Para aprender sem gastar, o Google Colab (<a href="https://www.youtube.com/watch?v=JsCU1V7Hjpc">Build Anything with Google Colab, Here’s How</a>) oferece notebooks com GPU gratuita, com sessões que expiram. A armadilha clássica: o valor de uma variável é o da última célula <i>executada</i>, não o da ordem no arquivo.</p>
 
 <h2>GPGPU além da IA: a série VectorFall</h2>
 <div class="box intro"><b>Para começar</b> Uma GPU não serve só para IA. <b>GPGPU</b> é usar a placa para qualquer tarefa divisível em muitos pedaços independentes: filtrar imagens, analisar planilhas, testar rotas.</div>
-<p>A série VectorFall, do canal Deep Tech with Amir Husain (<a href="https://www.youtube.com/watch?v=S6_5Wfn2BkM">Forget the $7,000 RTX 5090: Real AI and Text Analysis on a $19 GPU</a>; <a href="https://www.youtube.com/watch?v=uH6ekrpWIrg">A $15 GPU That Does Your AI Agent's Heavy Lifting | VectorFall Ep. 2</a>; <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a>), monta uma plataforma de computação sobre placas antigas de US$ 15–20. Como elas não têm suporte nas bibliotecas atuais, o código CUDA é escrito com ajuda de LLMs sobre versões antigas do toolkit — a IA tira o trabalho chato, não a necessidade de entender a arquitetura. A plataforma oferece análise de texto (busca, cadeias de Markov, embeddings), filtros de imagem e áudio, estatística sobre planilhas e solvers de escalas e de caixeiro-viajante.</p>
+<p>A série VectorFall, do canal Deep Tech with Amir Husain (<a href="https://www.youtube.com/watch?v=S6_5Wfn2BkM">Forget the $7,000 RTX 5090: Real AI and Text Analysis on a $19 GPU</a>; <a href="https://www.youtube.com/watch?v=uH6ekrpWIrg">A $15 GPU That Does Your AI Agent's Heavy Lifting | VectorFall Ep. 2</a>; <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a>), monta uma plataforma de computação sobre placas antigas de US$ 15–20. Como elas não têm suporte nas bibliotecas atuais, o código CUDA é escrito com ajuda de LLMs sobre versões antigas do toolkit; a IA tira o trabalho chato, não a necessidade de entender a arquitetura. A plataforma oferece análise de texto (busca, cadeias de Markov, embeddings), filtros de imagem e áudio, estatística sobre planilhas e solvers de escalas e de caixeiro-viajante.</p>
 <p>A ideia mais interessante é a GPU como “músculo” de agentes: em vez de pedir a um LLM caro que processe uma imagem ou resolva uma escala (gastando tokens e alucinando soluções que violam restrições), o agente chama uma ferramenta MCP que executa o trabalho determinístico na GPU barata e devolve um resultado verificável. A GPU não torna o caixeiro-viajante “fácil” — ele continua NP-difícil (ver Livro 4, Capítulo 2 (Algoritmos)) —, mas acelera heurísticas paralelas.</p>
 <figure><img src="img/07_vectorfall.png"><figcaption>Arquitetura do VectorFall: agentes chamam ferramentas MCP; um agendador reparte tempo e núcleos da GPU entre os módulos. Fonte: elaboração própria com dados de “A $15 GPU That Does Your AI Agent's Heavy Lifting | VectorFall Ep. 2”.</figcaption></figure>
 <pre><code>// kernel de Mandelbrot em CUDA: um thread por pixel
@@ -149,7 +149,7 @@ __global__ void mandel(unsigned char* img, int w, int h, int maxIt) {
 <li><b>Defina o uso</b>: chat, agente de código, servidor para equipe ou lote offline.</li>
 <li><b>Calcule a memória</b>: params × bytes (+15%) + KV cache para o contexto real.</li>
 <li><b>Estime a velocidade</b>: banda ÷ bytes por token (em MoE, parâmetros ativos). Abaixo de 15 tok/s, repense.</li>
-<li><b>Escolha o runtime</b>: Ollama/LM Studio para começar; llama.cpp para controle fino e hardware não-NVIDIA; vLLM para servir várias pessoas; OpenVINO para Intel; MLX para Mac.</li>
+<li><b>Escolha o runtime</b>: Ollama/LM Studio para começar; llama.cpp para controle fino e placas que não são NVIDIA; vLLM para servir várias pessoas; OpenVINO para Intel; MLX para Mac.</li>
 <li><b>Escolha a quantização</b>: Q4_K_M como padrão; Q6/Q8 se sobrar memória; abaixo de 4 bits só em modelos grandes.</li>
 <li><b>Configure direito</b>: template de chat, contexto, parser de tool calls, sampling recomendado.</li>
 <li><b>Meça</b> velocidade e qualidade com tarefas suas.</li>

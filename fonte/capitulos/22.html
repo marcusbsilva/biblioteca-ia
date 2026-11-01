@@ -14,11 +14,11 @@
 <p>A engenharia reversa sempre foi possível; o que a limitava era o custo. Modelos de linguagem explicam pseudocódigo, reconhecem bibliotecas e percorrem milhares de funções sem cansaço. O post <a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/">Engenharia Reversa com IA: a Adobe morreu?</a>, de Fabio Akita, discute esse ponto: quando a leitura do binário fica barata, a proteção baseada em “ninguém vai ter paciência de ler isto” desaparece. Na busca de vulnerabilidades, o Google anunciou em agosto de 2025 que o <b>Big Sleep</b>, agente do Google DeepMind e do Project Zero, havia encontrado 20 falhas em projetos abertos como FFmpeg e ImageMagick. As mesmas capacidades servem a defensores e atacantes.</p>
 
 <h3>Os quatro pecados do cliente gordo</h3>
-<p>O <b>cliente gordo</b> (fat client) carrega muita lógica consigo e costuma cometer quatro pecados:</p>
+<p>O <b>cliente gordo</b> (fat client, app que leva muita lógica no aparelho) carrega consigo e costuma cometer quatro pecados:</p>
 <ol>
 <li><b>Segredos embutidos</b>: se o app usa uma chave sozinho, ele a contém, e ela pode ser extraída.</li>
 <li><b>Lógica de negócio no cliente</b>: se a decisão acontece no aparelho, o atacante pode alterá-la.</li>
-<li><b>Superfície de API revelada</b>: o app entrega o mapa de endpoints e parâmetros.</li>
+<li><b>Superfície de API revelada</b>: o app entrega o mapa de endpoints (os endereços do servidor) e seus parâmetros.</li>
 <li><b>Adulteração</b>: versões modificadas do app são redistribuídas como se fossem originais.</li>
 </ol>
 
@@ -47,7 +47,7 @@
 <h3>Camada 2: o gateway seguro</h3>
 <p>O gateway só deixa passar sessões que provem três coisas:</p>
 <ol>
-<li><b>Canal autêntico</b>: TLS 1.3 com certificate pinning e, quando possível, mTLS, com a chave do cliente guardada em hardware seguro.</li>
+<li><b>Canal autêntico</b>: TLS 1.3 com certificate pinning (o app só aceita o certificado esperado) e, quando possível, mTLS (o cliente também se identifica com certificado), com a chave do cliente guardada em hardware seguro.</li>
 <li><b>Usuário autêntico</b>: <b>passkeys</b> (FIDO2/WebAuthn), resistentes a phishing.</li>
 <li><b>App e aparelho íntegros</b>: <b>attestation</b> assinada pelo sistema (Play Integrity no Android, App Attest no iOS), <i>verificada pelo servidor</i>.</li>
 </ol>
@@ -55,7 +55,7 @@
 <p>O gateway aplica ainda limitação de taxa, WAF e detecção de bots, e envia sinais ao motor de antifraude. Como o protocolo entre casca e gateway é pequeno, há poucos formatos de mensagem a validar, bem menos do que numa API REST com centenas de endpoints.</p>
 
 <h3>Camada 3: o motor de estado</h3>
-<p>Em vez de dezenas de operações, o servidor mantém para cada sessão um <b>estado de tela</b> e um <b>log de eventos</b>. O cliente envia <b>intenções</b> (“tocou em Pagar”); o motor aplica a lógica, calcula o novo estado e devolve só o <b>diff</b>. Três ideias se combinam: <b>event sourcing</b> (Livro 4, Capítulo 1 (Eng. Software)), <b>server-driven UI</b> e <b>sincronização por versão</b>, que torna a reconexão trivial: “estou na versão 42; mande o que veio depois”.</p>
+<p>Em vez de dezenas de operações, o servidor mantém para cada sessão um <b>estado de tela</b> e um <b>log de eventos</b>. O cliente envia <b>intenções</b> (“tocou em Pagar”); o motor aplica a lógica, calcula o novo estado e devolve só o <b>diff</b> (a diferença em relação à tela anterior). Três ideias se combinam: <b>event sourcing</b> (Livro 4, Capítulo 1 (Eng. Software)), <b>server-driven UI</b> e <b>sincronização por versão</b>, que torna a reconexão trivial: “estou na versão 42; mande o que veio depois”.</p>
 
 <h3>Camada 4: lógica e dados só no servidor</h3>
 <p>Regras, modelos de risco, chaves (em HSM ou KMS) e bancos de dados ficam aqui. Os serviços se autenticam entre si com identidades de carga de trabalho e mTLS interno, cada um com só as permissões de que precisa. Essa camada não confia na anterior por padrão: recebe comandos com contexto de usuário e sessão e decide de novo, como se o pedido viesse de fora. É o princípio de <b>zero trust</b> aplicado ao próprio núcleo.</p>
@@ -88,11 +88,11 @@
 <div class="box fact"><b>Você sabia?</b> O OnLive, primeiro grande serviço comercial de jogos por streaming, foi lançado em 2010 e fechou em 2015; o Google Stadia durou de 2019 a janeiro de 2023. Ambos tropeçaram mais no modelo de negócio e na latência das redes do que na tecnologia.</div>
 <figure><img src="img/22_superficie.png"><figcaption>Comparação qualitativa do que vai dentro do pacote distribuído em cada arquitetura. Fonte: elaboração própria.</figcaption></figure>
 <table>
-<tr><th>Variante</th><th>O que trafega</th><th>Custo principal</th></tr>
-<tr><td>SSR / HTMX</td><td>HTML e fragmentos</td><td>Interações ricas exigem cuidado</td></tr>
-<tr><td>LiveView / Blazor Server</td><td>Diffs de estado</td><td>Memória por sessão</td></tr>
-<tr><td>SDUI nativo</td><td>Árvore de componentes</td><td>Catálogo de componentes a manter</td></tr>
-<tr><td>Pixel streaming / VDI</td><td>Vídeo e input</td><td>GPU, banda e latência</td></tr>
+<tr><th>Variante</th><th>O que viaja pela rede</th><th>Custo principal</th></tr>
+<tr><td>SSR / HTMX</td><td>Pedaços de página prontos (HTML)</td><td>Telas muito interativas dão mais trabalho</td></tr>
+<tr><td>LiveView / Blazor Server</td><td>Só o que mudou na tela (diffs)</td><td>Memória no servidor para cada usuário</td></tr>
+<tr><td>SDUI nativo</td><td>A “planta” da tela, peça por peça</td><td>Manter o catálogo de peças</td></tr>
+<tr><td>Pixel streaming / VDI</td><td>Vídeo da tela e os toques</td><td>Placa de vídeo, internet boa e atraso</td></tr>
 </table>
 
 <h2>O que a casca ainda precisa proteger</h2>
@@ -100,7 +100,7 @@
 <ul>
 <li><b>Certificate pinning</b>: fixar a chave pública do servidor, com uma chave reserva, usando os mecanismos da plataforma.</li>
 <li><b>Higiene do pacote</b>: remover símbolos e logs de depuração e nenhum segredo de longa duração. O teste: se o pacote fosse publicado amanhã, algo grave aconteceria? A resposta deve ser “não”.</li>
-<li><b>RASP</b>: verificações em tempo de execução (root, depurador, emulador) que <b>informam, não decidem</b>; o servidor combina os sinais com o risco da operação.</li>
+<li><b>RASP</b> (autoproteção do app em execução): verificações em tempo de execução (root, depurador, emulador) que <b>informam, não decidem</b>; o servidor combina os sinais com o risco da operação.</li>
 <li><b>Attestation</b>: veredito verificado no servidor e vinculado a um nonce. É um sinal forte, não uma garantia.</li>
 <li><b>Proteção da interface</b>: bloquear captura de tela e sobreposições em telas sensíveis e pedir confirmação por passkey nas operações de alto valor, sem bloquear quem depende de leitores de tela.</li>
 <li><b>Antifraude no servidor</b>: como recebe todas as intenções, o servidor vê o comportamento da sessão (ritmo, sequência de telas, beneficiário novo) e decide quando exigir uma barreira extra.</li>

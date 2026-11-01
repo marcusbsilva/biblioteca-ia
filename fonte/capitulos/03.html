@@ -1,6 +1,34 @@
 <section class="chapter" id="ch03"><h1><span class="num">Capítulo 03</span>Engenharia de Contexto e de Prompt</h1>
-<p class="lead">Durante alguns anos, "saber usar IA" significou escrever um bom prompt. Com os agentes, que trabalham em loop por dezenas ou centenas de passos, chamam ferramentas e acumulam histórico, a pergunta mudou: é preciso decidir, a cada passo, <em>quais tokens</em> o modelo vê. Este capítulo trata isso como disciplina de engenharia: por que o contexto é finito, como montar system prompts, ferramentas e exemplos, como sobreviver a tarefas longas e como transformar tudo em artefatos versionados (CLAUDE.md, AGENTS.md, specs, skills). No fim há templates prontos.</p>
-<div class="box intro"><b>Para começar</b> Imagine um assistente brilhante que chega toda manhã sem lembrar de nada: ele só sabe o que está na mesa dele. O <b>prompt</b> é o bilhete; o <b>contexto</b> é a mesa inteira, medida em <b>tokens</b> (pedaços de texto), até o limite da <b>janela de contexto</b>. As bases estão no Livro 1, Capítulo 2 (LLMs, Transformers e MoE) e no Capítulo 4 (Agentes e MCP).</div>
+<p class="lead">No capítulo anterior, o foco foi o pedido que você escreve. Aqui o foco é tudo o que a IA tem à frente quando responde: o <b>contexto</b>. Começamos pela ideia intuitiva, a "mesa de trabalho" da IA, com dicas que qualquer usuário de chat pode aplicar hoje. Depois, numa parte marcada como avançada, vêm os detalhes para quem usa agentes (IAs que executam tarefas sozinhas, em vários passos): por que o contexto é limitado, como organizar instruções, ferramentas e exemplos, como lidar com tarefas longas e como guardar tudo em arquivos (CLAUDE.md, AGENTS.md, specs, skills). No fim há templates prontos.</p>
+<div class="box intro"><b>Para começar</b> Imagine um assistente brilhante que chega toda manhã sem lembrar de nada: ele só sabe o que está na mesa dele. O <b>prompt</b> é o bilhete com o pedido do dia; o <b>contexto</b> é a mesa inteira. As bases estão no Livro 1, Capítulo 2 (LLMs, Transformers e MoE) e no Capítulo 4 (Agentes e MCP).</div>
+
+<h2>A mesa de trabalho da IA</h2>
+<p>Quando você manda uma mensagem, a IA não "lembra" de nada por conta própria. Ela lê o que está sobre a mesa naquele momento e responde com base nisso. Sobre a mesa costuma haver:</p>
+<ul>
+<li><b>o seu pedido atual</b> (o prompt);</li>
+<li><b>a conversa até aqui</b>, todas as mensagens anteriores;</li>
+<li><b>arquivos e textos</b> que você anexou ou colou;</li>
+<li><b>instruções fixas</b>, como as "instruções personalizadas" do app ou as de um projeto;</li>
+<li><b>resultados de buscas</b> ou de outras ferramentas que a IA usou.</li>
+</ul>
+<p>Tudo isso junto é o <b>contexto</b>. E a mesa tem tamanho limitado, a chamada <b>janela de contexto</b>.</p>
+<h3>Mesa arrumada, resposta melhor</h3>
+<p>Uma mesa lotada atrapalha tanto quanto uma vazia. Se faltam papéis, a IA inventa; se sobram, ela se perde no meio deles e esquece o que importa. Três situações comuns:</p>
+<ul>
+<li><b>Mesa vazia</b>: você pede "melhore meu currículo" sem colar o currículo. A IA responde no genérico.</li>
+<li><b>Mesa bagunçada</b>: depois de duas horas de conversa sobre vários assuntos, ela mistura as regras.</li>
+<li><b>Mesa certa</b>: você cola só a vaga e o currículo e pede ajustes para aquela vaga.</li>
+</ul>
+<h3>Dicas para qualquer usuário de chat</h3>
+<ol>
+<li><b>Um assunto por conversa.</b> Mudou de assunto, abra um chat novo.</li>
+<li><b>Leve o material certo.</b> Anexe o documento em vez de descrevê-lo de memória.</li>
+<li><b>Só o necessário.</b> Cole a cláusula que interessa, não o contrato de 80 páginas, se puder.</li>
+<li><b>Recomece com um resumo.</b> Se a conversa desandou, peça "resuma o que decidimos" e cole o resumo num chat novo.</li>
+<li><b>Use instruções fixas.</b> O que vale sempre ("responda em português, sem jargão") vai nas instruções personalizadas ou num projeto.</li>
+</ol>
+<p>Agentes de programação fazem o mesmo em escala maior: leem arquivos, rodam comandos e acumulam resultados na mesa a cada passo. Por isso, para eles, arrumar a mesa vira uma disciplina própria, a <b>engenharia de contexto</b>.</p>
+<div class="box warn"><b>Daqui em diante: conteúdo avançado</b> As seções seguintes são técnicas e pensadas para quem usa ou constrói agentes: <i>harness</i> (o sistema em volta do modelo), orçamento de atenção, ferramentas, compactação, sub-agentes, arquivos de instrução (CLAUDE.md, AGENTS.md, SKILL.md) e specs. Se você usa IA só no chat, as dicas acima já cobrem o essencial; pule para o "Em resumo" no fim do capítulo, se preferir.</div>
 
 <h2>De prompt a contexto (e a harness)</h2>
 <h3>Três camadas que costumam ser confundidas</h3>
@@ -20,7 +48,7 @@
 </ol>
 <p>Os vídeos da IBM Technology <a href="https://www.youtube.com/watch?v=UC4vDpSJCkM">How to Pass Context in an Agentic AI Flow</a> e <a href="https://www.youtube.com/watch?v=pN-LfxNFiTc">How RAG, GraphRAG, and Context Engineering Improve AI Performance</a> acrescentam o ângulo de governança: contexto inclui identidade, cadeia de agentes e permissões. Ao preparar uma reunião com cliente, o agente deve puxar tickets e histórico, mas <em>não</em> a discussão interna de preços que aquele usuário não pode ver. Engenharia de contexto também decide o que o modelo não deve ver.</p>
 
-<h2>Por que o contexto é finito: context rot e orçamento de atenção</h2>
+<h2>Por que o contexto é finito: context rot e orçamento de atenção (avançado)</h2>
 <div class="box intro"><b>Para começar</b> Estudar com dez livros abertos não ensina mais que estudar com um. Com LLMs é parecido: mesmo quando "cabe tudo" na janela, a informação importante se dilui no resto.</div>
 <h3>O fenômeno</h3>
 <p><b>Context rot</b> é a observação, vinda de testes de "agulha no palheiro", de que a capacidade de recuperar com precisão uma informação da janela cai à medida que a janela cresce. Acontece em todos os modelos e é um gradiente, não um precipício; <a href="https://www.youtube.com/watch?v=BwXremQ-i6I">Context Engineering for AI Agents: 4 Failure Modes to Avoid</a> cita um estudo com 18 modelos de fronteira com o mesmo padrão. O modelo tem um <b>orçamento de atenção</b>: uma página de instruções funciona melhor que 4.000 páginas de Slack, mesmo que estas caibam.</p>
@@ -33,10 +61,10 @@
 <p>A taxonomia do vídeo da IBM (que ecoa a de Drew Breunig) mostra que todas as correções consistem em tirar informação da janela:</p>
 <table>
 <tr><th>Falha</th><th>Sintoma</th><th>Correção</th></tr>
-<tr><td>Envenenamento</td><td>Um erro entra na janela e vira "verdade"</td><td>Validar antes de registrar em notas</td></tr>
-<tr><td>Distração</td><td>O histórico longo domina; o agente repete o que já fez</td><td>Compactar; mover detalhes para arquivos</td></tr>
-<tr><td>Confusão</td><td>Ferramentas ou informação demais (um modelo falhou com 46 ferramentas e passou com 19)</td><td>Curar o conjunto de ferramentas</td></tr>
-<tr><td>Conflito</td><td>Versões contraditórias coexistem</td><td>Podar ou recomeçar com o estado corrigido</td></tr>
+<tr><td>Envenenamento</td><td>Um erro anotado vira "verdade"</td><td>Conferir antes de anotar</td></tr>
+<tr><td>Distração</td><td>O histórico longo domina e o agente se repete</td><td>Resumir e guardar detalhes em arquivos</td></tr>
+<tr><td>Confusão</td><td>Ferramentas demais (falhou com 46, acertou com 19)</td><td>Deixar só as ferramentas úteis</td></tr>
+<tr><td>Conflito</td><td>Duas versões contraditórias na mesa</td><td>Apagar a velha ou recomeçar</td></tr>
 </table>
 <p>Quando o agente esquece instruções, repete erros ou relê arquivos, a primeira reação deve ser limpar o contexto, não subir o esforço de raciocínio; um <code>/clear</code> entre tarefas resolve boa parte dos casos. A maior parte da janela costuma ser <em>resultado de ferramentas</em> (um arquivo inteiro, um log de testes), então as técnicas de maior retorno são as que reduzem essas saídas. No Claude Code, <code>/context</code> mostra como a janela está distribuída.</p>
 
@@ -57,24 +85,24 @@
 <p>Ferramentas devem ser como boas funções: <b>autocontidas, de propósito inequívoco, com parâmetros descritivos e retorno enxuto em tokens</b>. "Se um engenheiro humano não sabe dizer qual ferramenta usar, não espere que o agente saiba."</p>
 <table>
 <tr><th>Ruim</th><th>Melhor</th></tr>
-<tr><td><code>search</code>, <code>find</code>, <code>lookup</code> parecidas</td><td>Uma <code>search_orders(customer_id, status?, since?)</code> bem descrita</td></tr>
-<tr><td>JSON cru de 40 KB</td><td>Campos relevantes, paginados</td></tr>
-<tr><td><code>500 Internal Error</code></td><td>"customer_id inválido; use o formato C-12345"</td></tr>
-<tr><td>Todos os MCPs sempre carregados</td><td>Carregamento sob demanda</td></tr>
+<tr><td>Três ferramentas quase iguais: <code>search</code>, <code>find</code>, <code>lookup</code></td><td>Uma só, <code>search_orders</code>, bem descrita</td></tr>
+<tr><td>Devolver o arquivo inteiro</td><td>Devolver só os campos úteis</td></tr>
+<tr><td>Erro mudo: <code>500 Internal Error</code></td><td>Erro que orienta: "código inválido; use C-12345"</td></tr>
+<tr><td>Todas as ferramentas sempre ligadas</td><td>Ligar cada uma quando precisar</td></tr>
 </table>
 <p>O mesmo vale para saídas de terminal: filtre na fonte (<code>tail</code>, <code>grep</code>, <code>--quiet</code>). Proxies como o RTK, mostrado em <a href="https://www.youtube.com/watch?v=PNco78D42G4">Como Eu Economizo Até 80% em Tokens no Claude Code</a>, compactam essas saídas automaticamente, com economia relatada de 30% a 80%.</p>
 <h3>Exemplos (few-shot)</h3>
 <p>Prefira um conjunto <b>pequeno, diverso e canônico</b> de exemplos a uma lista de casos-limite. O modelo imita bem o que você mostra e inventa mal o que só descreve: "siga o estilo de <code>src/routes/users.ts</code>" vale mais que três parágrafos de convenções. Exemplos parecidos demais provocam cópia superficial; varie o conteúdo e mantenha constante só o que deve ser imitado.</p>
 <h3>Técnicas clássicas, situadas</h3>
 <table>
-<tr><th>Técnica</th><th>Mecanismo</th><th>Observação</th></tr>
-<tr><td>RAG</td><td>Recupera trechos e os injeta</td><td>Para conhecimento privado ou recente (ver Capítulo 3, RAG)</td></tr>
-<tr><td>Chain-of-Thought</td><td>Decompor em passos</td><td>Em modelos com raciocínio nativo rende menos; dê critério de verificação</td></tr>
-<tr><td>ReAct</td><td>Pensar → agir → observar</td><td>É, na prática, o loop agêntico moderno</td></tr>
-<tr><td>Grounding + "não sei"</td><td>Responder só a partir das fontes</td><td>Reduz alucinação</td></tr>
-<tr><td>Fine-tuning</td><td>Altera pesos</td><td>Não é engenharia de contexto; venha depois</td></tr>
+<tr><th>Técnica</th><th>Em uma frase</th></tr>
+<tr><td>RAG</td><td>Buscar trechos de documentos e pôr na mesa (ver Capítulo 3, RAG).</td></tr>
+<tr><td>Chain-of-Thought</td><td>Pedir o raciocínio passo a passo; rende menos em modelos que já "pensam".</td></tr>
+<tr><td>ReAct</td><td>Pensar, agir, observar o resultado e repetir: o ciclo dos agentes.</td></tr>
+<tr><td>Grounding + "não sei"</td><td>Responder só com base nas fontes dadas; reduz invenções.</td></tr>
+<tr><td>Fine-tuning</td><td>Retreinar o modelo; não é engenharia de contexto e vem depois.</td></tr>
 </table>
-<p>A IBM, em <a href="https://www.youtube.com/watch?v=pZjpNS9YeVA">Context Optimization vs LLM Optimization</a>, resume: prompt e RAG otimizam a <em>janela</em>; fine-tuning otimiza o <em>modelo</em>. Comece pelo prompt e meça contra uma baseline. Lembre que <em>greedy decoding</em> equivale a temperatura zero, e que vários modelos de raciocínio ignoram a temperatura.</p>
+<p>A IBM, em <a href="https://www.youtube.com/watch?v=pZjpNS9YeVA">Context Optimization vs LLM Optimization</a>, resume: prompt e RAG otimizam a <em>janela</em>; fine-tuning otimiza o <em>modelo</em>. Comece pelo prompt e meça contra uma baseline.</p>
 <h3>Saída estruturada como contrato</h3>
 <p>Quando a saída alimenta software, o prompt vira interface. <a href="https://www.youtube.com/watch?v=cgVppD6paYo">Prompt Engineering for LLMs, PDL, &amp; LangChain in Action</a> propõe três pilares: <b>contrato</b> (esquema), <b>laço de controle</b> (validar, reparar, tentar de novo) e <b>observabilidade</b>.</p>
 <pre><code>{"summary": str, "severity": "low"|"medium"|"high", "steps": [str]}
@@ -89,13 +117,13 @@ if not valid(out): out = llm_strict(prompt)   # structured outputs</code></pre>
 <p>Em vez de pré-carregar tudo, o agente mantém <b>identificadores leves</b> (caminhos, consultas, links) e lê o conteúdo via ferramentas (<code>grep</code>, <code>glob</code>, <code>head</code>). Nomes de pastas e arquivos viram sinal. Isso habilita a <b>revelação progressiva</b>: o contexto é descoberto em camadas. É o desenho das <b>skills</b>: só nome e descrição ficam na janela; o corpo do <code>SKILL.md</code> é lido quando acionado.</p>
 <table>
 <tr><th></th><th>Pré-carregado</th><th>Just-in-time</th></tr>
-<tr><td>Latência</td><td>Baixa</td><td>Maior</td></tr>
-<tr><td>Frescor</td><td>Depende de reindexar</td><td>Sempre atual</td></tr>
-<tr><td>Risco</td><td>Ruído, chunks errados</td><td>Agente se perde sem bons nomes</td></tr>
+<tr><td>Velocidade</td><td>Rápido</td><td>Mais lento</td></tr>
+<tr><td>Atualização</td><td>Pode ficar desatualizado</td><td>Sempre atual</td></tr>
+<tr><td>Risco</td><td>Material demais ou errado</td><td>O agente se perde se os nomes forem ruins</td></tr>
 </table>
 <p>A recomendação da Anthropic é híbrida: pouco material de alto valor no início (o CLAUDE.md) e exploração para o resto. E: <b>faça a coisa mais simples que funcione</b>.</p>
 
-<h2>Tarefas de longo horizonte</h2>
+<h2>Tarefas de longo horizonte (avançado)</h2>
 <div class="box intro"><b>Para começar</b> Uma tarefa de horas estoura a janela. As saídas são as de um profissional num projeto longo: resumir o que foi feito, manter um caderno e delegar partes a colegas.</div>
 <figure><img src="img/03_loop_agente.png"><figcaption>O loop agêntico como problema de contexto: o harness monta a janela, o modelo decide, a ferramenta age e o resultado passa por curadoria antes de voltar. Fonte: elaboração própria a partir de Anthropic (2025) e Fernanda Kipper.</figcaption></figure>
 <h3>Compactação</h3>
@@ -107,10 +135,10 @@ if not valid(out): out = llm_strict(prompt)   # structured outputs</code></pre>
 <figure><img src="img/03_subagentes_tokens.png"><figcaption>Mesmo trabalho num contexto único (1,2M tokens) vs. 12 sub-agentes de até 100k que devolvem resumos de ~1–2k tokens. Fonte: elaboração própria com dados de Anthropic (2025); valores de 12 × 100k ilustrativos.</figcaption></figure>
 <table>
 <tr><th>Técnica</th><th>Melhor para</th><th>Risco</th></tr>
-<tr><td>Compactação</td><td>Trocas longas e contínuas</td><td>Perda de detalhe sutil</td></tr>
-<tr><td>Notas</td><td>Desenvolvimento com marcos claros</td><td>Notas envenenadas ou velhas</td></tr>
-<tr><td>Sub-agentes</td><td>Trabalho paralelizável e buscas ruidosas</td><td>Custo alto; perda de coerência</td></tr>
-<tr><td><code>/clear</code></td><td>Troca de tarefa</td><td>Esquecer de registrar o estado</td></tr>
+<tr><td>Compactação</td><td>Conversas longas sobre um mesmo assunto</td><td>Perder detalhes</td></tr>
+<tr><td>Notas</td><td>Projetos com etapas claras</td><td>Notas erradas ou velhas</td></tr>
+<tr><td>Sub-agentes</td><td>Buscas e tarefas que podem correr em paralelo</td><td>Custo alto</td></tr>
+<tr><td><code>/clear</code></td><td>Trocar de tarefa</td><td>Esquecer de anotar onde parou</td></tr>
 </table>
 <p>Cada modelo tem seu tokenizer, e a mesma frase pode custar quantidades diferentes de tokens. Compare modelos por custo por tarefa, não por token. Uma troca de tokenizer funciona como inflação silenciosa: o preço por token pode ficar igual enquanto a mesma tarefa passa a consumir mais tokens, o que afeta tanto a fatura quanto o espaço útil da janela.</p>
 
@@ -122,11 +150,11 @@ if not valid(out): out = llm_strict(prompt)   # structured outputs</code></pre>
 <p>O arquivo deve ser um <b>índice enxuto</b>, não uma enciclopédia. Engenheiros da OpenAI relataram que um AGENTS.md gigante atrapalhava o agente; a solução foi transformá-lo num mapa que aponta onde buscar cada coisa. Um teto de ~200 linhas é a sugestão usual.</p>
 <table>
 <tr><th>Coloque</th><th>Evite</th></tr>
-<tr><td>Mapa do workspace</td><td>Documentação completa colada</td></tr>
-<tr><td>Comandos exatos de build, teste, lint</td><td>Regras que o linter já impõe</td></tr>
-<tr><td>Convenções não óbvias e o porquê</td><td>Generalidades ("código limpo")</td></tr>
-<tr><td>Decisões vigentes (ou link para ADRs)</td><td>Decisões revogadas (geram conflito)</td></tr>
-<tr><td>O que nunca fazer</td><td>Procedimentos numerados (viram skill)</td></tr>
+<tr><td>Um mapa das pastas</td><td>A documentação inteira colada</td></tr>
+<tr><td>Os comandos exatos para testar</td><td>Regras que uma ferramenta já confere</td></tr>
+<tr><td>Combinados não óbvios, com o motivo</td><td>Frases vagas ("código limpo")</td></tr>
+<tr><td>Decisões em vigor</td><td>Decisões já canceladas</td></tr>
+<tr><td>O que nunca fazer</td><td>Passo a passo longo (vira skill)</td></tr>
 </table>
 <p>Distribua o conteúdo entre mecanismos: <b>CLAUDE.md</b> (sempre no contexto), <b>rules por caminho</b>, <b>skills</b> (carregamento progressivo), <b>sub-agentes</b> (isolamento), <b>hooks</b> (garantias determinísticas) e <b>MCP</b> (sistemas externos). Regra de bolso: o que precisa acontecer <em>sempre</em> deve ser hook, porque instruções são probabilísticas.</p>
 <h3>Repositório agnóstico a agentes</h3>
@@ -160,13 +188,13 @@ if not valid(out): out = llm_strict(prompt)   # structured outputs</code></pre>
 <h2>Prompts pessoais de comportamento: o "Gabarito"</h2>
 <p>O "Gabarito" (Adapta.org), material de referência sem URL pública, é um system prompt pessoal em português enviado no início da conversa. Ele pede que o assistente sinalize que o leu e define dez diretrizes ligadas a técnicas nomeadas, entre elas anti-bajulação (não reverter sob pressão sem argumento novo), perguntas de esclarecimento, critério de sucesso explícito, step-back, Chain of Verification e confiança calibrada. Sua disciplina de estilo combate os tiques de texto de IA: preâmbulos, palavras de enchimento, ritmo staccato. Algumas diretrizes, com gatilho e ação:</p>
 <table>
-<tr><th>Diretriz</th><th>Técnica</th><th>Gatilho → ação</th></tr>
-<tr><td>Anti-bajulação</td><td>Sycophancy mitigation</td><td>Discordar com clareza; só reverter com argumento novo</td></tr>
-<tr><td>Pense antes de responder</td><td>Clarification prompting</td><td>Ambiguidade crítica → fazer a pergunta mais importante</td></tr>
-<tr><td>Execução orientada por meta</td><td>Self-eval prompting</td><td>Declarar critérios de sucesso, executar, checar item a item</td></tr>
-<tr><td>Recuo estratégico</td><td>Step-back prompting</td><td>Enunciar o princípio geral antes de aplicar</td></tr>
-<tr><td>Verificação em cadeia</td><td>Chain of Verification</td><td>Rascunho → perguntas de verificação isoladas → corrigir</td></tr>
-<tr><td>Confiança calibrada</td><td>Verbalized confidence</td><td>Expressar grau de certeza; dizer "não sei"</td></tr>
+<tr><th>Diretriz (técnica)</th><th>Na prática</th></tr>
+<tr><td>Anti-bajulação (<i>sycophancy mitigation</i>)</td><td>Discordar com clareza e só mudar de ideia diante de argumento novo.</td></tr>
+<tr><td>Pense antes de responder (<i>clarification prompting</i>)</td><td>Se o pedido for ambíguo, fazer a pergunta mais importante.</td></tr>
+<tr><td>Execução orientada por meta (<i>self-eval prompting</i>)</td><td>Dizer o que é sucesso, fazer e conferir item a item.</td></tr>
+<tr><td>Recuo estratégico (<i>step-back prompting</i>)</td><td>Lembrar a regra geral antes de aplicá-la ao caso.</td></tr>
+<tr><td>Verificação em cadeia (<i>Chain of Verification</i>)</td><td>Rascunhar, fazer perguntas de checagem e corrigir.</td></tr>
+<tr><td>Confiança calibrada (<i>verbalized confidence</i>)</td><td>Dizer o grau de certeza e admitir "não sei".</td></tr>
 </table>
 <p>O Gabarito é um bom exemplo de altitude certa, com dois limites: ocupa orçamento de atenção em toda conversa (em agentes de código, funciona melhor como skill) e técnicas caras como verificação em cadeia devem ser acionadas por gatilho, não sempre.</p>
 

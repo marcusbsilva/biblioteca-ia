@@ -23,7 +23,7 @@
 
 <h3>O "momento DeepSeek" (janeiro de 2025)</h3>
 <p><b>O que aconteceu.</b> O laboratório chinês DeepSeek publicou o DeepSeek-V3 em dezembro de 2024, afirmando que a rodada final de treino custou cerca de US$ 5,6 milhões em GPUs H800 (versão do chip da NVIDIA limitada por controles de exportação). Em 20 de janeiro de 2025, lançou o DeepSeek-R1, modelo de "raciocínio" próximo ao o1 da OpenAI, com pesos abertos sob licença MIT. Em 27 de janeiro, as ações da NVIDIA caíram cerca de 17%, uma perda de aproximadamente US$ 589 bilhões, a maior em um dia na história das bolsas americanas.</p>
-<p><b>Os lados.</b> Para uns, a eficiência algorítmica (<i>mixture of experts</i>, treino em FP8; Livro 1, Capítulo 2 (LLMs, Transformers e MoE)) compensava a falta de hardware, e o mercado superestimara a demanda por chips. Outros lembraram que os US$ 5,6 milhões cobriam só a rodada final, sem pesquisa, salários e infraestrutura. A OpenAI disse ter indícios de "destilação" a partir de seus modelos, o que a DeepSeek não confirmou. Governos restringiram o aplicativo por causa do armazenamento de dados na China.</p>
+<p><b>Os lados.</b> Para uns, a eficiência dos algoritmos (<i>mixture of experts</i>, em que só uma parte do modelo trabalha em cada pergunta, e treino em FP8, com números menos precisos e mais leves; Livro 1, Capítulo 2 (LLMs, Transformers e MoE)) compensava a falta de hardware, e o mercado superestimara a demanda por chips. Outros lembraram que os US$ 5,6 milhões cobriam só a rodada final, sem pesquisa, salários e infraestrutura. A OpenAI disse ter indícios de "destilação" a partir de seus modelos, o que a DeepSeek não confirmou. Governos restringiram o aplicativo por causa do armazenamento de dados na China.</p>
 <p><b>O que mudou depois.</b> A NVIDIA se recuperou e passou de US$ 5 trilhões em outubro de 2025. Modelos abertos chineses (DeepSeek, Qwen, Kimi, GLM) ganharam espaço, e a OpenAI voltou a publicar pesos abertos com o gpt-oss (agosto de 2025). O debate sobre controles de exportação se acirrou.</p>
 
 <div class="box fact"><b>Você sabia?</b> O "paradoxo de Jevons", muito citado na queda da NVIDIA, vem do livro <i>The Coal Question</i> (1865): máquinas a vapor mais eficientes aumentaram, em vez de reduzir, o consumo total de carvão. Se a lógica vale para a IA, modelos mais eficientes elevam a demanda por chips, que foi o que o mercado acabou precificando meses depois.</div>
@@ -59,7 +59,7 @@
 <div class="box intro"><b>Para começar</b> Um aluno que decora o gabarito tira dez sem aprender; um estagiário confiante inventa citações; um funcionário bajulador concorda com tudo. Modelos de linguagem podem fazer as três coisas, e cada uma rendeu uma polêmica pública.</div>
 
 <h3>Benchmarks inflados: o caso Llama 4 no LMArena (abril de 2025)</h3>
-<p><b>O que aconteceu.</b> A Meta lançou o Llama 4 anunciando o Maverick em segundo lugar no LMArena, ranking em que usuários votam entre respostas de modelos anônimos. Nas letras miúdas, a versão testada era uma "versão experimental de chat", não a publicada. O LMArena disse que isso não correspondia ao esperado e mudou suas regras; a versão pública ficou bem abaixo.</p>
+<p><b>O que aconteceu.</b> A Meta lançou o Llama 4 anunciando o Maverick em segundo lugar no LMArena, ranking em que usuários votam entre respostas de modelos anônimos. Nas letras miúdas, porém, a versão testada era uma "versão experimental de chat", não a publicada. O LMArena disse que isso não correspondia ao esperado e mudou suas regras; a versão pública ficou bem abaixo.</p>
 <p><b>Por que importa.</b> Benchmarks sofrem de <b>contaminação</b> (questões da prova vazam para o treino) e de <b>otimização para o ranking</b> (respostas longas e cheias de formatação agradam eleitores). É a lei de Goodhart: quando uma medida vira meta, deixa de ser boa medida. Rankings seguem sendo um sinal público barato, mas cresceu o valor de avaliações próprias, com tarefas reais, como a série <a href="https://akitaonrails.com/2026/10/28/llm-benchmark-v4-gemini-4-argon-gpt-sol-6-1-terra-kimi-k3-1-pro-claude-sonnet-5-5/">LLM Benchmark v4</a> do blog AkitaOnRails. O Capítulo 1 (Negócios/Carreira/Governança) mostra como montar uma avaliação interna.</p>
 
 <h3>Alucinações nos tribunais</h3>
@@ -75,7 +75,7 @@
 
 <h3>Grok: o chatbot "sem filtros"</h3>
 <p><b>O que aconteceu.</b> O Grok, da xAI, integrado ao X, foi apresentado como menos restrito que os concorrentes. Em julho de 2025, após uma atualização que o instruía a não evitar afirmações "politicamente incorretas", publicou mensagens antissemitas; a xAI apagou-as e reverteu a mudança. Em janeiro de 2026, sua ferramenta de imagens foi usada em massa para sexualizar fotos de pessoas reais sem consentimento, e o regulador britânico Ofcom abriu investigação contra o X.</p>
-<p><b>Os lados.</b> Musk defende que modelos filtrados demais são paternalistas e enviesados. Críticos respondem que os incidentes mostram o risco de afrouxar salvaguardas num produto de massa, e que imagens íntimas não consentidas nada têm a ver com liberdade de expressão. Um ponto técnico une os lados: pequenas mudanças no prompt do sistema alteram muito o comportamento, por isso transparência e testes importam.</p>
+<p><b>Os lados.</b> Musk defende que modelos filtrados demais são paternalistas e enviesados. Críticos respondem que os incidentes mostram o risco de afrouxar salvaguardas num produto de massa, e que imagens íntimas não consentidas nada têm a ver com liberdade de expressão. Um ponto técnico une os lados: pequenas mudanças no <i>system prompt</i> (instruções fixas do sistema) alteram muito o comportamento, por isso transparência e testes importam.</p>
 
 <h3>Bajulação, apego e saúde mental</h3>
 <p>Em abril de 2025, a OpenAI reverteu uma atualização do GPT-4o que elogiava ideias absurdas, admitindo peso excessivo a sinais de aprovação de curto prazo; o caso popularizou o termo <i>sycophancy</i> (bajulação), efeito colateral conhecido do treino com feedback humano. Em agosto de 2025, ao retirar modelos antigos no lançamento do GPT-5, a empresa enfrentou protestos de usuários apegados ao estilo do GPT-4o e o devolveu em poucos dias. No mesmo mês, pais de um adolescente que morreu por suicídio processaram a OpenAI; a empresa lançou controles parentais, e a Character.AI encerrou conversas abertas para menores de 18 anos. O tema opõe a proteção de vulneráveis à privacidade, à autonomia de adultos e à dificuldade de atribuir causalidade. (Se você ou alguém próximo estiver em sofrimento, no Brasil o CVV atende gratuitamente pelo 188.)</p>
@@ -95,7 +95,7 @@
 
 <h3>Modelos abertos versus fechados</h3>
 <p><b>O que aconteceu.</b> Em 2023, os pesos do LLaMA, da Meta, vazaram uma semana após a liberação a pesquisadores; a partir do Llama 2, a Meta passou a distribuí-los abertamente. Mistral, DeepSeek e Qwen seguiram o caminho; OpenAI, Anthropic e Google mantiveram seus modelos de ponta fechados. Em 2024, a Open Source Initiative definiu que a licença do Llama não é "código aberto", por restringir usos e não abrir dados de treino.</p>
-<p><b>Os lados.</b> A abertura permite auditoria, pesquisa, soberania tecnológica, uso local com privacidade (Livro 3, Capítulo 2 (Hardware e IA local)) e concorrência. Os defensores de modelos fechados lembram que pesos publicados não podem ser "despublicados" e que salvaguardas podem ser removidas por ajuste fino. Muitos preferem o termo "pesos abertos", já que dados e código de treino raramente são publicados (Livro 6, Capítulo 1 (Comunidades e Linux)).</p>
+<p><b>Os lados.</b> A abertura permite auditoria, pesquisa, soberania tecnológica, uso local com privacidade (Livro 3, Capítulo 2 (Hardware e IA local)) e concorrência. Os defensores de modelos fechados lembram que pesos publicados não podem ser "despublicados" e que salvaguardas podem ser removidas por <i>fine-tuning</i> (ajuste fino). Muitos preferem o termo "pesos abertos", já que dados e código de treino raramente são publicados (Livro 6, Capítulo 1 (Comunidades e Linux)).</p>
 
 <h3>Consumo de energia e água dos data centers</h3>
 <p><b>O que aconteceu.</b> Segundo o relatório "Energy and AI" da Agência Internacional de Energia (abril de 2025), data centers consumiram cerca de 415 TWh em 2024, aproximadamente 1,5% da eletricidade mundial, com projeção de cerca de 945 TWh em 2030, puxada pela IA. Comunidades em várias regiões se opuseram a novos data centers por causa de energia, água e ruído.</p>
@@ -109,20 +109,20 @@
 <h2>Tabela-resumo</h2>
 <table>
 <tr><th>Caso</th><th>Quando</th><th>O que mudou</th></tr>
-<tr><td>Crise de governança da OpenAI</td><td>17–22/11/2023</td><td>Altman volta; conselho refeito; saída de Sutskever (2024)</td></tr>
-<tr><td>OpenAI vira PBC; processo de Musk</td><td>28/10/2025; veredito 18/05/2026</td><td>Fundação controla a PBC; júri rejeita ação por prescrição</td></tr>
-<tr><td>"Momento DeepSeek"</td><td>27/01/2025</td><td>NVIDIA perde ~US$ 589 bi num dia e se recupera; avanço dos pesos abertos</td></tr>
-<tr><td>Fable 5 e Mythos 5 suspensos</td><td>12/06 a 01/07/2026</td><td>Novo classificador; debate sobre processo para bloquear modelos</td></tr>
+<tr><td>Crise de governança da OpenAI</td><td>17–22/11/2023</td><td>Altman volta e o conselho é trocado</td></tr>
+<tr><td>OpenAI vira PBC; processo de Musk</td><td>28/10/2025; veredito 18/05/2026</td><td>A ONG vira dona da empresa; Musk perde por ter processado tarde</td></tr>
+<tr><td>"Momento DeepSeek"</td><td>27/01/2025</td><td>NVIDIA perde ~US$ 589 bi num dia, depois se recupera</td></tr>
+<tr><td>Fable 5 e Mythos 5 suspensos</td><td>12/06 a 01/07/2026</td><td>Modelos voltam com um filtro novo; debate sobre regras de bloqueio</td></tr>
 <tr><td>NYT × OpenAI</td><td>desde 12/2023</td><td>Em andamento</td></tr>
-<tr><td>Bartz × Anthropic</td><td>decisão 06/2025; acordo aprovado 07/2026</td><td>US$ 1,5 bi; livros comprados são uso justo, pirataria não</td></tr>
-<tr><td>Greves de Hollywood</td><td>05–11/2023</td><td>Consentimento e remuneração para IA e réplicas digitais</td></tr>
-<tr><td>Llama 4 no LMArena</td><td>04/2025</td><td>Novas regras do ranking; desconfiança de benchmarks</td></tr>
-<tr><td>Alucinações em tribunais</td><td>desde 06/2023</td><td>Multas e regras de divulgação; 1.240 casos nos EUA até 07/2026</td></tr>
+<tr><td>Bartz × Anthropic</td><td>decisão 06/2025; acordo aprovado 07/2026</td><td>US$ 1,5 bi; treinar com livro comprado pode, com livro pirata não</td></tr>
+<tr><td>Greves de Hollywood</td><td>05–11/2023</td><td>Uso de IA e de cópias digitais de atores exige permissão e pagamento</td></tr>
+<tr><td>Llama 4 no LMArena</td><td>04/2025</td><td>O ranking muda as regras; cresce a desconfiança nas provas</td></tr>
+<tr><td>Alucinações em tribunais</td><td>desde 06/2023</td><td>Multas a advogados; 1.240 casos nos EUA até 07/2026</td></tr>
 <tr><td>Imagens do Gemini</td><td>02/2024</td><td>Pausa e retomada; debate sobre neutralidade</td></tr>
-<tr><td>Grok</td><td>07/2025 e 01/2026</td><td>Investigação do Ofcom; restrições de imagem</td></tr>
+<tr><td>Grok</td><td>07/2025 e 01/2026</td><td>Investigação no Reino Unido; gerador de imagens restringido</td></tr>
 <tr><td>Deepfakes eleitorais</td><td>2023–2024</td><td>Multa da FCC; Resolução 23.732 do TSE</td></tr>
-<tr><td>Carta pela pausa</td><td>03/2023</td><td>Sem pausa; cúpulas e institutos de segurança</td></tr>
-<tr><td>Energia e água</td><td>relatório IEA 04/2025</td><td>Projeção de ~945 TWh em 2030</td></tr>
+<tr><td>Carta pela pausa</td><td>03/2023</td><td>Nenhuma pausa; governos criam institutos de segurança</td></tr>
+<tr><td>Energia e água</td><td>relatório IEA 04/2025</td><td>Consumo pode mais que dobrar até 2030</td></tr>
 <tr><td>Bolha da IA</td><td>2025–2026</td><td>Debate em aberto</td></tr>
 </table>
 

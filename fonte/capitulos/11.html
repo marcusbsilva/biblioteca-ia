@@ -47,11 +47,12 @@
 <figure><img src="img/11_estatica_dinamica.png"><figcaption>Fluxo típico de investigação combinando análise estática e dinâmica, com hipóteses circulando entre as duas. Fonte: elaboração própria.</figcaption></figure>
 <table>
 <tr><th>Critério</th><th>Estática</th><th>Dinâmica</th></tr>
-<tr><td>Executa o alvo?</td><td>Não</td><td>Sim, em sandbox</td></tr>
-<tr><td>Cobertura</td><td>Todos os caminhos, em teoria</td><td>Só os exercitados</td></tr>
+<tr><td>Executa o alvo?</td><td>Não</td><td>Sim, num ambiente isolado (sandbox)</td></tr>
+<tr><td>Cobertura</td><td>Todos os caminhos, em teoria</td><td>Só os que rodaram no teste</td></tr>
 <tr><td>Ofuscação</td><td>Atrapalha muito</td><td>Atrapalha menos</td></tr>
 <tr><td>Risco</td><td>Baixo</td><td>Alto se o isolamento falhar</td></tr>
-<tr><td>Saída típica</td><td>Estrutura, hipóteses</td><td>Comportamento observado, indicadores de comprometimento</td></tr>
+<tr><td>Resultado</td><td>Mapa do programa e suspeitas</td><td>O que o programa fez: arquivos, conexões</td></tr>
+<tr><td>No dia a dia</td><td>Raio-X de uma encomenda suspeita</td><td>Abrir a caixa numa sala isolada</td></tr>
 </table>
 <p>Na prática, as duas se alimentam: a análise estática levanta hipóteses (“esta função parece cifrar dados”), e a dinâmica as confirma ou descarta observando o comportamento real. Equipes de resposta a incidentes fazem esse ciclo diariamente para extrair indicadores de comprometimento e criar regras de detecção que protegem outras empresas.</p>
 <p>Uma terceira família, a <b>execução simbólica</b>, trata entradas como variáveis e calcula que condições levam a cada caminho; a indústria a usa em <i>fuzzing</i> defensivo para encontrar bugs antes do lançamento.</p>
@@ -98,7 +99,7 @@ cur.execute("SELECT id FROM users WHERE email = ?", (email,))</code></pre>
 <tr><td>Esconder tráfego do provedor de internet</td><td>Sim</td><td>Sim</td></tr>
 <tr><td>Anonimato</td><td>Fraco (confiança no provedor)</td><td>Forte</td></tr>
 <tr><td>Velocidade</td><td>Boa</td><td>Ruim</td></tr>
-<tr><td>Wi-Fi público</td><td>Adequada</td><td>Exagero</td></tr>
+<tr><td>Wi-Fi público</td><td>Adequada</td><td>Desnecessário</td></tr>
 </table>
 <p>Outras ameaças de rede seguem a mesma lógica de camadas. <b>Man-in-the-middle</b> em Wi-Fi público é neutralizado por TLS em tudo e HSTS. <b>DDoS</b> pede CDN com filtragem do provedor, rate limiting no gateway e banco aceitando conexões só do back-end.</p>
 
@@ -115,7 +116,7 @@ cur.execute("SELECT id FROM users WHERE email = ?", (email,))</code></pre>
 <pre><code>from argon2 import PasswordHasher
 ph = PasswordHasher()               # Argon2id, salt automático
 h = ph.hash("frase-senha longa e única")
-ph.verify(h, tentativa)             # lança exceção se não confere</code></pre>
+ph.verify(h, attempt)                # lança exceção se não confere</code></pre>
 <div class="box warn"><b>Atenção</b> É comum ouvir que o SHA-256 é “inquebrável”. Para colisões, na prática, é. Para <b>senhas</b>, não: um SHA-256 sem salt de uma senha comum é descoberto em instantes por dicionário, porque o atacante não inverte a função, apenas testa candidatos prováveis. O que importa para senhas é o hash ser <i>lento</i>. Se um site lhe envia a senha original por e-mail, ele a guarda de forma recuperável; sistemas corretos só permitem <i>redefinir</i>.</div>
 <p>O <b>pepper</b>, um segredo da aplicação guardado fora do banco, é uma camada opcional: protege contra vazamento só do banco, mas perdê-lo invalida todas as senhas.</p>
 
@@ -126,12 +127,12 @@ ph.verify(h, tentativa)             # lança exceção se não confere</code></p
 <tr><td>Confidencialidade</td><td>Cifra-se com a <b>pública do destinatário</b>; só a <b>privada</b> dele decifra</td></tr>
 <tr><td>Assinatura digital</td><td>Assina-se com a <b>própria privada</b>; qualquer um verifica com a pública</td></tr>
 </table>
-<p>No <b>TLS 1.3</b>, uma troca Diffie-Hellman efêmera combina uma chave simétrica de sessão, e o servidor assina a troca para provar identidade. Nos <b>passkeys</b>, o dispositivo guarda uma chave privada por site e assina desafios; não há segredo para ser digitado num site falso, o que os torna resistentes a phishing. Na criptografia <b>ponta a ponta</b> (Signal, WhatsApp), só os aparelhos das pontas têm as chaves. A aula do CS50 lembra a diferença entre segurança e privacidade: com HTTPS o trajeto até o Gmail está protegido, mas o servidor lê seus e-mails; com ponta a ponta, não.</p>
+<p>No <b>TLS 1.3</b>, uma troca Diffie-Hellman efêmera permite que as duas partes combinem uma chave simétrica de sessão, e o servidor assina a troca para provar identidade. Nos <b>passkeys</b>, o dispositivo guarda uma chave privada por site e assina desafios; não há segredo para ser digitado num site falso, o que os torna resistentes a phishing. Na criptografia <b>ponta a ponta</b> (Signal, WhatsApp), só os aparelhos das pontas têm as chaves. A aula do CS50 lembra a diferença entre segurança e privacidade: com HTTPS o trajeto até o Gmail está protegido, mas o servidor lê seus e-mails; com ponta a ponta, não.</p>
 <p>Dizer que se “cifra com a chave privada” para assinar é uma simplificação do RSA de livro-texto que confunde; o termo correto é <i>assinar</i>. O vídeo <a href="https://www.youtube.com/watch?v=5ve4MkHmALc">Privacidade em Risco? Entendendo Criptografia e Algoritmos Hash</a>, de Fernanda Kipper, troca os papéis das chaves num trecho e depois se corrige; a tabela acima é a forma correta. Dois corolários práticos: com <b>criptografia de disco completo</b>, “apagar” um aparelho é descartar a chave; e o ransomware usa a mesma criptografia contra você, por isso a resposta é backup.</p>
 <div class="box tip"><b>Dica</b> Base64 é codificação (reversível sem chave); AES é criptografia (reversível com chave); SHA-256 é hash (não reversível, mas testável); Argon2 é hash de senha (lento de propósito).</div>
 
 <h2>Engenharia social: phishing na era da IA</h2>
-<p>Phishing explora a confiança humana com promessas ou medo, por e-mail, SMS, voz ou QR code. Segundo o relatório IBM Cost of a Data Breach 2024, citado em <a href="https://www.youtube.com/watch?v=nSGQkE67jcg">Phishing Defenses: Top Cybersecurity Strategies to Protect Your Data</a>, foi o 2º vetor mais comum. A IA permite mensagens personalizadas e sem erros, então procurar erros de português deixou de ser defesa. O que funciona: não clicar em links de mensagens, MFA e sobretudo passkeys, DNS filtrante e SPF/DKIM/DMARC no domínio.</p>
+<p>Phishing explora a confiança humana com promessas ou medo, por e-mail, SMS, voz ou QR code. Segundo o relatório IBM Cost of a Data Breach 2024, citado em <a href="https://www.youtube.com/watch?v=nSGQkE67jcg">Phishing Defenses: Top Cybersecurity Strategies to Protect Your Data</a>, o phishing foi o segundo vetor de ataque mais comum. A IA permite mensagens personalizadas e sem erros, então procurar erros de português deixou de ser defesa. O que funciona: não clicar em links de mensagens, MFA e sobretudo passkeys, DNS filtrante e SPF/DKIM/DMARC no domínio.</p>
 
 <h2>Segurança de agentes de IA</h2>
 <div class="box intro"><b>Para começar</b> Um agente de IA é como um estagiário prestativo que obedece a qualquer bilhete que encontra, inclusive um bilhete escondido numa página. Esse é o problema da <b>prompt injection</b>.</div>
@@ -139,12 +140,12 @@ ph.verify(h, tentativa)             # lança exceção se não confere</code></p
 <p>Bruce Schneier e coautores descrevem o <b>promptware</b> (<a href="https://www.youtube.com/watch?v=K68sqG18270">The Promptware Kill Chain: How Prompt Injection Becomes AI Malware</a>) como nova classe de malware, com uma kill chain de sete elos. Os mais traiçoeiros são a <b>persistência</b> (instrução gravada na memória do agente) e o <b>movimento lateral</b> (um assistente de e-mail que reencaminha o payload).</p>
 <figure><img src="img/11_promptware.png"><figcaption>Kill chain de promptware e um controle defensivo associado a cada elo. Fonte: elaboração própria com base em “The Promptware Kill Chain”, IBM Technology.</figcaption></figure>
 <table>
-<tr><th>Camada</th><th>Controle</th></tr>
-<tr><td>Entrada</td><td>Rotular conteúdo não confiável; classificadores de injeção</td></tr>
-<tr><td>Capacidades</td><td>Menor privilégio, sandbox, rede de saída restrita</td></tr>
-<tr><td>Ações</td><td>Humano no loop para compras, envios e exclusões</td></tr>
-<tr><td>Memória</td><td>Proveniência em cada item; não promover conteúdo externo a instrução</td></tr>
-<tr><td>Observabilidade</td><td>Trilha de auditoria de prompts, ferramentas e decisões</td></tr>
+<tr><th>Camada</th><th>Controle, num exemplo simples</th></tr>
+<tr><td>Entrada</td><td>Marcar o que veio de fora: texto de uma página nunca vira ordem</td></tr>
+<tr><td>Capacidades</td><td>Dar só as chaves necessárias, como estagiário sem acesso ao cofre</td></tr>
+<tr><td>Ações</td><td>Pedir confirmação de uma pessoa antes de comprar, enviar ou apagar</td></tr>
+<tr><td>Memória</td><td>Anotar a origem de cada lembrança; bilhete achado na rua não vira regra</td></tr>
+<tr><td>Observabilidade</td><td>Registrar tudo o que o agente leu e fez, como um diário de bordo</td></tr>
 </table>
 <p>Vale também a lição de <a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a>: “sim, 97%” é <i>confiança</i>, não <i>evidência</i>. Decisões de alto risco pedem perguntas menores e verificáveis, sinais independentes e registro de tudo. Agentes com terminal, navegador e mensageiro devem rodar isolados, com acesso restrito a usuários autorizados.</p>
 <p>No caso do agente de compras, discutido em <a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a>, a proposta é um AI gateway que inspeciona três pontos: o pedido do usuário, as requisições do agente e o conteúdo devolvido pelos sites. Um estudo da Meta citado no vídeo registrou sucesso parcial dos ataques em 86% dos casos, mas os agentes muitas vezes não conseguiam concluir o objetivo do atacante: uma “segurança por incompetência” que tende a desaparecer conforme os agentes melhoram.</p>

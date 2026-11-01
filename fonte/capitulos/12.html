@@ -49,11 +49,10 @@
 <p>Renato Augusto dedica dois vídeos à transição para arquitetura. Em <a href="https://www.youtube.com/watch?v=FfigYiI2fKc">Como Se Tornar Um ARQUITETO DE SOLUÇÕES | 4 Passos Que Vão Mudar Sua Carreira de PROGRAMADOR</a> ele separa dois papéis que costumam ser confundidos:</p>
 <table>
 <tr><th></th><th>Arquiteto de software</th><th>Arquiteto de soluções</th></tr>
-<tr><td>Nível</td><td>Low-level design (LLD)</td><td>High-level design (HLD)</td></tr>
-<tr><td>Foco</td><td>Requisitos funcionais, estrutura interna, comunicação entre módulos</td><td>Requisitos não funcionais: latência, vazão, disponibilidade, custo</td></tr>
-<tr><td>Ferramentas mentais</td><td>Camadas (Clean, Hexagonal, Onion), DDD estratégico e tático, padrões de projeto</td><td>Escala vertical/horizontal, cache, filas, bancos por atributo, CDN, multi-região</td></tr>
-<tr><td>Exemplo de requisito</td><td>"O pedido muda de estado só por eventos de domínio"</td><td>"200 ms no p99, 50 mil requisições simultâneas, 99,9% de disponibilidade, sem estourar o orçamento"</td></tr>
-<tr><td>Formação sugerida</td><td>Paradigmas, SOLID/DRY/KISS/YAGNI, padrões</td><td>Fundamentos de SO, redes e armazenamento → nuvem (AWS) → system design → certificação</td></tr>
+<tr><td>Olha para</td><td>Dentro do sistema: como as partes se organizam (low-level design)</td><td>O sistema inteiro: aguentar carga, ficar no ar e caber no orçamento (high-level design)</td></tr>
+<tr><td>Pergunta típica</td><td>"Onde fica cada regra do código?"</td><td>"O site aguenta a abertura de vendas de um show?"</td></tr>
+<tr><td>Exemplo</td><td>Separar a cozinha do salão num restaurante, cada um com sua função</td><td>Decidir quantos caixas abrir num sábado de movimento</td></tr>
+<tr><td>Estudar</td><td>Padrões de projeto, SOLID, DDD (modelar o código pelo negócio)</td><td>Redes, nuvem, cache (guardar respostas prontas), filas, system design</td></tr>
 </table>
 <p>"Arquitetura sem controle de custo é vaidade": o exemplo é a venda de ingressos, que passa de 10 mil visitas por hora a 1 milhão de acessos simultâneos quando abre um show. Em <a href="https://www.youtube.com/watch?v=mKIltWid_L0">Como Virar Um ARQUITETO DE SOFTWARE  | 5 PASSOS Que Vão Mudar Sua Carreira de PROGRAMADOR</a>, Renato Augusto acrescenta que "um diagrama bem feito pode valer mil linhas de código". Com IA, a frase ficou literal: diagrama e spec são o insumo do qual o agente gera as linhas.</p>
 <h3>Escolher linguagem pela área, não pelo hype</h3>
@@ -83,12 +82,13 @@
 <p>O curso de fluência em IA da Anthropic (<a href="https://www.youtube.com/watch?v=W4Ua6XFfX9w">The 4D Framework</a>, <a href="https://www.youtube.com/watch?v=EljzyfdYkrc">A closer look at Delegation</a> e <a href="https://www.youtube.com/watch?v=Y0KidGr9Z2Y">A closer look at Discernment</a>) organiza a colaboração com IA em quatro competências que não dependem de ferramenta, válidas na automação, no aumento e na agência.</p>
 <figure><img src="img/12_quatro_ds.png"><figcaption>Os quatro Ds da fluência em IA e os destinos possíveis da delegação. O ciclo descrição ↔ discernimento é o núcleo do trabalho diário. Fonte: elaboração própria com base no curso "AI Fluency: Framework &amp; Foundations" (Anthropic).</figcaption></figure>
 <table>
-<tr><th>Competência</th><th>Pergunta-chave</th><th>Subdivisões e exemplos</th></tr>
-<tr><td>Delegação</td><td>O que faço eu e o que a IA faz?</td><td>Consciência do problema (como é o sucesso?), consciência da plataforma (pontos fortes e limites de cada sistema), divisão de tarefas. "Os melhores colaboradores de IA são especialistas no seu campo primeiro."</td></tr>
-<tr><td>Descrição</td><td>Comuniquei o que quero com contexto suficiente?</td><td>Produto (formato, público), processo (abordagem), desempenho (tom, concisão). "Faça um logo" contra valores, público, cores e referências.</td></tr>
-<tr><td>Discernimento</td><td>O resultado é bom e o processo foi sólido?</td><td>Produto (correto, coerente, útil?), processo (erros lógicos, fixação num detalhe, IA reinserindo ideias já rejeitadas), desempenho (a interação está produtiva?)</td></tr>
-<tr><td>Diligência</td><td>Estou usando de forma responsável?</td><td>Viés (triagem de candidatos), dados sensíveis, transparência sobre o uso de IA, assumir a responsabilidade pelo resultado</td></tr>
+<tr><th>Competência</th><th>Pergunta-chave</th><th>Exemplo do dia a dia</th></tr>
+<tr><td>Delegação</td><td>O que faço eu e o que a IA faz?</td><td>Você escolhe o tema da festa; a IA lista os convidados e monta a planilha.</td></tr>
+<tr><td>Descrição</td><td>Expliquei bem o que quero?</td><td>Em vez de "faça um logo", dizer público, cores e o estilo desejado.</td></tr>
+<tr><td>Discernimento</td><td>O resultado está bom?</td><td>Conferir a receita sugerida antes de cozinhar para dez pessoas.</td></tr>
+<tr><td>Diligência</td><td>Estou usando com responsabilidade?</td><td>Não colar dados de clientes no chat e avisar quando o texto veio da IA.</td></tr>
 </table>
+<p>Como diz o curso, "os melhores colaboradores de IA são especialistas no seu campo primeiro".</p>
 <p>Um bom feedback de discernimento diz qual é o problema, por que é um problema e o que mudar. Às vezes o erro está na delegação: a ferramenta ou a abordagem era a errada. Os quatro Ds são a versão para usuários do que os capítulos técnicos chamam de spec, harness, sensores e guardrails.</p>
 
 <div class="box fact"><b>Você sabia?</b> Em “The Mythical Man-Month” (1975), Fred Brooks, gerente do sistema OS/360 da IBM, formulou a Lei de Brooks: adicionar pessoas a um projeto atrasado o atrasa ainda mais. O motivo é o custo de comunicação e de integração, que cresce com o tamanho da equipe. A pergunta voltou com agentes: mais agentes também exigem mais coordenação.</div>
@@ -110,16 +110,16 @@
 <h3>Métricas como guias, não metas</h3>
 <table>
 <tr><th>Framework</th><th>O que mede</th><th>Uso com IA</th></tr>
-<tr><td>DORA</td><td>Lead/cycle time, frequência de deploy, taxa de falha de mudança, tempo de recuperação</td><td>Detecta se o volume maior de código gerado aumenta a taxa de falha</td></tr>
-<tr><td>SPACE</td><td>Satisfação, Performance, Atividade, Colaboração (Communication), Eficiência/flow</td><td>Evita reduzir produtividade a "linhas" ou "PRs"</td></tr>
-<tr><td>DX Core 4</td><td>Velocidade, efetividade, qualidade, impacto</td><td>Acrescenta dimensões de IA: utilização, impacto e custo</td></tr>
+<tr><td>DORA</td><td>Rapidez e segurança das entregas (deploys, falhas, tempo para consertar)</td><td>Mostra se mais código gerado está quebrando mais coisas</td></tr>
+<tr><td>SPACE</td><td>Satisfação, desempenho, atividade, colaboração e foco</td><td>Evita medir só "linhas de código" ou número de pull requests</td></tr>
+<tr><td>DX Core 4</td><td>Velocidade, efetividade, qualidade e impacto</td><td>Acrescenta uso, impacto e custo da IA</td></tr>
 </table>
 <p>Pela lei de Goodhart, quando uma medida vira meta, deixa de ser boa medida. O vídeo <a href="https://www.youtube.com/watch?v=FheRqx7DjbU">Goodbye Tokenmaxxing: From AI Usage to Agentic AI Outcomes</a> mostra a versão atual: o <b>tokenmaxxing</b>, medir o sucesso da IA pelo consumo de tokens, gera dashboards que as pessoas aprendem a manipular. Cortar tokens às cegas erra pelo outro lado: tirar 500 tokens de contexto arquitetural pode custar 5.000 em retrabalho. A proposta é o <b>valuemaxxing</b>: medir deploys concluídos, retrabalho evitado e falhas corrigidas.</p>
 <table>
-<tr><th>Fase</th><th>Métrica dominante</th><th>Falha típica</th></tr>
-<tr><td>Tokenmaxxing</td><td>Tokens consumidos, número de usuários ativos</td><td>Confundir atividade com resultado; dashboards manipuláveis</td></tr>
-<tr><td>Minimização</td><td>Custo por usuário, tokens por tarefa</td><td>Cortar contexto útil e gerar retrabalho caro</td></tr>
-<tr><td>Valuemaxxing</td><td>Resultado por custo: deploys, retrabalho evitado, falhas corrigidas</td><td>Exige instrumentação que ligue consumo a resultado</td></tr>
+<tr><th>Fase</th><th>O que se mede</th><th>Problema ou exigência</th></tr>
+<tr><td>Tokenmaxxing</td><td>Quantos tokens se gastou</td><td>Como medir uma academia pelos minutos na esteira, não pelo condicionamento</td></tr>
+<tr><td>Minimização</td><td>Custo por tarefa</td><td>Economizar no ingrediente e ter de refazer o prato</td></tr>
+<tr><td>Valuemaxxing</td><td>Resultado por real gasto</td><td>Exige registrar o que cada gasto produziu</td></tr>
 </table>
 <h3>Custo: API, assinatura ou pod próprio?</h3>
 <p>Usar IA custa de três formas. A <b>assinatura</b> é como academia: valor fixo mensal com limites de uso. A <b>API</b> é como conta de luz: paga-se por consumo, em <i>tokens</i> (mil tokens ≈ 750 palavras em inglês). O <b>hardware próprio</b> é como comprar um carro em vez de pegar táxi; uma variante é o <i>pod</i>, uma máquina com GPUs alugada por hora na nuvem para rodar um modelo aberto.</p>
@@ -132,10 +132,10 @@
 </ul>
 <p>A regra prática que sai daí lembra a decisão on-premise × nuvem de Livro 3, Capítulo 2 (Hardware e IA local). API é melhor para carga variável, qualidade máxima e times pequenos. Pod próprio compensa com carga alta e estável, dados que não podem sair de casa e equipe capaz de operar o serving. E muitas tarefas nem precisam de LLM generativo: um classificador ou um modelo pequeno resolve com uma fração do custo.</p>
 <pre><code># Ponto de equilíbrio aproximado (API × pod), em sessões-hora por mês
-custo_pod_mes   = 36 * 24 * 30           # US$ 25.920 com o nó ligado 24/7
-capacidade      = 32 * 24 * 30           # 23.040 sessões-hora
-custo_api_sessao = tokens_por_hora * preco_por_token   # mede no seu uso real
-# o pod compensa se: utilização × capacidade × custo_api_sessao > custo_pod_mes
+pod_cost_month   = 36 * 24 * 30          # US$ 25.920 com o nó ligado 24/7
+capacity         = 32 * 24 * 30          # 23.040 sessões-hora
+api_cost_session = tokens_per_hour * price_per_token   # medir no seu uso real
+# o pod compensa se: utilization * capacity * api_cost_session > pod_cost_month
 # + custo de engenharia para operar o serving (que não é zero)</code></pre>
 <h4>Assinar ou rodar local: o que compensa?</h4>
 <div class="box intro"><b>Para começar</b> Vale comprar uma placa de vídeo e rodar a IA em casa? Para a maioria, a assinatura ainda é mais barata e entrega modelos melhores; rodar local vence quando privacidade, volume alto, uso offline ou aprendizado pesam mais. Preços a seguir são aproximados, em dólares, de out/2026.</div>
@@ -144,15 +144,11 @@ custo_api_sessao = tokens_por_hora * preco_por_token   # mede no seu uso real
 <figure><img src="img/12_breakeven.png"><figcaption>Custo acumulado em 3 anos. Premissas: assinaturas de US$ 20 e US$ 200/mês; API com 30 milhões de tokens/mês a US$ 3 por milhão (≈ US$ 90/mês); PC com Arc B580 a US$ 900 (250 W, 4 h/dia); PC com RTX 5090 a US$ 6.000 (650 W, 6 h/dia); energia a US$ 0,15/kWh; sem revenda. Preços aproximados de out/2026. Fonte: elaboração própria.</figcaption></figure>
 <p>Contra uma assinatura de US$ 20, nenhum PC se paga em três anos. Contra US$ 200/mês ou uma conta de API de ~US$ 90/mês, um PC barato empata em 4 a 10 meses. Mas <b>a comparação só vale se o modelo local fizer o mesmo trabalho</b>: um modelo de 12 GB não substitui um de fronteira num agente de código complexo; empata em resumos, classificação, extração, RAG interno, tradução e transcrição.</p>
 
-<table>
-<tr><th>Critério</th><th>Assinatura</th><th>API</th><th>Local (PC ou servidor próprio)</th></tr>
-<tr><td>Qualidade de ponta</td><td>Vence: acesso aos melhores modelos</td><td>Vence: os mesmos modelos, com controle fino</td><td>Perde no topo; empata em tarefas simples e médias</td></tr>
-<tr><td>Privacidade e dados sensíveis</td><td>Depende da política do plano</td><td>Contratos empresariais ajudam</td><td>Vence: nada sai da máquina</td></tr>
-<tr><td>Volume alto e constante</td><td>Limites de uso atrapalham</td><td>Custo cresce linearmente</td><td>Vence: custo marginal ≈ energia</td></tr>
-<tr><td>Offline</td><td>Não</td><td>Não</td><td>Vence</td></tr>
-<tr><td>Integração em produto</td><td>Não serve (uso pessoal)</td><td>Vence: padrão do mercado</td><td>Possível, mas exige operar o serving</td></tr>
-<tr><td>Esforço de manutenção</td><td>Nenhum</td><td>Baixo</td><td>Alto: drivers, runtimes, quantizações, atualizações</td></tr>
-</table>
+<ul>
+<li><b>Assinatura</b>: melhores modelos e zero manutenção; tem limites de uso e não serve para embutir num produto.</li>
+<li><b>API</b>: os mesmos modelos de ponta, pagos por uso; é o padrão para colocar IA dentro de um produto.</li>
+<li><b>Local</b>: vence em privacidade (nada sai da máquina), uso offline e volume alto (o custo extra é só a energia); perde nas tarefas mais difíceis e exige manutenção (drivers, atualizações).</li>
+</ul>
 <p>A melhor resposta costuma ser <b>híbrida</b>: assinatura ou API para as tarefas difíceis e um modelo local para o volume repetitivo e os dados que não podem sair de casa, com um roteador que manda cada tarefa ao modelo mais barato que dá conta.</p>
 
 <p><b>Quanta memória um modelo precisa?</b> Os parâmetros precisam caber na memória da placa (VRAM) ou na memória unificada. A <i>quantização</i> guarda cada número com menos bits: FP16 = 2 bytes por parâmetro, Q8 ≈ 1 byte, Q4 ≈ 0,5–0,6 byte.</p>
@@ -172,14 +168,13 @@ Exemplo: modelo denso de 27B em Q4_K_M, contexto de 32 mil tokens
 <p>O KV cache cresce linearmente com o contexto, por isso um modelo "cabe" com 4 mil tokens e não com 128 mil. Em modelos MoE (Livro 1, Capítulo 2 (LLMs, Transformers e MoE)), só os parâmetros ativos são lidos a cada token, então parte dos especialistas pode ficar na RAM do sistema, com a VRAM servindo de cache dos mais usados.</p>
 
 <p><b>Principais modelos abertos para rodar local (out/2026).</b> Memória estimada com a fórmula acima, com folga para 8 a 16 mil tokens de contexto.</p>
-<table>
-<tr><th>Família</th><th>Tamanhos de destaque</th><th>Memória aprox. Q4</th><th>Memória aprox. Q8</th><th>Uso indicado</th></tr>
-<tr><td>Qwen 3.5 / 3.6 / 3.8 (Alibaba, Apache 2.0)</td><td>0,8B a 14B; 27B denso; MoE de 30–35B com ~3B ativos; Qwen3.8 Flash-Next (~125B, ~6B ativos)</td><td>4B: 3 GB · 14B: 9 GB · 27B: 17–20 GB · 35B-A3B: 21 GB · Flash-Next: ~70 GB</td><td>4B: 5 GB · 14B: 16 GB · 27B: 30 GB · 35B-A3B: 37 GB · Flash-Next: ~130 GB</td><td>Uso geral, código, agentes, multilíngue (bom português). O 27B em Q8 tirou 80 no benchmark de Akita; o Flash-Next em 3 bits numa RTX 5090 tirou 91</td></tr>
-<tr><td>Gemma 4 (Google, Apache 2.0)</td><td>E2B, E4B; 26B-A4B (MoE); 31B denso</td><td>E4B: 4 GB · 26B-A4B: 16 GB · 31B: 19–22 GB</td><td>E4B: 6 GB · 26B-A4B: 28 GB · 31B: 34 GB</td><td>Multimodal (imagem, áudio nos menores), resumo, assistentes; E2B/E4B em notebooks e celulares</td></tr>
-<tr><td>gpt-oss (OpenAI, Apache 2.0)</td><td>20b, 120b (MoE)</td><td>20b: ~13–16 GB (formato nativo de 4 bits) · 120b: ~65 GB</td><td>(distribuído já quantizado)</td><td>Raciocínio e uso de ferramentas; o 20b é a opção clássica para placas de 16 GB; o 120b roda bem em 128 GB de memória unificada</td></tr>
-<tr><td>Mistral (Apache 2.0 na linha Small)</td><td>Mistral Small 3.x 24B; Devstral 24B</td><td>14–16 GB</td><td>25–27 GB</td><td>Devstral: agentes de código numa placa de 24 GB ou num Mac de 32 GB; Small: produtos comerciais com function calling</td></tr>
-<tr><td>DeepSeek (MIT)</td><td>V4 Flash (284B, 13B ativos); V4 Pro (1,6T)</td><td>Flash: ~160 GB (3 bits: ~110 GB)</td><td>Flash: ~300 GB</td><td>Qualidade próxima do topo; Flash em estação de 128–192 GB com quantização agressiva; Pro só em cluster</td></tr>
-</table>
+<ul>
+<li><b>Qwen 3.5 / 3.6 / 3.8</b> (Alibaba, Apache 2.0): uso geral, código, agentes e bom português. Memória em Q4 / Q8: 4B ≈ 3 / 5 GB; 14B ≈ 9 / 16 GB; 27B ≈ 17–20 / 30 GB; 35B-A3B (MoE) ≈ 21 / 37 GB; Flash-Next (~125B, ~6B ativos) ≈ 70 / 130 GB. No benchmark de Akita, o 27B em Q8 tirou 80 e o Flash-Next em 3 bits numa RTX 5090 tirou 91.</li>
+<li><b>Gemma 4</b> (Google, Apache 2.0): entende imagem (e áudio, nos menores); bom para resumos e assistentes. E4B ≈ 4 / 6 GB, roda em notebooks e celulares; 26B-A4B (MoE) ≈ 16 / 28 GB; 31B ≈ 19–22 / 34 GB.</li>
+<li><b>gpt-oss</b> (OpenAI, Apache 2.0): raciocínio e uso de ferramentas; já vem em 4 bits. O 20b (~13–16 GB) é a opção clássica para placas de 16 GB; o 120b (~65 GB) roda bem com 128 GB de memória unificada.</li>
+<li><b>Mistral Small / Devstral 24B</b> (Apache 2.0): ≈ 14–16 GB em Q4 e 25–27 GB em Q8. Devstral serve para agentes de código numa placa de 24 GB ou num Mac de 32 GB.</li>
+<li><b>DeepSeek V4</b> (MIT): qualidade próxima do topo, mas enorme. O Flash (284B, 13B ativos) pede ~110–160 GB mesmo comprimido; o Pro (1,6T) só roda em cluster.</li>
+</ul>
 <p>Tamanho não garante qualidade: no benchmark de Akita, um modelo de 1 trilhão de parâmetros tirou 46, enquanto modelos de 27B passaram de 80. Q4 costuma ser o melhor custo-benefício pessoal; o que mais derruba a qualidade local é configuração errada.</p>
 
 <p><b>Hardware.</b> A regra é <b>memória primeiro, velocidade depois</b>: se o modelo não cabe, roda dividido com a RAM e fica de 5 a 20 vezes mais lento. A velocidade de geração depende sobretudo da largura de banda da memória. Em 2026, a escassez de memória elevou bastante o preço das placas.</p>
@@ -194,9 +189,9 @@ Exemplo: modelo denso de 27B em Q4_K_M, contexto de 32 mil tokens
 <p><b>Software.</b> NVIDIA (CUDA) é o padrão: tudo funciona primeiro ali. AMD (ROCm, ou Vulkan no Windows), Intel (oneAPI/SYCL, OpenVINO) e Apple (Metal, MLX) funcionam bem para inferência, com suporte mais tardio em ferramentas novas. Ollama e LM Studio são as portas de entrada; llama.cpp dá mais controle; vLLM e SGLang servem vários usuários.</p>
 <table>
 <tr><th>Perfil</th><th>Recomendação</th><th>Por quê</th></tr>
-<tr><td>Iniciante / curioso</td><td>Assinatura de US$ 20 + experimentar modelos pequenos no PC que já tem (Ollama com Qwen 4–8B ou Gemma 4 E4B). Se quiser placa, Arc B580 12 GB ou RTX 3060 12 GB usada</td><td>Aprende o essencial gastando pouco; o modelo de ponta da assinatura continua disponível para o que importa</td></tr>
-<tr><td>Dev individual</td><td>Assinatura intensiva (US$ 100–200) ou API para agentes de código + placa de 16–24 GB (5060 Ti 16 GB, 3090 usada, 7900 XTX) ou Mac com 32–64 GB para RAG, autocompletar e dados privados</td><td>Modelo de fronteira onde a qualidade faz diferença; local para volume e privacidade</td></tr>
-<tr><td>Time pequeno (3–15 pessoas)</td><td>API com controle de custo e roteamento por tarefa + um servidor compartilhado (RTX 5090 / PRO, Strix Halo 128 GB ou Mac Studio) servindo um modelo aberto via vLLM ou Ollama para tarefas internas</td><td>Um servidor atende várias pessoas e amortiza o custo; a API cobre picos e tarefas difíceis. Rode evals antes de trocar qualquer modelo</td></tr>
+<tr><td>Iniciante / curioso</td><td>Assinatura de US$ 20 e modelos pequenos no PC que já tem (Ollama com Qwen 4–8B ou Gemma 4 E4B); se quiser placa, Arc B580 ou RTX 3060 usada, de 12 GB</td><td>Aprende gastando pouco</td></tr>
+<tr><td>Dev individual</td><td>Assinatura de US$ 100–200 ou API para agentes de código, mais uma placa de 16–24 GB ou um Mac de 32–64 GB</td><td>Ponta onde a qualidade importa; local para volume e privacidade</td></tr>
+<tr><td>Time pequeno (3–15 pessoas)</td><td>API com controle de custo e um servidor compartilhado rodando um modelo aberto para tarefas internas</td><td>Um servidor atende várias pessoas; a API cobre picos. Rode evals (testes de qualidade) antes de trocar de modelo</td></tr>
 </table>
 <div class="box key"><b>Em resumo</b> Assinatura vence no uso pessoal moderado; API, em produtos e carga variável; local, em privacidade, volume constante e offline. A memória define que modelo roda, a largura de banda define a velocidade. Antes de comprar hardware, teste o modelo pretendido num serviço de nuvem barato.</div>
 
@@ -279,14 +274,14 @@ Exemplo: modelo denso de 27B em Q4_K_M, contexto de 32 mil tokens
 <p>A ISO/IEC 42001:2023 faz para a IA o que a 27001 faz para a segurança da informação: especifica um <b>AIMS</b> (<i>AI Management System</i>) auditável e certificável. Segue a estrutura harmonizada das normas ISO (cláusulas 4 a 10), integrável a um SGSI 27001 ou a um sistema 9001, e traz no Anexo A controles de referência.</p>
 <figure><img src="img/12_iso42001_pdca.png"><figcaption>O ciclo PDCA da ISO/IEC 42001 aplicado à IA, com as quatro camadas de risco. Fonte: elaboração própria com base em "How to Manage Your AI Before It Makes the Wrong Decision" (IBM Technology).</figcaption></figure>
 <table>
-<tr><th>Cláusula</th><th>Conteúdo</th><th>Exemplo concreto num produto com LLM</th></tr>
-<tr><td>4 Contexto</td><td>Escopo, partes interessadas, obrigações regulatórias</td><td>Inventário de sistemas de IA (incluindo copilotos e agentes internos) e de que dados eles tocam</td></tr>
-<tr><td>5 Liderança</td><td>Responsável pela IA, política de IA, papéis</td><td>Dono nomeado para cada sistema; política de uso aceitável de IA</td></tr>
-<tr><td>6 Planejamento</td><td>Avaliação de risco e de impacto, apetite e tolerância, plano de tratamento, objetivos mensuráveis</td><td>Matriz de risco por caso de uso; limite de taxa de alucinação aceitável num eval</td></tr>
-<tr><td>7 Suporte</td><td>Recursos, competência, documentação, comunicação</td><td>Model cards, registro de prompts e versões; treinamento em fluência em IA</td></tr>
-<tr><td>8 Operação</td><td>Ciclo de vida, gestão de mudanças, fornecedores</td><td>Troca de modelo do fornecedor tratada como mudança: rodar a suíte de evals antes</td></tr>
-<tr><td>9 Avaliação</td><td>Monitoramento, auditoria interna, revisão pela direção</td><td>Dashboards de drift, viés e custo; amostragem de saídas para revisão humana</td></tr>
-<tr><td>10 Melhoria</td><td>Incidentes, não conformidades, ação corretiva</td><td>Post-mortem de incidente de prompt injection com correção no harness</td></tr>
+<tr><th>Cláusula</th><th>Pergunta-guia</th><th>Exemplo simples</th></tr>
+<tr><td>4 Contexto</td><td>Onde usamos IA?</td><td>Uma lista de todos os robôs e assistentes da empresa.</td></tr>
+<tr><td>5 Liderança</td><td>Quem responde?</td><td>Cada assistente tem um dono com nome e sobrenome.</td></tr>
+<tr><td>6 Planejamento</td><td>O que pode dar errado?</td><td>Aceitar no máximo 1 resposta inventada a cada 100 testadas.</td></tr>
+<tr><td>7 Suporte</td><td>Está documentado e a equipe sabe usar?</td><td>Um manual de cada assistente e um curso curto para o time.</td></tr>
+<tr><td>8 Operação</td><td>Mudanças são controladas?</td><td>Trocar o modelo só depois de repetir os testes, como numa revisão de carro.</td></tr>
+<tr><td>9 Avaliação</td><td>Continua funcionando bem?</td><td>Toda semana, uma pessoa lê 20 respostas sorteadas.</td></tr>
+<tr><td>10 Melhoria</td><td>Aprendemos com os erros?</td><td>Depois de um incidente, registrar a causa e corrigir o processo.</td></tr>
 </table>
 <p>A abordagem é baseada em risco, em quatro camadas: <b>dados</b> (viés, qualidade, procedência), <b>modelo</b> (acurácia, explicabilidade, robustez), <b>sistema</b> (integrações, segurança, permissões) e <b>uso</b> (mau uso, consequências não intencionais).</p>
 
@@ -305,7 +300,7 @@ Exemplo: modelo denso de 27B em Q4_K_M, contexto de 32 mil tokens
 <table>
 <tr><th>Dimensão</th><th>NIST AI RMF</th><th>ISO/IEC 42001</th><th>EU AI Act</th></tr>
 <tr><td>Natureza</td><td>Framework de boas práticas</td><td>Norma de sistema de gestão</td><td>Regulamento (lei)</td></tr>
-<tr><td>Obrigatoriedade</td><td>Voluntário</td><td>Voluntária (pode ser exigida por contrato)</td><td>Obrigatório para quem coloca IA no mercado da UE ou cujo resultado é usado na UE</td></tr>
+<tr><td>Obrigatoriedade</td><td>Voluntário</td><td>Voluntária (pode ser exigida por contrato)</td><td>Obrigatório para quem oferece IA na UE</td></tr>
 <tr><td>Certificação</td><td>Não</td><td>Sim, por auditoria de terceira parte</td><td>Avaliação de conformidade e marcação CE para alto risco</td></tr>
 <tr><td>Estrutura</td><td>Govern, Map, Measure, Manage</td><td>Cláusulas 4–10 (PDCA) + controles do Anexo A</td><td>Níveis de risco + regime para GPAI</td></tr>
 <tr><td>Foco</td><td>Identificar e medir riscos; características de confiabilidade</td><td>Governança organizacional, papéis, evidências, melhoria contínua</td><td>Proteger saúde, segurança e direitos fundamentais</td></tr>

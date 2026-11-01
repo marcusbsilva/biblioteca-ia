@@ -45,12 +45,12 @@
 
 <table>
 <tr><th>Comunidade</th><th>Tipo de conhecimento</th><th>Relação com a IA</th></tr>
-<tr><td>Stack Overflow</td><td>Perguntas e respostas votadas</td><td>Licenciado para Google e OpenAI; perguntas em forte queda</td></tr>
-<tr><td>Reddit</td><td>Conversa, experiência, opinião</td><td>Licenciado para Google e OpenAI; r/LocalLLaMA como laboratório</td></tr>
-<tr><td>Blogs pessoais</td><td>Análises longas e assinadas</td><td>Testes independentes e didática</td></tr>
-<tr><td>GitHub</td><td>Código, issues, revisões</td><td>Base do treino de modelos de código</td></tr>
-<tr><td>Hugging Face</td><td>Pesos e datasets</td><td>Distribuição neutra de modelos abertos</td></tr>
-<tr><td>CSDN e ModelScope</td><td>Blogs, fórum e modelos em chinês</td><td>Ecossistema de Qwen e DeepSeek</td></tr>
+<tr><td>Stack Overflow</td><td>Perguntas e respostas votadas</td><td>Vendeu o acervo a Google e OpenAI; recebe cada vez menos perguntas</td></tr>
+<tr><td>Reddit</td><td>Conversa, experiência, opinião</td><td>Vendeu o acervo a Google e OpenAI; no r/LocalLLaMA, gente comum testa modelos em casa</td></tr>
+<tr><td>Blogs pessoais</td><td>Análises longas e assinadas</td><td>Autores testam modelos por conta própria e explicam o resultado</td></tr>
+<tr><td>GitHub</td><td>Código, issues, revisões</td><td>Os assistentes de código aprenderam lendo esse código</td></tr>
+<tr><td>Hugging Face</td><td>Pesos e datasets</td><td>Lugar onde todos publicam modelos abertos para download</td></tr>
+<tr><td>CSDN e ModelScope</td><td>Blogs, fórum e modelos em chinês</td><td>Onde se discutem modelos chineses como Qwen e DeepSeek</td></tr>
 </table>
 
 <h3>O paradoxo: a IA comeu o mural</h3>
@@ -91,13 +91,13 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available())"</c
 <p>Há três motivos para saber Linux: o código quase certamente vai rodar em Linux (servidor, container, CI); os agentes de código trabalham pelo terminal, e você precisa ler o que eles executam; e a documentação de IA assume Linux como padrão. Não é preciso virar administrador de sistemas. A aula <a href="https://www.youtube.com/watch?v=eepzDoovmAw">CS50x em Português - Aula 1 - C</a> já apresenta os comandos básicos, e o roteiro abaixo cobre o dia a dia:</p>
 <table>
 <tr><th>Tema</th><th>O que aprender</th><th>Por que importa em IA</th></tr>
-<tr><td>Navegação e arquivos</td><td><code>ls</code>, <code>cd</code>, <code>find</code>, <code>grep</code>, <code>less</code></td><td>Achar modelos, logs e configurações</td></tr>
-<tr><td>Permissões</td><td><code>chmod</code>, <code>chown</code>, <code>sudo</code>, grupos</td><td>Acesso à GPU e segurança de agentes</td></tr>
-<tr><td>Processos e recursos</td><td><code>ps</code>, <code>htop</code>, <code>kill</code>, <code>free</code>, <code>df</code></td><td>Diagnosticar memória e travamentos</td></tr>
-<tr><td>Pacotes e ambientes</td><td><code>apt</code>/<code>dnf</code>, <code>venv</code>, <code>uv</code></td><td>Versões compatíveis de bibliotecas</td></tr>
-<tr><td>Rede e acesso remoto</td><td><code>ssh</code>, <code>scp</code>, <code>curl</code></td><td>Usar servidores com GPU alugados</td></tr>
-<tr><td>Serviços e containers</td><td><code>systemctl</code>, <code>journalctl</code>, Docker/Podman</td><td>Manter um servidor de inferência</td></tr>
-<tr><td>Shell script</td><td>Variáveis, laços, pipes (<code>|</code>), redirecionamento</td><td>Automatizar e entender o que o agente executa</td></tr>
+<tr><td>Navegação e arquivos</td><td><code>ls</code>, <code>cd</code>, <code>find</code>, <code>grep</code>, <code>less</code></td><td>Achar um modelo baixado ou o registro de um erro</td></tr>
+<tr><td>Permissões</td><td><code>chmod</code>, <code>chown</code>, <code>sudo</code>, grupos</td><td>Liberar a placa de vídeo sem dar acesso a tudo</td></tr>
+<tr><td>Processos e recursos</td><td><code>ps</code>, <code>htop</code>, <code>kill</code>, <code>free</code>, <code>df</code></td><td>Descobrir por que o computador travou</td></tr>
+<tr><td>Pacotes e ambientes</td><td><code>apt</code>/<code>dnf</code>, <code>venv</code>, <code>uv</code></td><td>Instalar a versão certa de cada biblioteca</td></tr>
+<tr><td>Rede e acesso remoto</td><td><code>ssh</code>, <code>scp</code>, <code>curl</code></td><td>Usar de casa um computador com GPU alugado</td></tr>
+<tr><td>Serviços e containers</td><td><code>systemctl</code>, <code>journalctl</code>, Docker/Podman</td><td>Deixar um modelo respondendo dia e noite</td></tr>
+<tr><td>Shell script</td><td>Variáveis, laços, pipes (<code>|</code>), redirecionamento</td><td>Repetir tarefas sem digitar tudo e ler o que o agente faz</td></tr>
 </table>
 <div class="box tip"><b>Dica</b> Não é preciso formatar o computador: no Windows, o WSL2 instala um Ubuntu completo (<code>wsl --install</code>) com acesso à GPU; no macOS, o terminal já é Unix.</div>
 
@@ -121,7 +121,7 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available())"</c
 <p><b>Consumir e devolver o mínimo.</b> Vote na resposta que resolveu seu problema, deixe uma estrela no repositório ou diga em que versão funcionou. Quando usar IA para resolver algo não documentado, publique a solução depois.</p>
 <p><b>Perguntar e reportar bem.</b> Saber perguntar também melhora seus prompts (Livro 2, Capítulo 1 (Prompts na prática)). Antes de abrir uma pergunta ou issue:</p>
 <ol>
-<li>Pesquise se já existe, incluindo issues fechados.</li>
+<li>Pesquise se já existe, incluindo issues fechadas.</li>
 <li>Descreva o objetivo, não só o erro.</li>
 <li>Inclua versões, o comando exato e a mensagem de erro completa como texto.</li>
 <li>Monte um <b>exemplo mínimo reproduzível</b> e diga o que já tentou.</li>

@@ -25,28 +25,29 @@
 <div class="box tip"><b>Dica</b> Pesquise todo pacote antes de instalar (idade, downloads, mantenedores); use registro interno com lista aprovada; trave versões com lockfile; rode SCA; e não deixe agentes instalarem dependências sem aprovação humana.</div>
 
 <h3>Segredos vazados</h3>
-<p>Segundo a GitGuardian, cerca de 29 milhões de segredos (senhas, chaves de API, tokens) vazaram no GitHub público em 2025 (+34%). Commits feitos com ajuda de IA vazaram a cerca do <b>dobro</b> da média, e mais de 24 mil segredos apareceram em configurações de servidores MCP (Livro 2, Capítulo 4 (Agentes e MCP)). As regras, lembradas em <a href="https://www.youtube.com/watch?v=aGVN6aHKkE0">O MÍNIMO que um dev precisa saber sobre segurança</a>: <code>.env</code> fora do Git, segredos num cofre e, se uma senha foi commitada, <b>trocá-la</b>, porque apagar o commit não a "desvaza".</p>
+<p>Segundo a GitGuardian, cerca de 29 milhões de segredos (senhas, chaves de API, tokens) vazaram no GitHub público em 2025 (+34%). Commits feitos com ajuda de IA vazaram segredos em cerca do <b>dobro</b> da taxa média, e mais de 24 mil segredos apareceram em configurações de servidores MCP (Livro 2, Capítulo 4 (Agentes e MCP)). As regras, lembradas em <a href="https://www.youtube.com/watch?v=aGVN6aHKkE0">O MÍNIMO que um dev precisa saber sobre segurança</a>: <code>.env</code> fora do Git, segredos num cofre e, se uma senha foi commitada, <b>trocá-la</b>, porque apagar o commit não a "desvaza".</p>
 
 <h3>Prompt injection em agentes</h3>
-<p>Num LLM, dados e instruções são o mesmo texto. <b>Prompt injection</b> é colocar, no texto que a IA vai ler, instruções que ela obedece; é o risco número 1 do OWASP Top 10 para LLMs. O vídeo <a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a>, da IBM Technology, separa a injeção <b>direta</b> da <b>indireta</b> (escondida numa página, PDF ou e-mail). Em <a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a>, um agente de compras paga o dobro por causa de texto preto sobre fundo preto.</p>
+<p>Num LLM (modelo de linguagem), dados e instruções são o mesmo texto. <b>Prompt injection</b> é colocar, no texto que a IA vai ler, instruções que ela obedece; é o risco número 1 do OWASP Top 10 para LLMs. O vídeo <a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a>, da IBM Technology, separa a injeção <b>direta</b> da <b>indireta</b> (escondida numa página, PDF ou e-mail). Em <a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a>, um agente de compras paga o dobro por causa de texto preto sobre fundo preto.</p>
 <p>Agentes de código leem issues, comentários e READMEs, qualquer um deles com possíveis instruções maliciosas. No caso <b>s1ngularity</b> (agosto de 2025), uma versão maliciosa do pacote Nx usou as CLIs de IA instaladas na máquina da vítima para procurar credenciais, expondo 2.180 contas. Skills de terceiros também são porta de entrada, como alerta <a href="https://www.youtube.com/watch?v=qYNs80FKIVc">5 Best Practices for Building AI Agent Skills</a>.</p>
 
 <h2>Padrões e normas</h2>
 <div class="box intro"><b>Para começar</b> Software tem seus "códigos de obra", e a IA os torna mais importantes: viram o gabarito para conferir o que a máquina produziu e podem virar instruções ("siga o OWASP ASVS nível 2") no arquivo de regras do agente.</div>
 <table>
-<tr><th>Referência</th><th>O que é</th><th>Como usar com IA</th></tr>
-<tr><td><b>OWASP Top 10:2025</b></td><td>Os dez riscos web mais críticos; controle de acesso quebrado em 1.º, e duas novas: cadeia de suprimentos e tratamento de condições excepcionais</td><td>Checklist mínimo de revisão e base do prompt do agente revisor</td></tr>
-<tr><td><b>OWASP Top 10 for LLM 2025</b></td><td>Prompt injection, vazamento de dados, agência excessiva, consumo ilimitado e outros</td><td>Vale para o produto e para o próprio uso de agentes no desenvolvimento</td></tr>
-<tr><td><b>OWASP ASVS</b></td><td>Requisitos verificáveis em três níveis</td><td>Virar critérios de aceite e testes</td></tr>
-<tr><td><b>NIST SSDF</b> (SP 800-218) e <b>800-218A</b></td><td>Práticas de desenvolvimento seguro; perfil para IA generativa</td><td>Esqueleto do processo</td></tr>
-<tr><td><b>SLSA, SBOM, Sigstore</b></td><td>Proveniência do build, lista de ingredientes, assinatura de artefatos</td><td>Garantir que o que roda em produção veio do código revisado</td></tr>
-<tr><td><b>CWE Top 25</b></td><td>As fraquezas mais perigosas (XSS, SQLi, CSRF, falta de autorização no topo)</td><td>Priorizar regras de SAST</td></tr>
-<tr><td><b>ISO/IEC 27001</b></td><td>Gestão de segurança da informação, certificável</td><td>Governança: política de IA, fornecedores, auditorias</td></tr>
+<tr><th>Referência</th><th>O que é, em palavras simples</th><th>Exemplo do dia a dia</th></tr>
+<tr><td><b>OWASP Top 10:2025</b></td><td>Os dez riscos mais graves de sites e sistemas web</td><td>A lista das dez falhas mais comuns que um vistoriador procura numa casa</td></tr>
+<tr><td><b>OWASP Top 10 for LLM 2025</b></td><td>Os principais riscos de apps com IA, como prompt injection</td><td>Um bilhete escondido que faz o assistente obedecer a um estranho</td></tr>
+<tr><td><b>OWASP ASVS</b></td><td>Lista de requisitos que dá para testar, em três níveis</td><td>Uma ficha de vistoria com itens de “sim” ou “não”</td></tr>
+<tr><td><b>NIST SSDF</b> (SP 800-218 e 800-218A)</td><td>Boas práticas para todo o processo de desenvolvimento</td><td>O passo a passo de uma cozinha que segue as normas sanitárias</td></tr>
+<tr><td><b>SLSA, SBOM, Sigstore</b></td><td>Provar a origem do software, listar seus componentes e assiná-lo</td><td>O rótulo de um alimento com ingredientes, lote e selo</td></tr>
+<tr><td><b>CWE Top 25</b></td><td>As 25 fraquezas de código mais perigosas</td><td>Os 25 defeitos que mais derrubam prédios</td></tr>
+<tr><td><b>ISO/IEC 27001</b></td><td>Norma certificável de gestão da segurança da informação</td><td>Um selo de qualidade que a empresa ganha após auditoria</td></tr>
 </table>
+<p>Com IA, essas referências viram duas coisas: um checklist para revisar o código gerado e instruções no arquivo de regras do agente (por exemplo, “siga o OWASP ASVS nível 2”). Na lista de 2025, controle de acesso quebrado está em 1.º lugar, e entraram cadeia de suprimentos (as dependências de terceiros) e tratamento de erros e exceções.</p>
 <p>No Brasil, a LGPD se soma a tudo isso: um agente que copia dados pessoais de produção para um modelo externo pode configurar tratamento indevido.</p>
 
 <h3>O pipeline seguro</h3>
-<p><b>SAST</b> lê o código sem executá-lo (Semgrep, CodeQL); <b>DAST</b> ataca a aplicação rodando (OWASP ZAP); <b>SCA</b> verifica dependências (Dependabot, OSV-Scanner); <b>secret scanning</b> bloqueia credenciais antes do push (gitleaks).</p>
+<p><b>SAST</b> (análise estática) lê o código sem executá-lo (Semgrep, CodeQL); <b>DAST</b> (análise dinâmica) ataca a aplicação rodando (OWASP ZAP); <b>SCA</b> (análise de composição) verifica as dependências (Dependabot, OSV-Scanner); <b>secret scanning</b> bloqueia credenciais antes do push (gitleaks).</p>
 <figure><img src="img/15_pipeline_seguro.png"><figcaption>Pipeline de desenvolvimento seguro com IA: da spec e da modelagem de ameaças ao monitoramento, com verificações automáticas em cada etapa e revisão por agente e humano no PR. Fonte: elaboração própria.</figcaption></figure>
 <p>O princípio é a <b>defesa em profundidade</b>: várias camadas imperfeitas e independentes. É o espírito "verificar e depois confiar" de <a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a>: tratar a IA como componente não confiável. A camada mais barata é a mais cedo: um hook de pre-commit com gitleaks custa segundos.</p>
 <p><b>Checklist do agente:</b> sandbox sem credenciais de produção; token sem permissão de merge ou publicação; instalação de pacotes e rede com aprovação humana; skills e servidores MCP revisados como dependências; conteúdo externo tratado como dado, nunca como ordem.</p>
@@ -118,7 +119,7 @@ Por que esta abordagem? O que pode dar errado? O que NÃO foi testado?</code></p
 <h3>Tempo e produtividade</h3>
 <ul>
 <li><b>Peng et al. (2023)</b>: com Copilot, um servidor HTTP saiu <b>55,8% mais rápido</b>. Tarefa única, pequena, estudo do fabricante.</li>
-<li><b>Cui, Demirer et al. (2025)</b>: três experimentos de campo com 4.867 desenvolvedores; <b>+26%</b> de tarefas por semana, mais entre os menos experientes. "Tarefa concluída" não mede qualidade.</li>
+<li><b>Cui, Demirer et al. (2025)</b>: três experimentos de campo com 4.867 desenvolvedores; <b>+26%</b> de tarefas por semana, com ganho maior entre os menos experientes. "Tarefa concluída" não mede qualidade.</li>
 <li><b>METR (2025)</b>: 16 veteranos de grandes projetos abertos, 246 issues reais sorteadas; com IA levaram <b>19% mais tempo</b>, mas acharam ter ganho 20%. Em fevereiro de 2026, o METR disse ser "provável" que as ferramentas atuais acelerem, com "evidência muito fraca" do tamanho.</li>
 <li><b>DORA</b>: em 2024, mais adoção de IA vinha com vazão −1,5% e estabilidade −7,2%; em 2025 a relação com a vazão ficou positiva, mas a instabilidade seguiu subindo. A IA é um <em>amplificador</em> dos fundamentos que o time já tem.</li>
 </ul>
@@ -129,20 +130,16 @@ Por que esta abordagem? O que pode dar errado? O que NÃO foi testado?</code></p
 <li><b>Bastani et al. (PNAS, 2025)</b>: quase mil alunos de matemática; o ChatGPT comum melhorou os exercícios e piorou a prova sem IA em 17%; uma versão "tutora" eliminou a perda.</li>
 <li><b>MIT Media Lab (2025)</b>: preprint com 54 estudantes sugere "dívida cognitiva" ao escrever com ChatGPT. Sinal de alerta, não prova.</li>
 </ul>
-<table>
-<tr><th>Estudo</th><th>Tempo</th><th>Qualidade / segurança</th><th>Aprendizado</th><th>Limitação</th></tr>
-<tr><td>Peng 2023</td><td>55,8% mais rápido</td><td>—</td><td>—</td><td>tarefa única; fabricante</td></tr>
-<tr><td>Cui 2025</td><td>+26% tarefas</td><td>—</td><td>—</td><td>"tarefa" ≠ valor</td></tr>
-<tr><td>METR 2025</td><td>19% mais lento</td><td>—</td><td>—</td><td>16 devs</td></tr>
-<tr><td>Faros 2025</td><td>sem ganho na empresa</td><td>PRs 154% maiores; +9% bugs</td><td>—</td><td>observacional</td></tr>
-<tr><td>Veracode 2025/26</td><td>—</td><td>~45% das tarefas com falha</td><td>—</td><td>tarefas com armadilha</td></tr>
-<tr><td>Anthropic 2026</td><td>sem diferença</td><td>—</td><td>−17 pontos; preservado ao perguntar</td><td>52 pessoas; curto prazo</td></tr>
-<tr><td>Bastani 2025</td><td>—</td><td>—</td><td>−17% na prova; tutor anula</td><td>matemática</td></tr>
-</table>
+<p><b>Resumo dos estudos:</b></p>
+<ul>
+<li><b>Tempo:</b> Peng 2023, 55,8% mais rápido (uma tarefa só); Cui 2025, +26% de tarefas; METR 2025, 19% mais lento (só 16 devs); Faros 2025, nenhum ganho na empresa; Anthropic 2026, sem diferença.</li>
+<li><b>Qualidade e segurança:</b> Faros 2025, PRs 154% maiores e +9% de bugs (estudo observacional); Veracode 2025/26, falha em cerca de 45% das tarefas com armadilha.</li>
+<li><b>Aprendizado:</b> Anthropic 2026, −17 pontos no quiz, mas sem perda para quem pedia explicações (52 pessoas, curto prazo); Bastani 2025, −17% na prova, perda anulada pela IA tutora (só matemática).</li>
+</ul>
 <p>Três padrões emergem: a IA acelera tarefas pequenas e novas e ajuda mais quem tem menos contexto; o ganho individual some em PRs maiores e instabilidade se o processo não muda; e delegar sem entender custa aprendizado, enquanto usar a IA para entender o preserva. Os modelos de 2026 são mais capazes que os desses estudos, mas a segurança (Veracode 2026) não melhorou no mesmo ritmo.</p>
 <h3>Recomendações</h3>
 <ul>
-<li><b>Quem aprende:</b> use a IA como tutora, não como ghostwriter; nada entra no projeto sem que você saiba explicar; reserve tempo sem IA para fundamentos.</li>
+<li><b>Quem aprende:</b> use a IA como tutora, não como ghostwriter (quem escreve por você); nada entra no projeto sem que você saiba explicar; reserve tempo sem IA para fundamentos.</li>
 <li><b>Profissionais:</b> use IA onde rende (protótipos, testes, migrações, documentação); escreva a spec antes do prompt; desconfie da sua sensação de velocidade.</li>
 <li><b>Líderes:</b> adote o PR com proveniência, risco e explicação; meça com DORA e retrabalho, não com linhas; proteja as tarefas de formação dos juniores; tenha uma política de IA curta, incluindo que dados nunca vão para modelo externo.</li>
 </ul>
