@@ -1,0 +1,182 @@
+<section class="chapter" id="ch22"><h1><span class="num">Capítulo 22</span>Segurança cloud-first: o app-casca e a nova camada de proteção</h1>
+<p class="lead">Distribuir software sempre significou entregar ao usuário uma cópia do programa e, com ela, tudo o que ele sabe fazer. Enquanto ler um binário exigia semanas de um especialista, o risco era tolerável. Com modelos de IA capazes de explicar código compilado e procurar falhas em escala, deixou de ser. Este capítulo defende uma tese de arquitetura: aplicações sensíveis, a começar pelas bancárias, devem rodar quase inteiramente na nuvem, e o que chega ao dispositivo deve ser apenas uma casca que desenha a tela, captura o toque e conversa com o servidor por um protocolo de estado.</p>
+
+<div class="box key"><b>A tese defendida neste capítulo</b> Diante de uma IA que lê binários e encontra vulnerabilidades em escala, soluções sensíveis devem rodar até 99% na nuvem. A primeira camada no aparelho deve ser só uma casca, embutida ou por streaming, que se comunica por protocolo de rede e replay de estado, sem expor código nem lógica de servidor. Esta é a posição do livro, não um consenso do setor; por isso o capítulo dedica uma seção inteira aos seus custos e limites.</div>
+
+<div class="box intro"><b>Para começar</b> Um banco não entrega a cada cliente uma cópia do cofre com o manual da fechadura. O cliente vê só o balcão e faz pedidos; o caixa, do outro lado do vidro, consulta as regras e mexe no cofre. O app-casca é esse balcão digital. Termos que voltam no capítulo: <b>cliente</b> (o programa no aparelho), <b>servidor</b> (o computador do fornecedor), <b>binário</b> (o programa compilado) e <b>estado</b> (a fotografia do que a aplicação “sabe” num instante).</div>
+
+<h2>O problema: tudo o que vai no pacote pode ser lido</h2>
+
+<h3>Compilar não é esconder</h3>
+<p>Compilar só troca a representação do código. Bytecode (Java, Kotlin, C#) preserva nomes e estrutura quase intactos; código de máquina é mais difícil, mas decompiladores maduros reconstroem funções e fluxos com boa fidelidade, como mostra o Livro 4, Capítulo 4 (Eng. Reversa e Segurança). Logo, <b>tudo o que vai no pacote deve ser tratado como público</b>: regras de validação, endereços de serviços internos, chaves de API, feature flags. O guia de testes mobile da OWASP (MASTG) resume: o cliente deve ser considerado sob controle do atacante.</p>
+
+<h3>O que a IA mudou</h3>
+<p>A engenharia reversa sempre foi possível; o que a limitava era o custo. Modelos de linguagem explicam pseudocódigo, reconhecem bibliotecas e percorrem milhares de funções sem cansaço. O post <a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/">Engenharia Reversa com IA: a Adobe morreu?</a>, de Fabio Akita, discute esse ponto: quando a leitura do binário fica barata, a proteção baseada em “ninguém vai ter paciência de ler isto” desaparece. Na busca de vulnerabilidades, o Google anunciou em agosto de 2025 que o <b>Big Sleep</b>, agente do Google DeepMind e do Project Zero, havia encontrado 20 falhas em projetos abertos como FFmpeg e ImageMagick. As mesmas capacidades servem a defensores e atacantes.</p>
+
+<h3>Os quatro pecados do cliente gordo</h3>
+<p>O <b>cliente gordo</b> (fat client) carrega muita lógica consigo e costuma cometer quatro pecados:</p>
+<ol>
+<li><b>Segredos embutidos</b>: se o app usa uma chave sozinho, ele a contém, e ela pode ser extraída.</li>
+<li><b>Lógica de negócio no cliente</b>: se a decisão acontece no aparelho, o atacante pode alterá-la.</li>
+<li><b>Superfície de API revelada</b>: o app entrega o mapa de endpoints e parâmetros.</li>
+<li><b>Adulteração</b>: versões modificadas do app são redistribuídas como se fossem originais.</li>
+</ol>
+
+<h3>Por que os bancos estão no centro do alvo</h3>
+<p>Segundo a Pesquisa Febraban de Tecnologia Bancária 2026, o Brasil teve cerca de 240,8 bilhões de transações bancárias em 2025, 78% delas pelo mobile banking. A Kaspersky registrou alta de 56% nos ataques de trojans bancários contra Android em 2025, e a Zimperium contou, em março de 2026, 34 famílias ativas mirando 1.243 marcas financeiras em 90 países.</p>
+<figure><img src="img/22_dados_ameaca.png"><figcaption>À esquerda, participação do mobile banking nas transações no Brasil em 2025. À direita, países com mais apps bancários visados por malware. Fonte: elaboração própria com dados da Pesquisa Febraban 2026 (via Jornal de Brasília) e da Infosecurity Magazine.</figcaption></figure>
+<p>Os trojans modernos não se limitam a roubar senhas: abusam de serviços de acessibilidade, sobrepõem telas falsas e operam <i>dentro da sessão verdadeira</i>, de modo que a fraude parece atividade normal.</p>
+<div class="box warn"><b>Atenção: a casca não resolve tudo</b> Se o malware controla o aparelho, o servidor recebe pedidos que parecem legítimos. A arquitetura cloud-first reduz o que o atacante consegue aprender e alterar no app, mas precisa ser combinada com antifraude comportamental no servidor e com proteções no cliente.</div>
+
+<div class="box key"><b>Em resumo</b> Binários são legíveis, a IA tornou a leitura barata e apps bancários já são o alvo preferido. A pergunta de projeto deixa de ser “como esconder melhor o que está no pacote” e passa a ser “o que precisa mesmo estar no pacote”.</div>
+
+<h2>Da proteção do código à proteção da fronteira</h2>
+<div class="box intro"><b>Para começar</b> Uma loja pode pôr alarme em cada produto ou deixar os produtos no estoque e mostrar só o catálogo. A indústria de software escolheu por muito tempo a primeira opção; esta seção explica por que a segunda é mais duradoura.</div>
+<p><b>Ofuscação</b> transforma código em algo funcionalmente igual, porém difícil de entender. É útil, mas tem um limite teórico: em 2001, Barak e coautores provaram que não existe ofuscador genérico de “caixa-preta virtual”. Na prática, ofuscação é custo imposto ao atacante, e a IA barateia exatamente esse custo.</p>
+<p>A resposta duradoura é mover a <b>fronteira de confiança</b>, a linha que separa o que você controla do que não controla. O aparelho do usuário está do lado de fora; o servidor, do lado de dentro. A regra da OWASP é que <b>nenhuma decisão de segurança pode depender do lado de fora</b>. O app-casca leva essa regra ao limite: se o cliente não decide nada, não há decisão a falsificar.</p>
+<p>A ideia é antiga: terminais de mainframe, o X Window System (1984), Citrix e a web clássica eram modelos de casca. Os apps nativos e as SPAs dos anos 2010 levaram lógica ao cliente em busca de fluidez; a IA ofensiva é um motivo forte para o pêndulo voltar.</p>
+<div class="box fact"><b>Você sabia?</b> Em 1995, Larry Ellison, da Oracle, defendeu o <i>Network Computer</i>, um aparelho sem disco que buscaria tudo na rede. A ideia fracassou porque as redes domésticas eram lentas; três décadas depois, Chromebooks e streaming de jogos realizaram boa parte dela.</div>
+
+<h2>A arquitetura proposta em quatro camadas</h2>
+<div class="box intro"><b>Para começar</b> Num teatro de marionetes, o público vê os bonecos, mas as mãos e o roteiro ficam atrás da cortina. A casca é o palco; o servidor, o titereiro; entre os dois há uma porta vigiada.</div>
+<figure><img src="img/22_camadas.png"><figcaption>As quatro camadas da arquitetura cloud-first. O dispositivo fica fora da fronteira de confiança e só troca intenções e diffs de estado com o gateway. Fonte: elaboração própria.</figcaption></figure>
+
+<h3>Camada 1: a casca fina</h3>
+<p>A casca só <b>renderiza</b> e <b>captura input</b>. Há dois sabores: a <b>casca de componentes</b>, que monta telas a partir de uma árvore enviada pelo servidor (server-driven UI, Phoenix LiveView), e a <b>casca de pixels</b>, um player interativo que recebe vídeo e devolve toques (cloud gaming, desktops virtuais). Em ambos, o pacote não contém regra de negócio, endpoint interno nem segredo de serviço.</p>
+
+<h3>Camada 2: o gateway seguro</h3>
+<p>O gateway só deixa passar sessões que provem três coisas:</p>
+<ol>
+<li><b>Canal autêntico</b>: TLS 1.3 com certificate pinning e, quando possível, mTLS, com a chave do cliente guardada em hardware seguro.</li>
+<li><b>Usuário autêntico</b>: <b>passkeys</b> (FIDO2/WebAuthn), resistentes a phishing.</li>
+<li><b>App e aparelho íntegros</b>: <b>attestation</b> assinada pelo sistema (Play Integrity no Android, App Attest no iOS), <i>verificada pelo servidor</i>.</li>
+</ol>
+<p>O mTLS é natural em dispositivos corporativos gerenciados; em apps de consumo, o certificado do cliente pode ser gerado no primeiro uso e guardado no Secure Enclave (iPhone) ou no StrongBox/TEE (Android). Nas passkeys, a biometria apenas desbloqueia a chave, que nunca sai do hardware. Na attestation, o ponto crucial é que quem confere a declaração é o servidor, nunca o próprio app.</p>
+<p>O gateway aplica ainda limitação de taxa, WAF e detecção de bots, e envia sinais ao motor de antifraude. Como o protocolo entre casca e gateway é pequeno, há poucos formatos de mensagem a validar, bem menos do que numa API REST com centenas de endpoints.</p>
+
+<h3>Camada 3: o motor de estado</h3>
+<p>Em vez de dezenas de operações, o servidor mantém para cada sessão um <b>estado de tela</b> e um <b>log de eventos</b>. O cliente envia <b>intenções</b> (“tocou em Pagar”); o motor aplica a lógica, calcula o novo estado e devolve só o <b>diff</b>. Três ideias se combinam: <b>event sourcing</b> (Livro 4, Capítulo 1 (Eng. Software)), <b>server-driven UI</b> e <b>sincronização por versão</b>, que torna a reconexão trivial: “estou na versão 42; mande o que veio depois”.</p>
+
+<h3>Camada 4: lógica e dados só no servidor</h3>
+<p>Regras, modelos de risco, chaves (em HSM ou KMS) e bancos de dados ficam aqui. Os serviços se autenticam entre si com identidades de carga de trabalho e mTLS interno, cada um com só as permissões de que precisa. Essa camada não confia na anterior por padrão: recebe comandos com contexto de usuário e sessão e decide de novo, como se o pedido viesse de fora. É o princípio de <b>zero trust</b> aplicado ao próprio núcleo.</p>
+
+<h3>O protocolo de replay de estado</h3>
+<p>A figura a seguir mostra uma interação típica: conectar, receber a tela, tocar num botão, perder a rede e se recuperar.</p>
+<figure><img src="img/22_replay_estado.png"><figcaption>Sequência do protocolo de replay de estado. A casca envia intenções numeradas; o motor responde com snapshots ou diffs versionados e, após uma queda, reenvia os eventos perdidos. Fonte: elaboração própria.</figcaption></figure>
+<pre><code>// cliente -&gt; servidor: intenção, nunca uma regra
+{"t":"intent","seq":17,"base":41,"action":"tap","target":"btn_pagar"}
+
+// servidor -&gt; cliente: diff sobre a versão 41 (estilo JSON Patch)
+{"t":"patch","from":41,"to":42,"ops":[
+  {"op":"replace","path":"/screen/title","value":"Pagamento confirmado"}]}
+
+// após reconexão
+{"t":"resume","last":42}</code></pre>
+<p>Primeiro a sessão é estabelecida e o cliente recebe um <b>snapshot</b>, a árvore completa da tela. Depois, a única coisa que o usuário “faz” é enviar intenções; cada uma atravessa o gateway, vira um comando de domínio, produz um evento e volta como diff. O número de sequência detecta duplicatas e garante ordem; após uma queda, o servidor reenvia os eventos que faltam ou um snapshot novo. O diff segue a ideia do JSON Patch (RFC 6902); em produção usam-se formatos binários e WebSocket, HTTP/2 ou, para pixels, WebRTC.</p>
+<div class="box tip"><b>Dica: idempotência é obrigatória</b> Toda intenção que move dinheiro deve carregar uma chave de idempotência, para que uma reconexão automática não vire pagamento em dobro.</div>
+
+<h2>Variantes que já existem no mercado</h2>
+<p>A casca não é uma tecnologia, é um espectro:</p>
+<ul>
+<li><b>Renderização no servidor</b>: SSR e HTMX enviam HTML; o <b>Phoenix LiveView</b> (Elixir) mantém um processo leve por usuário e envia só os trechos que mudaram, e o <b>Blazor Server</b> faz o mesmo em .NET.</li>
+<li><b>Server-driven UI nativo</b>: o Airbnb descreveu em 2021 sua Ghost Platform; o Nubank, em 2023, o <b>Backend Driven Content</b>, em Clojure e Flutter, usado em 43% do app. Ambos adotaram SDUI por velocidade de produto, mas o efeito colateral de segurança é real: o app carrega menos conhecimento do negócio.</li>
+<li><b>WebView em apps bancários</b>: casca nativa para login e biometria, com telas web. Exige domínios fixos, pinning e nenhuma ponte JavaScript-nativo genérica.</li>
+<li><b>Pixel streaming e VDI</b>: GeForce NOW, Pixel Streaming da Unreal e desktops virtuais corporativos não deixam sequer descrição de interface no cliente, ao custo de GPU, banda e latência.</li>
+</ul>
+<p>Cada família tem seu cuidado. Em LiveView e HTMX, a tentação é reintroduzir lógica sensível em JavaScript “para ficar mais rápido”. Em SDUI, o passo que transforma ganho de produto em política de segurança é simples de enunciar: nenhuma regra de negócio no cliente, nem mesmo de validação. No streaming de pixels, o efeito colateral é curioso: trapaças em jogos que dependem de ler a memória local deixam de funcionar, porque a memória está no data center. Para um banco, transmitir vídeo seria desperdício; para uma estação de engenharia com software caro, pode fazer todo sentido. Já VDI e DaaS são usados há anos por bancos, seguradoras e órgãos públicos em centrais de atendimento: os dados do cliente nunca tocam o notebook do operador, e bloqueios de área de transferência, impressão e captura de tela são aplicados no servidor.</p>
+<div class="box fact"><b>Você sabia?</b> O LiveView só é viável em escala graças à máquina virtual BEAM, criada na Ericsson nos anos 1980 para centrais telefônicas que não podiam cair. A tecnologia que mantinha ligações de pé hoje mantém telas sincronizadas.</div>
+<div class="box fact"><b>Você sabia?</b> O OnLive, primeiro grande serviço comercial de jogos por streaming, foi lançado em 2010 e fechou em 2015; o Google Stadia durou de 2019 a janeiro de 2023. Ambos tropeçaram mais no modelo de negócio e na latência das redes do que na tecnologia.</div>
+<figure><img src="img/22_superficie.png"><figcaption>Comparação qualitativa do que vai dentro do pacote distribuído em cada arquitetura. Fonte: elaboração própria.</figcaption></figure>
+<table>
+<tr><th>Variante</th><th>O que trafega</th><th>Custo principal</th></tr>
+<tr><td>SSR / HTMX</td><td>HTML e fragmentos</td><td>Interações ricas exigem cuidado</td></tr>
+<tr><td>LiveView / Blazor Server</td><td>Diffs de estado</td><td>Memória por sessão</td></tr>
+<tr><td>SDUI nativo</td><td>Árvore de componentes</td><td>Catálogo de componentes a manter</td></tr>
+<tr><td>Pixel streaming / VDI</td><td>Vídeo e input</td><td>GPU, banda e latência</td></tr>
+</table>
+
+<h2>O que a casca ainda precisa proteger</h2>
+<div class="box intro"><b>Para começar</b> O balcão do banco não guarda dinheiro, mas precisa de vidro blindado e câmera. A casca não tem segredos de negócio, mas é onde o usuário digita a senha e confirma o pagamento.</div>
+<ul>
+<li><b>Certificate pinning</b>: fixar a chave pública do servidor, com uma chave reserva, usando os mecanismos da plataforma.</li>
+<li><b>Higiene do pacote</b>: remover símbolos e logs de depuração e nenhum segredo de longa duração. O teste: se o pacote fosse publicado amanhã, algo grave aconteceria? A resposta deve ser “não”.</li>
+<li><b>RASP</b>: verificações em tempo de execução (root, depurador, emulador) que <b>informam, não decidem</b>; o servidor combina os sinais com o risco da operação.</li>
+<li><b>Attestation</b>: veredito verificado no servidor e vinculado a um nonce. É um sinal forte, não uma garantia.</li>
+<li><b>Proteção da interface</b>: bloquear captura de tela e sobreposições em telas sensíveis e pedir confirmação por passkey nas operações de alto valor, sem bloquear quem depende de leitores de tela.</li>
+<li><b>Antifraude no servidor</b>: como recebe todas as intenções, o servidor vê o comportamento da sessão (ritmo, sequência de telas, beneficiário novo) e decide quando exigir uma barreira extra.</li>
+</ul>
+<p>Dois princípios atravessam essa lista. Primeiro, <b>um controle que decide localmente pode ser desligado localmente</b>: por isso RASP e attestation alimentam o servidor em vez de bloquear sozinhos. Segundo, a attestation tem limites conhecidos (aparelhos com root bem disfarçado existem, e o Google endureceu as regras da Play Integrity em 2025), então ela entra como um sinal entre vários. Um trojan que opera dentro da sessão costuma deixar padrões, como toques sem pausa humana e navegação direta para a tela de transferência; a casca não impede o malware de existir, mas o servidor, com visão total, pode reagir.</p>
+<div class="box key"><b>Em resumo</b> Na arquitetura casca, as proteções do cliente deixam de esconder segredos e passam a proteger o canal, atestar integridade, coletar sinais e proteger a interface. Quem decide é sempre o servidor.</div>
+
+<h2>Limites e trade-offs</h2>
+<div class="box intro"><b>Para começar</b> Centralizar tudo é como guardar o dinheiro da cidade num único cofre: fica mais fácil vigiar, mas, se a estrada fechar, ninguém saca. Cada custo abaixo é real e tem resposta de engenharia, nem sempre barata.</div>
+<ul>
+<li><b>Latência</b>: uma ida e volta pode passar de 50 ms, e centenas em redes móveis ruins. Respostas: deixar local o que é cosmético (animações, máscaras), computação de borda e HTTP/3.</li>
+<li><b>Uso offline</b>: casca pura não funciona sem rede. Resposta: cache de leitura cifrado e sem permitir ação; apps de campo pedem modelo híbrido.</li>
+<li><b>Custo de servidor</b>: estado por sessão consome memória. Respostas: estados pequenos, hibernação de sessões e a variante certa. Em troca, correções chegam a todos com um deploy.</li>
+<li><b>Privacidade</b>: o fornecedor vê tudo, em tensão com a minimização da LGPD. Resposta: finalidade e retenção definidas para a telemetria.</li>
+<li><b>Servidor como alvo único</b>: o contra-argumento mais sério. O núcleo precisa operar em <b>zero trust</b> (NIST SP 800-207), com segmentação, HSM e logs imutáveis. A diferença é que o defensor controla o servidor e pode auditá-lo com a mesma IA.</li>
+<li><b>Disponibilidade e acessibilidade</b>: múltiplas regiões e modo somente leitura; pixel streaming quebra leitores de tela, enquanto SDUI e LiveView podem ser plenamente acessíveis.</li>
+</ul>
+<p>Para o <b>uso offline</b>, o cache de leitura deve guardar só o último snapshot de telas informativas (o extrato, por exemplo), cifrado com chave protegida por hardware e marcado com data. Operações offline genuínas, como pagamento por aproximação sem conexão, exigem outro desenho, com credenciais tokenizadas de uso limitado, que é o que as carteiras digitais já fazem. No <b>custo</b>, o outro lado da balança inclui a fraude evitada, o fim de manter várias versões antigas do app com lógica divergente e a correção de vulnerabilidades por deploy, em vez de atualização forçada em milhões de aparelhos. Na <b>privacidade</b>, convém separar telemetria de segurança de dados de produto e cifrar dados sensíveis por usuário: a casca não pode virar desculpa para vigilância.</p>
+<p>Vale detalhar dois desses pontos. Na <b>latência</b>, a física impõe um piso: a luz na fibra percorre cerca de 200 km por milissegundo, e a percepção humana tolera até uns 100 ms como “instantâneo”. Além de deixar local o que é cosmético, o servidor pode enviar junto com a tela pequenas regras de apresentação (“ao tocar, mostre carregando”), sem lógica de negócio. No <b>servidor como alvo único</b>, zero trust significa na prática que nenhum serviço confia em outro por estar na mesma rede, que cada chamada é autenticada e autorizada e que o comprometimento de um serviço não abre os demais. Bancos já convivem com a dependência do servidor: o Pix não funciona sem os sistemas do Banco Central e, mesmo assim, virou o meio de pagamento mais usado do país.</p>
+<p>No Brasil, segundo a TIC Domicílios 2025, 65% dos usuários acessam a internet só pelo celular (87% na classe DE). Isso reforça a tese e a desafia: a casca precisa ser leve em bytes e tolerar quedas. Uma tela SDUI trafega poucos kilobytes; um minuto de vídeo, megabytes.</p>
+<div class="box warn"><b>Atenção</b> Uma casca lenta ou que não abre sem 4G empurra o usuário para canais menos seguros ou para a concorrência. A tese só vence se a experiência for, no mínimo, equivalente à do app gordo nos casos de uso principais.</div>
+
+<h2>Quando o modelo é ideal e quando não é</h2>
+<figure><img src="img/22_matriz_setores.png"><figcaption>Matriz de adequação do modelo cloud-first por setor, em avaliação qualitativa. Fonte: elaboração própria.</figcaption></figure>
+<p><b>É ideal</b> em bancos e fintechs (alto valor de ataque, regulação forte, liquidação que já exige servidor), governo e saúde, sistemas corporativos internos e software de alto valor de propriedade intelectual (Livro 5, Capítulo 3 (Propriedade intelectual)). <b>Não é, ou não totalmente</b>, em apps de campo com uso offline prolongado, edição de mídia de baixa latência, jogos competitivos (onde o servidor autoritativo já é uma casca parcial) e software livre, cujo valor está na transparência (Livro 6, Capítulo 1 (Comunidades e Linux)).</p>
+<p>Os critérios por trás da matriz são quatro: quanto vale atacar o sistema, quanto a regulação exige, quanta latência o uso tolera e quanto se pode contar com conexão. Bancos combinam valor de ataque máximo, normas do Banco Central sobre segurança cibernética e operações que de qualquer forma exigem servidor para liquidar; algumas centenas de milissegundos numa confirmação de pagamento são aceitáveis. Em sistemas corporativos internos, a rede é controlada e os aparelhos podem ser gerenciados, o que permite mTLS completo. Já para apps de campo, a saída é híbrida: casca para operações sensíveis, captura offline com sincronização e validação posterior no servidor.</p>
+<div class="box tip"><b>Dica: a regra dos 99%</b> “Até 99% na nuvem” é direção, não dogma. O 1% local deve ser só o que é seguro expor e indispensável à experiência. Se uma linha de código local responde à pergunta “o usuário pode fazer isto?”, ela está do lado errado da fronteira.</div>
+
+<h2>Roadmap de adoção</h2>
+<ol>
+<li><b>Inventário e modelagem de ameaças</b>: auditar o próprio pacote para listar segredos, regras e endpoints expostos.</li>
+<li><b>Tirar segredos e decisões do cliente</b>: rotacionar chaves e mover para o servidor toda validação com efeito financeiro ou de segurança.</li>
+<li><b>Fortalecer a borda</b>: pinning, attestation, passkeys e gateway com antifraude.</li>
+<li><b>Migrar telas para SDUI ou LiveView</b>, começando pelas mais sensíveis, medindo latência e consumo de dados.</li>
+<li><b>Consolidar o núcleo em zero trust</b>, com auditoria contínua assistida por IA.</li>
+</ol>
+<table>
+<tr><th>Área</th><th>Pergunta de verificação</th></tr>
+<tr><td>Pacote</td><td>Há segredo, endpoint interno ou regra de negócio no binário?</td></tr>
+<tr><td>Canal e identidade</td><td>Há TLS 1.3, pinning com chave reserva e passkeys?</td></tr>
+<tr><td>Integridade</td><td>A attestation é verificada no servidor, com nonce?</td></tr>
+<tr><td>Protocolo</td><td>O cliente envia só intenções, com sequência e idempotência?</td></tr>
+<tr><td>Núcleo</td><td>Os serviços internos se autenticam entre si (zero trust)?</td></tr>
+<tr><td>Estado</td><td>Snapshot, diffs e replay foram testados com quedas de rede reais?</td></tr>
+<tr><td>Interface</td><td>Telas sensíveis bloqueiam captura e overlays?</td></tr>
+<tr><td>Antifraude</td><td>O servidor combina RASP, attestation e comportamento para decidir risco?</td></tr>
+<tr><td>Experiência</td><td>Latência e consumo foram medidos em 4G fraco e aparelho de entrada?</td></tr>
+<tr><td>Acessibilidade</td><td>Os componentes funcionam com leitores de tela?</td></tr>
+<tr><td>Privacidade</td><td>A telemetria de intenções tem finalidade e retenção definidas?</td></tr>
+</table>
+
+<h2>Relação com o desenvolvimento seguro</h2>
+<p>O Capítulo 4 (Desenvolvimento seguro e Pull Request) tratou de <i>como</i> construir software seguro com IA; este trata de <i>onde</i> o código deve rodar. Vários requisitos do OWASP MASVS, como armazenamento seguro e resiliência contra engenharia reversa, encolhem quando o app não guarda nada valioso, e o esforço de verificação migra para o servidor, onde a equipe controla as ferramentas. A mesma IA que barateia a engenharia reversa barateia a auditoria do servidor: o defensor troca um campo de batalha que não controla, milhões de aparelhos nas mãos de qualquer pessoa, por um que controla.</p>
+<p>Há também uma ligação com o novo Pull Request. Com a lógica no servidor, cada mudança de regra passa por um único pipeline de revisão, testes e implantação, e uma correção de segurança chega a todos em minutos, sem depender da loja de aplicativos, cuja aprovação pode levar dias. Em contrapartida, o servidor concentra o risco, e é ali que revisão assistida por IA, análise estática e verificação de dependências precisam do máximo rigor.</p>
+
+<div class="box key"><b>Em resumo</b> O app-casca aplica um princípio antigo, não confiar no cliente, num momento em que a IA o tornou urgente. A casca desenha e escuta; o gateway verifica; o motor de estado sincroniza; o núcleo decide em zero trust. Os custos são desafios de engenharia com respostas conhecidas, e para bancos, governo e sistemas corporativos o saldo é favorável.</div>
+
+<h2>Fontes deste capítulo</h2>
+<p>Dados atuais verificados em 31/10/2026.</p>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor ou veículo</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/">Engenharia Reversa com IA: a Adobe morreu?</a></td><td>https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/</td><td>Fabio Akita (AkitaOnRails)</td><td>IA barateia engenharia reversa de software comercial</td></tr>
+<tr><td><a href="https://techcrunch.com/2025/08/04/google-says-its-ai-based-bug-hunter-found-20-security-vulnerabilities/">Google says its AI-based bug hunter found 20 security vulnerabilities</a></td><td>https://techcrunch.com/2025/08/04/google-says-its-ai-based-bug-hunter-found-20-security-vulnerabilities/</td><td>TechCrunch</td><td>Big Sleep encontrou 20 falhas</td></tr>
+<tr><td><a href="https://www.dawn.com/news/1978843">Mobile banking cyberattacks rise by 56pc in 2025: report</a></td><td>https://www.dawn.com/news/1978843</td><td>Dawn (dados da Kaspersky)</td><td>Trojans bancários Android +56% em 2025</td></tr>
+<tr><td><a href="https://www.infosecurity-magazine.com/news/financial-brands-mobile-banking/">Financial Brands Targeted in Global Mobile Banking Malware Surge</a></td><td>https://www.infosecurity-magazine.com/news/financial-brands-mobile-banking/</td><td>Infosecurity Magazine (dados da Zimperium)</td><td>34 famílias, 1.243 marcas, 90 países</td></tr>
+<tr><td><a href="https://jornaldebrasilia.com.br/noticias/economia/volume-de-transacoes-bancarias-foi-de-2408-bilhoes-em-2025-alta-anual-de-11-diz-febraban/">Volume de transações bancárias foi de 240,8 bilhões em 2025</a></td><td>https://jornaldebrasilia.com.br/noticias/economia/volume-de-transacoes-bancarias-foi-de-2408-bilhoes-em-2025-alta-anual-de-11-diz-febraban/</td><td>Jornal de Brasília (Pesquisa Febraban 2026)</td><td>78% das transações via mobile banking</td></tr>
+<tr><td><a href="https://www.mobiletime.com.br/noticias/09/12/2025/tic-domicilios-2025/">TIC Domicílios 2025</a></td><td>https://www.mobiletime.com.br/noticias/09/12/2025/tic-domicilios-2025/</td><td>Mobile Time (dados do Cetic.br)</td><td>65% acessam a internet só pelo celular</td></tr>
+<tr><td><a href="https://building.nu.com/server-driven-ui-framework-at-nubank/">Backend Driven Content: why we developed a Server Driven UI framework at Nubank</a></td><td>https://building.nu.com/server-driven-ui-framework-at-nubank/</td><td>Rodrigo Sampaio (Building Nubank)</td><td>BDC em Clojure e Flutter; 43% do app</td></tr>
+<tr><td><a href="https://medium.com/airbnb-engineering/a-deep-dive-into-airbnbs-server-driven-ui-system-842244c5f5">A Deep Dive into Airbnb's Server-Driven UI System</a></td><td>https://medium.com/airbnb-engineering/a-deep-dive-into-airbnbs-server-driven-ui-system-842244c5f5</td><td>Airbnb Engineering</td><td>Ghost Platform: SDUI para web e mobile</td></tr>
+<tr><td><a href="https://mas.owasp.org/">OWASP Mobile Application Security (MASVS/MASTG)</a></td><td>https://mas.owasp.org/</td><td>OWASP</td><td>Padrões de verificação de apps móveis</td></tr>
+<tr><td><a href="https://csrc.nist.gov/pubs/sp/800/207/final">SP 800-207: Zero Trust Architecture</a></td><td>https://csrc.nist.gov/pubs/sp/800/207/final</td><td>NIST</td><td>Definição de referência de zero trust</td></tr>
+<tr><td><a href="https://developer.android.com/google/play/integrity">Play Integrity API</a></td><td>https://developer.android.com/google/play/integrity</td><td>Android Developers</td><td>Attestation de app e dispositivo no Android</td></tr>
+<tr><td><a href="https://developer.apple.com/documentation/devicecheck/establishing-your-app-s-integrity">Establishing your app's integrity (App Attest)</a></td><td>https://developer.apple.com/documentation/devicecheck/establishing-your-app-s-integrity</td><td>Apple Developer</td><td>Attestation com chave no Secure Enclave</td></tr>
+<tr><td><a href="https://www.rfc-editor.org/rfc/rfc6902">RFC 6902: JavaScript Object Notation (JSON) Patch</a></td><td>https://www.rfc-editor.org/rfc/rfc6902</td><td>IETF</td><td>Formato padrão de diffs em JSON</td></tr>
+<tr><td><a href="https://hexdocs.pm/phoenix_live_view/">Phoenix LiveView</a></td><td>https://hexdocs.pm/phoenix_live_view/</td><td>Documentação oficial</td><td>Estado no servidor e diffs por WebSocket</td></tr>
+<tr><td><a href="https://dev.epicgames.com/documentation/en-us/unreal-engine/pixel-streaming-in-unreal-engine">Pixel Streaming in Unreal Engine</a></td><td>https://dev.epicgames.com/documentation/en-us/unreal-engine/pixel-streaming-in-unreal-engine</td><td>Epic Games</td><td>Aplicação 3D transmitida por WebRTC</td></tr>
+<tr><td><a href="https://eprint.iacr.org/2001/069">On the (Im)possibility of Obfuscating Programs</a></td><td>https://eprint.iacr.org/2001/069</td><td>Barak et al. (2001)</td><td>Não existe ofuscação genérica de caixa-preta</td></tr>
+</table>
+</section>

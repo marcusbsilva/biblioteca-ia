@@ -1,0 +1,490 @@
+<section class="chapter" id="ch08"><h1><span class="num">Capítulo 08</span>Engenharia de Software e Arquitetura</h1>
+<p class="lead">Engenharia de software é um assunto enorme: linguagens, front-end, APIs, bancos de dados, padrões de projeto, arquitetura, testes, DevOps e Git. Este capítulo percorre esse caminho, do código de uma função até um sistema com milhões de usuários. Um fio condutor atravessa tudo: <em>não existe bala de prata</em>. Cada técnica resolve um problema e cobra um preço, e saber quando <i>não</i> aplicá-la vale cada vez mais agora que agentes de IA geram código em segundos.</p>
+<div class="box intro"><b>Para começar</b> Escrever código é assentar tijolos; <b>engenharia de software</b> é o que garante que a casa fique de pé, aceite reformas e aguente mais gente do que o previsto. A <b>arquitetura</b> é a planta: o que é caro mudar depois. O capítulo conversa com o Livro 3, Capítulo 1 (Programando com IA) e com o Capítulo 2 (Algoritmos).</div>
+
+<h2>O que é (e o que não é) arquitetura de software</h2>
+<div class="box intro"><b>Para começar</b> Uma cidade que cresce sem plano vira um labirinto em que qualquer obra trava o trânsito. Um software também pode “funcionar” hoje e ser um pesadelo para mudar amanhã. Arquitetura é o plano que evita isso.</div>
+<p>Na aula <a href="https://www.youtube.com/watch?v=jwBpiEoo8rI">Fundamentos de Arquitetura de Software para Backend</a>, do canal Fernanda Kipper, arquitetura é a <b>organização fundamental de um sistema</b>: componentes, relações entre eles e os princípios que guiam sua evolução. Martin Fowler prefere “o entendimento compartilhado que os desenvolvedores experientes têm do sistema”. O vídeo <a href="https://www.youtube.com/watch?v=SWgCLOW1bCE">VOCÊ NÃO SABE ARQUITETURA DE SOFTWARE (veja esse vídeo)</a>, apoiado no livro <i>Arquitetura Limpa</i>, de Robert C. Martin, a define pelo que ela não é: não decide se o sistema funciona (há muitos sistemas funcionando com arquiteturas horríveis) nem se resume a pastas. Seu objetivo é tornar o sistema <b>fácil de entender, manter e implantar</b>. Um caso citado: mudar o texto de um endpoint levou duas semanas porque ninguém achava a classe responsável.</p>
+<p>Há decisões <b>estruturais</b> (monólito ou microsserviços, eventos, serverless, nuvem, banco) e decisões de <b>design de código</b> (Clean Architecture, Hexagonal, MVC, padrões, interfaces). A <b>Lei de Conway</b> (1967) lembra que sistemas copiam a estrutura de comunicação da organização; como times mudam, é mais estável dividir o sistema por <b>responsabilidades de negócio</b> (autenticação, checkout, estoque).</p>
+<p>A mesma aula organiza o vocabulário em seis conceitos, que voltam ao longo do capítulo:</p>
+<table>
+<tr><th>Conceito</th><th>Pergunta-guia</th><th>Exemplo</th></tr>
+<tr><td>Stateful × stateless</td><td>O servidor precisa lembrar do cliente entre requisições?</td><td>Stateless é “mostrar o crachá” (token) a cada requisição, o que permite multiplicar instâncias.</td></tr>
+<tr><td>Síncrono × assíncrono</td><td>O usuário precisa do resultado <i>agora</i>?</td><td>Uma verificação que leva 30 min responde na hora e notifica depois.</td></tr>
+<tr><td>Acoplamento</td><td>A dependência é do domínio ou acidental?</td><td>Matrícula depender do pagamento é legítimo; ler tabelas internas do billing, não.</td></tr>
+<tr><td>Idempotência</td><td>Se a operação se repetir, o efeito muda?</td><td>Cobrar o cartão três vezes por três cliques.</td></tr>
+<tr><td>Cache</td><td>Quanta defasagem posso aceitar?</td><td>Post de blog, sim. Saldo bancário, não.</td></tr>
+<tr><td>Restrições</td><td>Quais limites de orçamento, prazo e time valem aqui?</td><td>Um servidor de ~€ 40/mês atende milhares de usuários; não é preciso começar com Kubernetes.</td></tr>
+</table>
+
+<h2>Linguagens e fundamentos</h2>
+<div class="box intro"><b>Para começar</b> O computador só entende código de máquina, então toda linguagem precisa de um tradutor: alguns traduzem tudo antes, outros na hora, outros um pouco de cada. Esta seção mostra esses modelos, o que são <b>tipos</b> e os erros clássicos de Java, JavaScript e Python.</div>
+<h3>Modelos de execução</h3>
+<ul>
+<li><b>Bytecode + máquina virtual</b> (Java, Kotlin, C#): o <code>javac</code> gera bytecode portável, que a JVM interpreta e compila em tempo de execução (JIT). A JVM também cuida da coleta de lixo.</li>
+<li><b>Compilação nativa</b> (Swift, Rust, C/C++, em geral via LLVM): código de máquina para uma arquitetura específica, rápido, mas não portável.</li>
+<li><b>Transpilação</b> (TypeScript → JavaScript): o <code>tsc</code> verifica tipos e emite JS; os tipos desaparecem em tempo de execução.</li>
+</ul>
+
+<h3>Tipagem: dois eixos independentes</h3>
+<p><b>Estática × dinâmica</b> diz <i>quando</i> o tipo é verificado (compilação em Java, TypeScript, Go; execução em Python, JavaScript). <b>Forte × fraca</b> diz quanto a linguagem aceita conversões implícitas. Python é dinâmica <i>e forte</i> (<code>"1" + 1</code> dá erro); JavaScript é dinâmica e fraca (<code>"1" + 1 === "11"</code>). Dizer que Python é “fracamente tipado” é um erro comum.</p>
+<p>A aula <a href="https://www.youtube.com/watch?v=QoqDr4H2G8U">CURSO DE TYPESCRIPT para INICIANTES | Aprenda Typescript na Prática</a> mostra o ganho prático: o editor pega <code>res.jon(...)</code> antes de virar erro 500 em produção. Recomendações: <code>"strict": true</code>, evitar <code>any</code> e usar <i>union types</i> de literais. Um contraponto vem do post <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a>, do blog AkitaOnRails: num experimento com sete linguagens e quatro modelos de IA, a tipagem forte não reduziu os reparos, porque os erros eram de regra de negócio. O que mais ajudou foi uma suíte de testes. Conclusão do autor: “disciplina vence compilador e vence linguagem”.</p>
+
+<h3>Java: armadilhas e recursos modernos</h3>
+<p>Os vídeos <a href="https://www.youtube.com/watch?v=nODe5lFcGpg">Curso de PROGRAMAÇÃO JAVA para INICIANTES | Fundamentos + Programação Orientada Objetos</a>, <a href="https://www.youtube.com/watch?v=jLropHUgI1A">CURSO de JAVA INTERMEDIÁRIO | Estruturas de dados, Stream API, Generics, Packages, Records</a> e <a href="https://www.youtube.com/watch?v=WpVF3S4kuK0">5 RECURSOS DO JAVA QUE VOCÊ PRECISA CONHECER</a> formam um minicurso. As armadilhas mais comuns:</p>
+<ul>
+<li><b><code>==</code> × <code>.equals</code></b>: com objetos, <code>==</code> compara referências. Duas <code>new String("Ana")</code> são diferentes por <code>==</code> e iguais por <code>equals</code>. Ao sobrescrever <code>equals</code>, sobrescreva <code>hashCode</code>, senão <code>HashMap</code> quebra.</li>
+<li>Casting explícito trunca: <code>(int) 9.99 == 9</code>. Arrays têm tamanho fixo; <code>ArrayList</code> é dinâmica.</li>
+<li>Coleções: <code>List</code> (ordenada), <code>Set</code> (sem duplicatas), <code>Map</code> (chave→valor; <code>get</code> de chave ausente devolve <code>null</code>).</li>
+</ul>
+<p>O Java moderno trouxe <b>records</b> (estáveis no Java 16), <i>text blocks</i> (Java 15), switch com seta, lambdas e a <b>Stream API</b>:</p>
+<pre><code>record Livro(String titulo, int paginas) {}   // equals/hashCode/toString prontos
+var r = List.of("Fernanda", "Ana").stream()
+            .filter(n -&gt; n.startsWith("F"))
+            .map(String::toUpperCase)
+            .toList();                         // [FERNANDA]</code></pre>
+
+<h3>Memória: stack, heap e garbage collector</h3>
+<p>A <b>stack</b> guarda os frames de chamada (variáveis locais e referências) e é liberada quando o método retorna; recursão sem fim termina em <code>StackOverflowError</code>. O <b>heap</b> guarda os objetos, e o <b>garbage collector</b> libera os que ninguém mais alcança. O vídeo <a href="https://www.youtube.com/watch?v=cgUfurMJosE">Entendendo COLETOR DE LIXO DO JAVA (memória Heap, Stack, Garbage Collector)</a> compara os coletores da JVM: Serial (simples, pausas longas), Parallel (throughput), <b>G1</b> (padrão desde o Java 9, meta de pausa curta) e ZGC/Shenandoah (pausas abaixo de 1 ms, mais CPU). A escolha é sempre throughput × latência; faça profiling antes de trocar.</p>
+
+<h3>JavaScript e Python: erros clássicos</h3>
+<p>Os vídeos <a href="https://www.youtube.com/watch?v=n8RLfLunQzc">JAMAIS cometa esses ERROS em JavaScript</a> e <a href="https://www.youtube.com/watch?v=sVfFxC5pC8k">ERROS COMUNS | Null Pointer e None</a> mostram que muitos bugs vêm de três fontes: <b>mutação inesperada</b>, <b>valores ausentes</b> e <b>assincronia</b>.</p>
+<table>
+<tr><th>Erro</th><th>Sintoma</th><th>Correção</th></tr>
+<tr><td><code>arr.sort()</code> muda o original (JS)</td><td>Dados “mudam sozinhos”</td><td><code>arr.toSorted()</code> ou <code>[...arr].sort()</code></td></tr>
+<tr><td><code>x = lista.sort()</code> (Python)</td><td><code>x</code> vira <code>None</code></td><td><code>sorted(lista)</code></td></tr>
+<tr><td>Acessar propriedade de <code>undefined</code>/<code>None</code></td><td><code>TypeError</code>/<code>AttributeError</code></td><td><code>?.</code> e <code>??</code>; <code>Optional</code> + mypy; <code>dict.get</code></td></tr>
+<tr><td>Usar <code>fetch</code> sem esperar</td><td>Recebe uma <code>Promise</code> pendente</td><td><code>async/await</code></td></tr>
+<tr><td>Variável de ambiente ausente</td><td>Falha em produção horas depois</td><td><i>Fail fast</i> no boot</td></tr>
+</table>
+<p>Em JS e Python, parâmetros são passados por <i>valor da referência</i>: mutar o objeto recebido afeta quem chamou. E dados que vêm de fora devem ser validados em tempo de execução (Zod, Pydantic): tipos estáticos não protegem contra um JSON malformado.</p>
+
+<h3>Ferramentas: IDE, CLI e o problema do contexto</h3>
+<p>Os vídeos <a href="https://www.youtube.com/watch?v=fWZylhIHF9w">What Is an AI IDE? How AI Is Changing Developer &amp; Coding Tools</a> e <a href="https://www.youtube.com/watch?v=5RtmQSKKQo8">IDE vs CLI: What Every DevOps Engineer Should Know</a>, do canal IBM Technology, observam que o atrito não está em escolher IDE ou terminal, e sim nas <b>passagens</b> entre editor, testes, build e logs, em que o humano vira a “cola” do contexto. As ferramentas de IA úteis executam várias etapas e validam o resultado sozinhas.</p>
+
+<h2>Front-end</h2>
+<div class="box intro"><b>Para começar</b> O <b>front-end</b> é a vitrine: tudo o que o usuário vê no navegador. Ela é feita de <b>HTML</b> (estrutura), <b>CSS</b> (aparência) e <b>JavaScript</b> (comportamento). Veremos como uma página chega à tela, CSS, React e um pouco de design de interface.</div>
+<h3>Como a web funciona</h3>
+<p>A aula <a href="https://www.youtube.com/watch?v=yYst7puZXjw">CS50x - Lecture 8 - HTML, CSS, JavaScript</a>, de Harvard, resume a base. Roteadores encaminham <b>pacotes</b> IP (IPv4 tem 32 bits, ~4,3 bilhões de endereços; IPv6, 128 bits). O <b>TCP</b> acrescenta portas (80, 443) e retransmissão. O <b>DNS</b> traduz nomes em IPs. O HTTP define verbos (GET, POST, PUT, PATCH, DELETE) e códigos de status:</p>
+<table>
+<tr><th>Código</th><th>Significado</th></tr>
+<tr><td>200 / 201</td><td>OK / Created</td></tr>
+<tr><td>301 / 303</td><td>Redirecionamento permanente / Post-Redirect-Get</td></tr>
+<tr><td>400 / 401 / 403 / 404</td><td>Payload inválido, sem autenticação, sem permissão, inexistente</td></tr>
+<tr><td>413 / 429</td><td>Payload grande demais / Too Many Requests (rate limiting)</td></tr>
+<tr><td>500 / 502 / 503 / 504</td><td>Bug, upstream fora, sobrecarga, timeout no proxy</td></tr>
+</table>
+<p>O navegador transforma o HTML numa árvore, o <b>DOM</b>, que o JavaScript manipula em resposta a eventos. Lição de segurança da aula: <b>validação no cliente é conveniência, não proteção</b>. Quem valida de verdade é o servidor.</p>
+<div class="box fact"><b>Você sabia?</b> O código HTTP 418 “I'm a teapot” nasceu de uma piada de 1º de abril, a RFC 2324, de 1998, que descrevia um protocolo para controlar cafeteiras. Ele nunca foi usado a sério, mas muitos frameworks o implementam até hoje.</div>
+
+<h3>CSS: Flexbox, Grid e responsividade</h3>
+<p><b>Flexbox</b> é unidimensional: <code>justify-content</code> alinha no eixo principal e <code>align-items</code> no secundário; trocar <code>row</code> por <code>column</code> inverte os eixos, o erro mais comum de iniciante. <b>Grid</b> é bidimensional: a unidade <code>fr</code> divide o espaço livre, <code>grid-template-areas</code> nomeia regiões e <code>repeat(auto-fill, minmax(200px, 1fr))</code> cria colunas responsivas sem media queries.</p>
+<p><b>Responsividade</b> importa porque a maior parte do acesso à internet no Brasil é pelo celular. O <a href="https://www.youtube.com/watch?v=S-TqflGxHd4">TUTORIAL COMPLETO CSS MEDIA QUERY - Criando layouts responsivos na PRÁTICA</a> recomenda <b>mobile first</b> (estilos base para o celular, <code>min-width</code> para telas maiores), poucos breakpoints padronizados (768 e 1024 px) e evitar larguras fixas.</p>
+<pre><code>.cards { display: grid; grid-template-columns: 1fr; gap: 1rem; }   /* mobile first */
+@media (min-width: 768px)  { .cards { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .cards { grid-template-columns: repeat(4, 1fr); } }</code></pre>
+<p>Entre os frameworks, o <b>Bootstrap</b> oferece componentes prontos (<code>btn btn-primary</code>, grid de 12 colunas) e o <b>Tailwind</b> é <i>utility-first</i>, com uma classe por propriedade (<code>mt-4</code>, <code>md:flex</code>) e um build que mantém só as classes usadas.</p>
+
+<h3>React: hooks e dados remotos</h3>
+<p>O <b>React</b> monta a tela com <b>componentes</b> e redesenha só o que muda. Os hooks principais:</p>
+<ul>
+<li><code>useState</code>: só o setter avisa o React. Quando o novo valor depende do anterior, use <code>setCount(prev =&gt; prev + 1)</code>.</li>
+<li><code>useEffect(fn, deps)</code>: roda quando as dependências mudam; o <code>return</code> é o <i>cleanup</i>. Em desenvolvimento, o <code>StrictMode</code> monta duas vezes de propósito, o que explica logs duplicados.</li>
+<li><code>useContext</code> evita passar props por vários níveis; hooks customizados (<code>useAlgo</code>) encapsulam lógica reutilizável.</li>
+</ul>
+<p>Buscar dados com <code>useEffect + fetch</code> obriga a reimplementar loading, erro, retry e cache em cada tela. O <b>TanStack Query</b> resolve com <code>useQuery</code> e <code>useMutation</code>, e <code>invalidateQueries</code> recarrega a lista após uma mutação. <b>Micro front-ends</b> (vídeo <a href="https://www.youtube.com/watch?v=HBi6jJUltKQ">Microfrontends Explicado Simples: A Arquitetura que Está Mudando o Frontend</a>) dão deploy independente a cada time, ao preço de complexidade; como microsserviços, só valem para times grandes.</p>
+<p>O tutorial <a href="https://www.youtube.com/watch?v=o2_RBMABx4s">Criando APLICAÇÃO COMPLETA e ESCALÁVEL com Angular + Edge Computing</a> mostra o problema clássico das SPAs: sem JavaScript nada aparece, o que prejudica o SEO. A solução é <b>Static Site Generation</b>: cada página vira HTML estático, servido a partir da borda de uma CDN.</p>
+
+<h3>UI/UX para quem gera interface com IA</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=Qdw3Dt_-tzc">5 BOAS PRÁTICAS de UI/UX para melhorar seus PROMPTS (frontend)</a> mostra que princípios de design melhoram muito a UI gerada por IA: <b>hierarquia visual</b> (dois CTAs com o mesmo peso dividem a atenção), <b>proximidade</b> (elementos próximos são lidos como grupo), <b>affordance</b> (IAs esquecem <code>cursor: pointer</code> e <code>:hover</code>) e componentes como <b>máquinas de estado</b> (vazio → loading → sucesso | erro, sem estados impossíveis).</p>
+
+<h2>Back-end e APIs</h2>
+<div class="box intro"><b>Para começar</b> Se o front-end é o salão, o <b>back-end</b> é a cozinha, e a <b>API</b> é o garçom: o cardápio com regras pelo qual um programa faz pedidos a outro. Veremos estilos de API, validação, cobranças em dobro, tempo real e a infraestrutura na frente do servidor.</div>
+<h3>Estilos de API</h3>
+<p>Para o vídeo <a href="https://www.youtube.com/watch?v=Qw8qVSZEWBc">What Is an API? Types, Uses, &amp; AI Integration</a>, na era da IA a API é o “canudo” que leva dados até o modelo e permite que ele aja. Três estilos dominam:</p>
+<table>
+<tr><th></th><th>REST</th><th>GraphQL</th><th>gRPC</th></tr>
+<tr><td>Modelo</td><td>Recursos + verbos HTTP</td><td>Endpoint único; o cliente escolhe os campos</td><td>Chamada de função remota, Protocol Buffers sobre HTTP/2</td></tr>
+<tr><td>Forte em</td><td>Simplicidade, <b>cache HTTP</b></td><td>Evita over/under-fetching</td><td>Payload pequeno, tipagem, streaming</td></tr>
+<tr><td>Fraco em</td><td>Várias chamadas, versionamento</td><td>Cache difícil, queries caras</td><td>Difícil de depurar, acopla os lados</td></tr>
+<tr><td>Use para</td><td>APIs públicas</td><td>Front com necessidades variadas</td><td>Microsserviços que você controla</td></tr>
+</table>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=Cvr0cGtq3fQ">O que fazer quando RESTful não for suficiente</a> faz uma observação que vale para o capítulo todo: quem programa com IA precisa saber <i>quando pedir</i> gRPC, filas ou CQRS, porque a IA dificilmente vai sugerir sozinha.</p>
+
+<h3>DTOs e validação</h3>
+<p>Um <b>DTO</b> (<i>Data Transfer Object</i>) é um contrato simples que valida e transporta dados (vídeo <a href="https://www.youtube.com/watch?v=jpeUKuCexGc">DTOs, o que é e porque usar</a>). Use DTOs separados para entrada (<code>CreateUser</code> tem <code>password</code>) e saída (<code>UserResponse</code> <b>nunca</b> tem). Passar o corpo da requisição direto para o ORM permite <b>mass assignment</b>: o atacante envia <code>"is_admin": true</code>. Validar e-mail mostra o limite das regex (<a href="https://www.youtube.com/watch?v=RsSE7ZWUC6k">Como Validar Email do Jeito Certo!</a>): uma regex completa da RFC 5322 é gigante e arrisca <b>ReDoS</b>. A receita é regex simples, biblioteca no back e, sempre, um <b>e-mail de confirmação</b>.</p>
+
+<h3>Idempotência e double submit</h3>
+<p>Uma operação é <b>idempotente</b> quando repeti-la tem o mesmo efeito de executá-la uma vez. Pela semântica HTTP, GET, PUT e DELETE devem ser; POST não. Mas os vídeos <a href="https://www.youtube.com/watch?v=YNHKO_74sLU">Todo DEV precisa entender isso: IDEMPOTÊNCIA</a> e <a href="https://www.youtube.com/watch?v=xsCOMiUwpeg">Como sistemas evitam requisições duplicadas</a> alertam: não presuma pelo verbo. Clique duplo, retry após timeout e rede instável causam <b>double submit</b>, e as defesas se empilham:</p>
+<table>
+<tr><th>Camada</th><th>Técnica</th><th>Limite</th></tr>
+<tr><td>Front</td><td>Desabilitar o botão</td><td>Contornável</td></tr>
+<tr><td>HTTP</td><td>Post/Redirect/Get (303)</td><td>Só evita reenvio com F5</td></tr>
+<tr><td>Servidor</td><td>Chave de idempotência em armazenamento <b>compartilhado</b> (Redis/banco)</td><td>Definir o que é “duplicado” e quando expira</td></tr>
+<tr><td>Banco</td><td><code>UNIQUE</code> constraint</td><td>Exige um campo realmente único</td></tr>
+</table>
+<p>Para cadastros, redirect + unique bastam. Para pagamentos e estoque, a chave de idempotência é obrigatória, e nunca na memória local de um servidor só.</p>
+
+<h3>Tempo real: polling, SSE, WebSocket e webhooks</h3>
+<p>Na web comum o cliente pergunta e o servidor responde. Para o servidor avisar novidades, há opções (vídeos <a href="https://www.youtube.com/watch?v=uiT4oK19hu4">SERVER-SENT EVENTS: Aprenda a Construir Sistemas que se Comunicam em Tempo Real</a>, <a href="https://www.youtube.com/watch?v=LBTY5BaWLH0">O que é WebSocket? Entenda na prática em 20 minutos (Guia para programadores)</a> e <a href="https://www.youtube.com/watch?v=k0QTuaK6LX4">WEBHOOKS vs WEBSOCKETS (na prática)</a>):</p>
+<table>
+<tr><th>Técnica</th><th>Direção</th><th>Uso típico</th></tr>
+<tr><td>Polling / long polling</td><td>cliente → servidor</td><td>Poucos usuários; desperdiça requisições</td></tr>
+<tr><td><b>SSE</b></td><td>servidor → cliente</td><td>Resposta HTTP que não fecha (<code>text/event-stream</code>); streaming de LLM, notificações</td></tr>
+<tr><td><b>WebSocket</b></td><td>bidirecional</td><td>Upgrade HTTP (101) para canal persistente; chats, jogos</td></tr>
+<tr><td><b>Webhook</b></td><td>servidor → servidor</td><td>“API invertida”: o provedor faz POST na sua URL. Valide a assinatura (HMAC) e seja idempotente</td></tr>
+</table>
+<p>Dois erros típicos com SSE: chamar <code>res.end()</code> após cada mensagem (vira polling disfarçado) e abrir uma conexão Redis por usuário quando um único assinante Pub/Sub basta.</p>
+<pre><code>app.get('/stream', (req, res) =&gt; {
+  res.setHeader('Content-Type', 'text/event-stream');
+  const onMsg = (msg) =&gt; res.write(`data: ${msg}\n\n`);
+  subscriber.on('message', onMsg);                 // um único cliente Redis
+  req.on('close', () =&gt; subscriber.off('message', onMsg));
+});</code></pre>
+
+<h3>CORS</h3>
+<p><b>CORS</b> diz se uma página de um site pode <i>ler</i> respostas de outro (vídeo <a href="https://www.youtube.com/watch?v=0gXiTWMikDU">O que é CORS? Análise frontend e backend</a>). Ele existe só no navegador; curl e serviços entre si não têm “erro de CORS”. Requisições não simples disparam um <b>preflight</b> <code>OPTIONS</code>, e o <code>*</code> não vale com cookies. CORS não substitui autenticação nem proteção contra CSRF (cookies <code>SameSite</code>, tokens).</p>
+
+<h3>Proxy reverso, CDN e rate limiting</h3>
+<p>Um <b>proxy reverso</b> é a recepção do prédio: fica na frente dos servidores e cuida de roteamento, TLS, cache e balanceamento. O vídeo <a href="https://www.youtube.com/watch?v=9nyiY-psbMs">Apache vs NGINX</a> contrasta o Apache (processo ou thread por conexão no modelo clássico) com o Nginx, criado em 2004 para o “problema C10K”, com poucos workers orientados a eventos. Em <a href="https://www.youtube.com/watch?v=gd_cUmwzgEM">APRENDA NGINX DO ZERO | Curso de NGINX em 1 HORA</a>, a pegadinha clássica é a barra final do <code>proxy_pass</code>, que decide se o prefixo é repassado:</p>
+<pre><code>upstream frontend { server localhost:3000; server localhost:3001; }  # round-robin
+server {
+  listen 80;
+  location /     { proxy_pass http://frontend; }
+  location /api/ { proxy_pass http://localhost:8000/; }  # barra final remove /api
+}</code></pre>
+<p>Uma <b>CDN</b> é uma rede de depósitos perto do usuário: servidores de <b>borda</b> guardam cópias de arquivos estáticos e buscam na origem só no <i>miss</i> (vídeo <a href="https://www.youtube.com/watch?v=pOFToA0Upek">O que é uma CDN? Para que serve a CDN?</a>).</p>
+<p><b>Rate limiting</b> limita requisições por cliente num intervalo. No vídeo <a href="https://www.youtube.com/watch?v=mlzPJlQeqBM">Rate Limiter | Explicação Completa</a>, o autor conta um ataque cujo único objetivo era gerar custo num sistema serverless. Os algoritmos clássicos são <b>fixed window</b> (simples, mas permite rajada dupla na virada), <b>sliding window</b> (preciso, usa mais memória), <b>token bucket</b> (permite rajadas controladas) e <b>leaky bucket</b> (saída constante). A resposta padrão é <b>429</b> com <code>Retry-After</code>, e a mesma ideia serve para <b>orçamentos de tokens</b> por usuário em apps com LLM.</p>
+
+<h3>Estado global, connection pooling e event loop</h3>
+<p><b>Estado global no back-end</b> gera bugs difíceis de reproduzir: o vídeo <a href="https://www.youtube.com/watch?v=5vKcNaWXtCY">Como Uma Requisição Contamina Outra</a> mostra uma variável <code>current_user</code> compartilhada entre requisições paralelas. Prefira funções puras, contexto por requisição e injeção de dependência.</p>
+<p>Abrir uma conexão com o banco é caro (TCP, TLS, autenticação). Com <b>connection pooling</b> (<a href="https://www.youtube.com/watch?v=aqmt_3UWItA">Como 1.000 Requests Usam 20 Conexões | Connection Pooling</a>), mil requisições compartilham, por exemplo, 20 conexões. O pool é criado fora do handler, e o <code>release</code> vai num <code>finally</code>. Em serverless, use um pool externo (PgBouncer, RDS Proxy).</p>
+<pre><code>const pool = new Pool({ max: 20 });          // uma vez, no módulo
+app.get('/users/:id', async (req, res) =&gt; {
+  const client = await pool.connect();
+  try { res.json((await client.query('SELECT * FROM users WHERE id=$1', [req.params.id])).rows[0]); }
+  finally { client.release(); }
+});</code></pre>
+<p>Até <code>console.log</code> pesa: no Node, escrever em arquivo ou terminal é síncrono e atrasa o <i>event loop</i>. Nos testes do vídeo <a href="https://www.youtube.com/watch?v=V3tyJSEDiuM">Console log pode TRAVAR a sua aplicação (explicação)</a>, cem logs por requisição derrubaram a vazão de um servidor de ~1,3 milhão para ~71 mil requisições no mesmo intervalo. Use logs assíncronos e estruturados (Pino).</p>
+<p>Por fim, cada dependência externa traz riscos de cadeia de suprimentos (o caso <i>xz</i>, de 2024), atualizações quebradas e imagens maiores. A regra de <a href="https://www.youtube.com/watch?v=nJpXU6RSvO8">O custo de usar muitas dependências</a>: não instale uma biblioteca para uma única função; fixe versões com lockfile e audite no CI.</p>
+
+<h2>Bancos de dados</h2>
+<div class="box intro"><b>Para começar</b> Um <b>banco de dados</b> é o arquivo-mestre da empresa: guarda as informações de forma organizada e segura. Há bancos <b>relacionais</b>, como planilhas com colunas fixas consultadas em SQL, e <b>NoSQL</b>, como fichas livres. Veremos garantias, distribuição, busca, evolução do esquema, cache e sharding.</div>
+<h3>Relacional × documento, ACID × BASE</h3>
+<p>O MySQL organiza dados em tabelas com esquema; o MongoDB guarda documentos JSON flexíveis (<a href="https://www.youtube.com/watch?v=OdgZ0jr4jpM">MySQL vs MongoDB</a>). Os vídeos <a href="https://www.youtube.com/watch?v=8KUyqiSkQlQ">ACID e BASE explicado de forma simples</a> e <a href="https://www.youtube.com/watch?v=bhw4-Kq_RPs">Como Escolher o Banco de Dados Correto pra sua Aplicação | System Design &amp; Arquitetura de Software</a> mostram que a escolha começa pelas garantias. <b>ACID</b>: <b>atomicidade</b> (a transferência debita e credita, ou nada), <b>consistência</b> (o estoque nunca fica negativo), <b>isolamento</b> (duas compras do último item: uma falha) e <b>durabilidade</b> (o confirmado sobrevive a um crash). <b>BASE</b> troca correção imediata por disponibilidade e escala, com <b>consistência eventual</b>. Pagamentos, estoque e ingressos pedem consistência forte; likes, analytics e recomendações aceitam a eventual. Na prática as fronteiras se misturam: o MongoDB tem transações ACID e o DynamoDB oferece leitura consistente sob demanda.</p>
+
+<h3>CAP e PACELC</h3>
+<p>Quando um banco roda em várias máquinas e a rede entre elas cai, cada lado precisa decidir: continua atendendo com dado talvez velho ou para até a linha voltar? O teorema <b>CAP</b> (Brewer, 2000) diz que, durante uma <b>partição</b>, é preciso escolher entre <b>consistência</b> e <b>disponibilidade</b>. Um banco prefere ficar indisponível a mostrar saldo errado (CP); uma rede social prefere mostrar curtidas atrasadas (AP). O <b>PACELC</b> (Abadi, 2012) completa: <i>sem</i> partição, a escolha diária é entre <b>latência</b> e consistência (replicação síncrona é consistente e lenta; assíncrona, rápida e eventual).</p>
+<table>
+<tr><th>Banco</th><th>Classificação usual</th><th>Mecanismo</th></tr>
+<tr><td>Cassandra / ScyllaDB</td><td>PA/EL (ajustável)</td><td>Consistência por consulta (ONE, QUORUM, ALL)</td></tr>
+<tr><td>MongoDB</td><td>PC/EC (padrão)</td><td>Replica set com eleição de primário</td></tr>
+<tr><td>DynamoDB</td><td>Por requisição</td><td><code>ConsistentRead</code> true/false</td></tr>
+<tr><td>CockroachDB, Spanner</td><td>PC/EC</td><td>Consenso (Raft/Paxos); Spanner usa relógios atômicos</td></tr>
+</table>
+<p>Com fator de replicação RF, se os nós lidos (R) e escritos (W) somam mais que RF, toda leitura cruza com uma réplica atualizada. Dois erros comuns: confundir o “C” de ACID (invariantes) com o do CAP (todas as réplicas devolvem a última escrita), e chamar o Postgres de “CA”. Um nó só não sofre partição; com réplicas, a escolha volta a existir.</p>
+
+<h3>Índices e Full-Text Search</h3>
+<p>Um <b>índice</b> é como o índice remissivo de um livro. O vídeo <a href="https://www.youtube.com/watch?v=UYOr-rpQs1I">O QUE NINGUÉM TE ENSINOU SOBRE BUSCAS INTELIGENTES NO BANCO DE DADOS!</a> mostra que <code>LIKE '%termo%'</code> busca substrings (“anel” acha “panela”) e, com o curinga no início, não usa índice B-tree: lê a tabela inteira. O <b>Full-Text Search</b> tokeniza, remove <i>stopwords</i>, reduz palavras ao radical (<i>stemming</i>) e monta um <b>índice invertido</b>.</p>
+<pre><code>-- PostgreSQL
+CREATE INDEX idx_fts ON products USING GIN (to_tsvector('portuguese', name || ' ' || description));
+SELECT * FROM products
+ WHERE to_tsvector('portuguese', name || ' ' || description) @@ plainto_tsquery('portuguese', 'capa dura');</code></pre>
+<p>A lição dos números do vídeo: <b>sem o índice</b>, o FTS foi <i>mais lento</i> que o LIKE (139 ms contra 4,9 ms); com o índice GIN, caiu para 0,3 ms. Para relevância de grande e-commerce, use um motor dedicado (Elasticsearch/OpenSearch); para substrings tolerantes a erro, a extensão <code>pg_trgm</code>.</p>
+
+<h3>ORMs, SQL injection e migrações</h3>
+<p>Uma <b>ORM</b> traduz objetos em SQL (<code>user.save()</code>). O vídeo <a href="https://www.youtube.com/watch?v=upn1vRXg-Og">Como ORMs Mentem pra Você</a> lista o que ela esconde. O principal é o <b>N+1</b>: um loop que acessa <code>order.customer.name</code> dispara uma consulta por pedido. A solução é <i>eager loading</i> (<code>select_related</code> no Django, <code>include</code> no Prisma, <code>JOIN FETCH</code> no JPA). Inspecione o SQL gerado com <code>EXPLAIN ANALYZE</code> e use SQL puro nas consultas críticas. Contra <b>SQL injection</b>, a defesa são <b>consultas parametrizadas</b> (<code>WHERE id = $1</code>), não “sanitizar” strings (<a href="https://www.youtube.com/watch?v=THwPB7OrMyw">O que é SQL injection e como resolver</a>).</p>
+<p>Rodar <code>ALTER TABLE</code> à mão em produção não é revisável nem reproduzível (<a href="https://www.youtube.com/watch?v=Go7rKLtJ0ec">Como Fazer Migrações de Banco de Dados do Jeito Certo</a>). <b>Migrações</b> ficam no repositório, passam por PR e o banco registra qual versão aplicou. Para mudar sem downtime, use <b>expand/contract</b>: adicione a coluna nova, escreva nas duas, faça o backfill em lotes, mude as leituras e só depois remova a antiga. Já o <b>database branching</b> (<a href="https://www.youtube.com/watch?v=llC6b8g6FgY">Pare de quebrar o banco em produção: Aprenda Database Branching</a>) dá a cada branch de código uma cópia <i>copy-on-write</i> do banco de staging, que só duplica os blocos alterados.</p>
+
+<h3>Cache</h3>
+<p><b>Cache</b> é deixar o sal ao lado do fogão em vez de buscá-lo na despensa. Funciona por causa das ordens de grandeza de latência citadas em <a href="https://www.youtube.com/watch?v=vRO0UfvsbDw">CACHE-ASIDE: Escalabilidade, Performance e Arquitetura de Software pra Mandar Bem na Entrevista!</a>: RAM ~100 ns, SSD ~100 µs, disco rígido ~10 ms. Mesmo pela rede, uma leitura no Redis costuma ser bem mais rápida que uma consulta com joins.</p>
+<p>No <b>cache-aside</b>, a aplicação lê o cache; no <i>miss</i>, lê o banco e grava no cache com <b>TTL</b>. Alternativas: <b>write-through</b> (grava nos dois, cache sempre atual, escrita mais lenta) e <b>write-behind</b> (grava no cache e persiste depois, com risco de perda). Armadilhas: o <b>cache stampede</b> (milhares de misses quando uma chave quente expira; use lock ou TTL com <i>jitter</i>) e cache local em várias instâncias, cada uma com uma versão diferente.</p>
+<p>O caso da Timeline do Facebook (<a href="https://www.youtube.com/watch?v=6bTkTy6DjOQ">ARQUITETURA BACKEND DO FACEBOOK | System Design</a>) mostra que cache sem estratégia não basta: a solução combinou desnormalização, separação entre dados quentes e frios e um agregador rodando na própria máquina do banco, levando a computação até os dados.</p>
+
+<h3>Sharding</h3>
+<p>Réplicas de leitura escalam leituras, mas não escritas nem volume. Quando o primário não aguenta, vem o <b>sharding</b>: os dados são fatiados entre bancos independentes. O vídeo <a href="https://www.youtube.com/watch?v=xJllDyCIyws">Aprenda a Escalar Bancos de Dados Usando SHARDING | System Design &amp; Arquitetura de Software</a> propõe uma ordem: escala vertical, índices, cache, otimização de queries, réplicas e, por último, sharding.</p>
+<ul>
+<li>A <b>shard key</b> precisa de alta cardinalidade, distribuição uniforme e afinidade (usuário numa rede social). <code>created_at</code> por ano concentra a carga no shard atual (<i>hotspot</i>).</li>
+<li><code>hash(key) % N</code> remapeia quase tudo quando N muda; o <b>consistent hashing</b> move só ~1/N das chaves.</li>
+<li>Desafios: o “problema da celebridade”, consultas entre shards e transações distribuídas, que viram <b>Sagas</b> com compensações.</li>
+</ul>
+
+<h2>Design de código: orientação a objetos bem feita</h2>
+<div class="box intro"><b>Para começar</b> Orientação a objetos organiza o programa em peças que juntam dados e comportamento, como blocos de LEGO. Peças bem desenhadas podem ser trocadas sem desmontar o castelo. Esta seção mostra os sintomas de um código apodrecendo e três ferramentas: <b>SOLID</b>, <b>Object Calisthenics</b> e <b>padrões de projeto</b>.</div>
+<h3>Sintomas de código apodrecendo</h3>
+<p>Robert C. Martin descreveu quatro sintomas, retomados em <a href="https://www.youtube.com/watch?v=S2mMFopw_ww">4 Sintomas de que Seu Código Está APODRECENDO e Você Precisa Identificar Agora!</a>: <b>rigidez</b> (toda mudança gera efeito dominó), <b>fragilidade</b> (mexer no frete cancela pedidos), <b>imobilidade</b> (impossível reaproveitar um módulo) e <b>viscosidade</b> (a gambiarra é mais fácil que o caminho certo). A saída começa por cobrir as áreas sensíveis com testes e refatorar; depois, extrair partes aos poucos atrás de uma fachada, o padrão <b>Strangler Fig</b>.</p>
+
+<h3>SOLID</h3>
+<table>
+<tr><th>Princípio</th><th>Enunciado</th><th>Violação típica</th></tr>
+<tr><td><b>S</b>RP</td><td>Um módulo tem <b>um único motivo para mudar</b></td><td>Classe que matricula, cobra e manda e-mail</td></tr>
+<tr><td><b>O</b>CP</td><td>Aberto para extensão, fechado para modificação</td><td>Cadeia de <code>if (tipo == "ICMS")</code></td></tr>
+<tr><td><b>L</b>SP</td><td>Um subtipo substitui o tipo base sem quebrar o cliente</td><td>Subclasse que exige mais ou entrega menos; <code>instanceof</code> no cliente</td></tr>
+<tr><td><b>I</b>SP</td><td>Nenhum cliente depende de métodos que não usa</td><td>Cartão lançando exceção em <code>generateQRCode</code></td></tr>
+<tr><td><b>D</b>IP</td><td>Regras dependem de abstrações, não de detalhes</td><td><code>new StripeClient()</code> dentro da regra de negócio</td></tr>
+</table>
+<p>As visões divergem. Renato Augusto (por exemplo, em <a href="https://www.youtube.com/watch?v=f6-5ANuTkys">O Princípio SOLID mais CRÍTICO de TODOS! | Princípio de Substituição de LISKOV</a>) considera LSP e ISP os mais negligenciados. Augusto Galego, em <a href="https://www.youtube.com/watch?v=2yqHlJ2HbTo">Princípios SOLID Pelos Olhos de um Dev Sr.</a>, dá nota máxima a Liskov e é cético com ISP e DIP, que aumentam o boilerplate. Os dois concordam que os princípios <b>não devem ser seguidos à risca em software pequeno</b>. Na aula <a href="https://www.youtube.com/watch?v=5_fmI1nmWOQ">Dominando príncipios de design de código | SOLID</a>, o ganho é concreto: com um <code>Notifier</code> injetado, uma queda do e-mail deixa de bloquear matrículas, e trocar e-mail por WhatsApp não mexe na regra.</p>
+<div class="box fact"><b>Você sabia?</b> O “L” do SOLID homenageia Barbara Liskov, que formulou o princípio de substituição numa palestra de 1987. Ela também criou a linguagem CLU, pioneira em tipos abstratos de dados, e recebeu o Prêmio Turing de 2008.</div>
+
+<h3>Object Calisthenics</h3>
+<p>As nove regras de Jeff Bay (<i>The ThoughtWorks Anthology</i>, 2008) são <b>exercícios</b>, não leis, comentados em <a href="https://www.youtube.com/watch?v=Ss6LAFC_9pw">Separando Dev Júnior de Dev Senior (Object Calisthenics)</a>. As mais úteis: um nível de indentação por método; não usar <code>else</code> (<i>guard clauses</i>, retornar cedo); encapsular primitivos em <b>Value Objects</b> que se autovalidam (Email, CPF); um ponto por linha (<b>Lei de Demeter</b>: peça <code>order.getCustomerZipCode()</code> em vez de navegar a cadeia); e evitar getters/setters (<b>Tell, Don't Ask</b>). Regras como “no máximo duas variáveis de instância” são consideradas exageradas.</p>
+<pre><code>// Anêmico: a regra mora num "Service"
+if (product.getPrice() &gt; 50) product.setPrice(product.getPrice() - 10);
+// Rico: a entidade protege a própria regra
+product.applyDiscount(Money.of("10.00"));</code></pre>
+<p><b>Nunca use <code>float</code> para dinheiro</b>: 0,1 + 0,2 ≠ 0,3 em ponto flutuante binário. Use <code>BigDecimal</code>, centavos inteiros ou um tipo Money.</p>
+
+<h3>Padrões de projeto</h3>
+<p>Um <b>padrão de projeto</b> é uma solução com nome para um problema recorrente, como uma jogada ensaiada. O catálogo do GoF (1994) os divide em criacionais, estruturais e comportamentais. Regra de ouro: aplique quando o problema aparecer, nunca preventivamente.</p>
+<table>
+<tr><th>Padrão</th><th>Problema que resolve</th><th>Cuidado</th></tr>
+<tr><td>Factory</td><td>Centralizar a criação; o cliente só conhece a interface</td><td>Métodos estáticos atrapalham testes</td></tr>
+<tr><td>Singleton</td><td>Uma instância por processo (pool de conexões)</td><td>É estado global</td></tr>
+<tr><td>Adapter</td><td>Traduzir uma biblioteca externa para a sua interface</td><td>“As libs se adaptam ao nosso código”</td></tr>
+<tr><td>Strategy</td><td>Algoritmos intercambiáveis sem if/switch (impostos, descontos)</td><td>A escolha sobe para uma Factory</td></tr>
+<tr><td>State</td><td>Estados de um pedido como objetos com transições válidas</td><td>Mais classes; alternativa: tabela de transições</td></tr>
+<tr><td>Observer</td><td>O emissor não conhece quem escuta</td><td>Fluxo implícito, difícil de rastrear</td></tr>
+</table>
+<p>Em <a href="https://www.youtube.com/watch?v=9sI8KHEjs0M">5 Design Patterns Que Todo Dev Deveria Conhecer</a>, Augusto Galego acrescenta dois padrões de <b>resiliência</b> indispensáveis ao chamar APIs instáveis (pagamentos, LLMs). O <b>retry com backoff exponencial e jitter</b> espera 1, 2, 4 s… e sorteia o momento dentro de cada intervalo para que milhares de clientes não retentem juntos (veja a figura a seguir); só retente erros transitórios e operações idempotentes. O <b>circuit breaker</b>, após N falhas, “abre” e faz as chamadas falharem na hora, deixando passar uma chamada de teste de tempos em tempos.</p>
+<figure><img src="img/08_backoff.png"><figcaption>Backoff exponencial puro × backoff com <i>full jitter</i> (cinco clientes simulados): o jitter desfaz a sincronização das retentativas. Fonte: elaboração própria com dados do vídeo “5 Design Patterns Que Todo Dev Deveria Conhecer”.</figcaption></figure>
+
+<h3>Acoplamento: um espectro, não um pecado</h3>
+<p>Para Augusto Galego, em <a href="https://www.youtube.com/watch?v=ecev-RuuKVg">Quando Vale a Pena Desacoplar Seu Código?</a>, o método “receita de bolo” que salva, cobra, reserva estoque e envia e-mail em sequência é ótimo para um MVP. Cada nível de desacoplamento (interface + injeção → fila → pub/sub) compra resiliência e paga em indireção. Três frases dele: “abstração é útil quando abstrai alguma coisa” (<code>UserService</code> + <code>UserServiceImpl</code> sem segunda implementação é cerimônia); “fila não dá velocidade, dá <b>vazão</b>”; e IAs tendem a desacoplar ao máximo até software simples, então dê pushback.</p>
+
+<h2>Arquitetura de aplicação</h2>
+<div class="box intro"><b>Para começar</b> Agora olhamos a montagem inteira. O coração do sistema (as regras de negócio) não deveria depender da “roupa” que ele veste (framework, banco, provedor de pagamento). Veremos as arquiteturas que protegem esse núcleo, a escolha entre monólito e microsserviços e dois padrões avançados: CQRS e Event Sourcing.</div>
+<h3>Clean Architecture e Hexagonal</h3>
+<p>As duas fazem as dependências apontarem para dentro. A <b>Clean Architecture</b> (Robert C. Martin) organiza o código em anéis: entidades, casos de uso, adaptadores e frameworks. A <b>Hexagonal</b> (<i>Ports and Adapters</i>, Alistair Cockburn, 2005) tem um núcleo que define <b>portas</b> (interfaces de entrada e de saída) e <b>adaptadores</b> que as implementam, como mostra a figura a seguir. Os vídeos <a href="https://www.youtube.com/watch?v=HTrLgUKQLvs">Me de 30 minutos para aprender Arquitetura Limpa e Hexagonal</a> e <a href="https://www.youtube.com/watch?v=LHhm1gzIzOE">Arquitetura Hexagonal | Explicação de um Dev Sr.</a> mostram as duas na prática: no fundo, é DIP + Adapter aplicados à aplicação inteira.</p>
+<figure><img src="img/08_clean.png"><figcaption>Ports and Adapters: o núcleo define as portas, e os adaptadores de entrada e saída (inclusive um InMemory para testes) dependem dele, nunca o contrário. Fonte: elaboração própria.</figcaption></figure>
+<p>Ganha-se testabilidade (casos de uso rodam com adaptadores em memória) e liberdade para trocar fornecedores sem tocar no núcleo. Paga-se em arquivos e indireção. Não é organização de pastas: o que importa é o núcleo depender só de interfaces que ele mesmo define.</p>
+
+<h3>Monólito, monólito modular e microsserviços</h3>
+<p>Um <b>monólito</b> é uma unidade de deploy. Um <b>monólito modular</b> mantém o deploy único, mas cria fronteiras internas com contratos mínimos: no exemplo de <a href="https://www.youtube.com/watch?v=CwIyDq6nhdk">Aprenda MONOLITO MODULAR ANTES de MICROSERVIÇOS</a>, matrículas só chama <code>cobrancas.isConfirmed(pedido)</code>, e cobranças pode trocar de provedor sem afetar ninguém. <b>Microsserviços</b> separam também deploy, processo e banco. A pergunta-chave, citada em <a href="https://www.youtube.com/watch?v=ooJjxNsQnK4">Quando usar Monolitos vs Microserviços</a>, é: <b>“que benefício justifica trocar uma chamada de função por uma chamada de rede?”</b>. O custo vem em autenticação entre serviços, tracing, latência, consistência entre bancos e infraestrutura.</p>
+<table>
+<tr><th>Dor no monólito</th><th>Solução sem microsserviço</th><th>Quando o microsserviço se justifica</th></tr>
+<tr><td>Carga alta</td><td>Load balancer + réplicas</td><td>Perfis de carga muito diferentes</td></tr>
+<tr><td>Conflitos entre muitos devs</td><td>Módulos com donos</td><td>Vários times realmente autônomos</td></tr>
+<tr><td>Uma parte precisa de GPU</td><td>Extrair só essa parte</td><td>Serviço de IA separado</td></tr>
+</table>
+<p>A Shopify segue como monólito modular famoso, e a Amazon Prime Video relatou em 2023 que voltar um pipeline de monitoramento para um processo único cortou o custo em 90%. Dividir mal produz um <b>monólito distribuído</b>, o pior dos dois mundos. O consenso: comece pelo monólito modular e extraia serviços quando a dor for real.</p>
+
+<h3>CQRS e Event Sourcing</h3>
+<p>Numa biblioteca, o balcão de devoluções (escrita) e o catálogo de consulta (leitura) têm necessidades diferentes. O <b>CQRS</b> (<i>Command Query Responsibility Segregation</i>), explicado em <a href="https://www.youtube.com/watch?v=8Z8JAtEEan0">CQRS: O PADRÃO ARQUITETURAL QUE TODO PROGRAMADOR PRECISA CONHECER!</a>, separa o modelo de escrita do de leitura. Faz sentido quando há <b>assimetria</b>: uma página de produto agrega dezenas de tabelas, enquanto a escrita toca uma ou duas. Réplicas de leitura ajudam, mas não são CQRS, porque mantêm o mesmo modelo.</p>
+<figure><img src="img/08_cqrs.png"><figcaption>CQRS completo: escrita no Postgres (fonte da verdade), propagação por CDC/Outbox → Kafka → worker de projeção → banco de leitura desnormalizado. Fonte: elaboração própria com dados do vídeo “CQRS: O PADRÃO ARQUITETURAL QUE TODO PROGRAMADOR PRECISA CONHECER!”.</figcaption></figure>
+<p>O ponto delicado é a sincronização. Gravar no banco e depois publicar no Kafka cria o <b>dual write</b>: se a segunda operação falha, os lados divergem. As soluções são o <b>CDC</b> (ler o log de transações do banco) ou o <b>Transactional Outbox</b> (gravar o evento numa tabela <i>na mesma transação</i> e publicá-lo depois). O resultado é consistência eventual; validações críticas, como saldo, consultam a fonte da verdade.</p>
+<p><b>Event Sourcing</b> (<a href="https://www.youtube.com/watch?v=jzMghF8n26E">EVENT SOURCING: APRENDA A CONSTRUIR SISTEMAS QUE VÃO ALÉM DO CRUD</a>, <a href="https://www.youtube.com/watch?v=0B20k31Gyq0">CQRS  e EVENT SOURCING | Design de Software Maduro</a>) leva a ideia ao limite: o estado é a soma de eventos imutáveis (ContaAberta, DepósitoFeito…), como um extrato. Um UPDATE apaga a história; um evento a preserva. <b>Projeções</b> geram modelos de leitura, <b>snapshots</b> evitam reprocessar tudo e o <b>replay</b> permite reconstruir o passado, por exemplo para estornar tarifas declaradas indevidas. Correções são eventos inversos, nunca deleções. Ambos são decisões de <b>domínio</b> (auditoria, finanças), não modismos: num CRUD simples só multiplicam a complexidade.</p>
+
+<h2>System design: de um servidor a milhões de usuários</h2>
+<div class="box intro"><b>Para começar</b> Uma barraca de pastel atende dez clientes por hora; para mil, não basta fritar mais rápido: são precisas mais fritadeiras, uma fila organizada e talvez filiais. <b>System design</b> é planejar essa expansão para software. Veremos o roteiro de entrevista, como medir disponibilidade e três estudos de caso.</div>
+<h3>Roteiro e evolução típica</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=yaNjUYg6yY0">É isso que um SENIOR precisa saber sobre SYSTEM DESIGN</a> sugere um roteiro: requisitos funcionais e não funcionais, estimativas de capacidade, modelo de dados, API, desenho de alto nível e, por fim, gargalos. Avalia-se a capacidade de discutir <b>trade-offs</b>: se a leitura leva 60 ms e a meta é 500 ms, colocar Redis só traz custo.</p>
+<p><b>Escala vertical</b> (máquina maior) tem teto e mantém um ponto único de falha; <b>escala horizontal</b> (réplicas atrás de um load balancer) exige aplicação <b>stateless</b>. A figura a seguir resume a evolução descrita no livro <i>System Design Interview</i>, de Alex Xu, recomendado em <a href="https://www.youtube.com/watch?v=9g7twJrXqoY">System Design: Escalando uma Arquitetura do Zero a Um Milhão de Usuários | Arquitetura de Software</a>: load balancer, autoscaling, réplicas de leitura (com consistência eventual; leia do primário logo após escrever), cache, filas com workers para tarefas lentas e, por último, sharding e múltiplas regiões.</p>
+<figure><img src="img/08_escala.png"><figcaption>Evolução típica de uma arquitetura até milhões de usuários. Sharding fica por último. Fonte: elaboração própria.</figcaption></figure>
+
+<h3>Disponibilidade e o cálculo dos “noves”</h3>
+<p>O <b>SLI</b> é a medida real (fração de requisições boas), o <b>SLO</b> é a meta interna (99,9% em 30 dias) e o <b>SLA</b> é o contrato com o cliente, geralmente mais frouxo. A diferença 1 − SLO é o <b>error budget</b>: enquanto houver orçamento, o time arrisca deploys; quando acaba, prioriza confiabilidade. O downtime permitido é <code>(1 − disponibilidade) × período</code>:</p>
+<table>
+<tr><th>Disponibilidade</th><th>Downtime/ano</th><th>Downtime/mês (30 d)</th></tr>
+<tr><td>99%</td><td>3,65 dias</td><td>7,2 h</td></tr>
+<tr><td>99,9%</td><td>8,76 h</td><td>43,2 min</td></tr>
+<tr><td>99,99%</td><td>52,6 min</td><td>4,32 min</td></tr>
+<tr><td>99,999%</td><td>5,26 min</td><td>25,9 s</td></tr>
+</table>
+<p>O que mais pesa é a <b>composição</b>. Componentes em <b>série</b> multiplicam disponibilidades: LB (99,99%) × API (99,9%) × banco (99,95%) ≈ <b>99,84%</b>, pior que qualquer um isolado. Réplicas em <b>paralelo</b> combinam como 1 − (1 − A₁)(1 − A₂): duas de 99% dão <b>99,99%</b>, como mostra a figura a seguir. Mas só se as falhas forem independentes: duas réplicas na mesma zona, com o mesmo bug, caem juntas.</p>
+<figure><img src="img/08_composicao.png"><figcaption>Disponibilidade composta de N componentes em série (multiplicação) comparada a duas réplicas de 99% em paralelo. Fonte: elaboração própria (cálculo).</figcaption></figure>
+<p>A disponibilidade também se escreve A = MTBF / (MTBF + MTTR). Na prática, reduzir o tempo de recuperação (MTTR) com alertas, rollback rápido e runbooks costuma ser mais barato que evitar toda falha.</p>
+
+<h3>Estudos de caso</h3>
+<p><b>Notificações em larga escala.</b> No exercício do vídeo de system design, é preciso avisar até milhões de inscritos em menos de 5 s quando sai um vídeo novo. A arquitetura separa ingestão, descoberta e entrega com filas: um validador responde rápido ao webhook, um processador quebra a lista de assinantes em lotes, workers por canal (push, e-mail, SMS) entregam e uma <b>dead-letter queue</b> guarda as falhas para reprocessar. Para poucos usuários, um endpoint basta.</p>
+<p><b>Upload e streaming de vídeo.</b> Em <a href="https://www.youtube.com/watch?v=JBivKeZVex0">ARQUITETANDO O YOUTUBE NA PRÁTICA | SYSTEM DESIGN</a>, as soluções ingênuas falham: vídeo em base64 dentro de JSON cresce 33%, e um POST único esbarra em 413 e timeouts. O desenho que funciona: a API gera <b>URLs pré-assinadas</b> para <i>multipart upload</i> direto no armazenamento de objetos; o cliente envia pedaços em paralelo; um evento dispara a <b>transcodificação</b> em várias resoluções e segmentos curtos (manifestos DASH ou HLS); o player alterna a resolução conforme a banda (<b>Adaptive Bitrate</b>); e uma CDN serve os segmentos.</p>
+<p><b>Sistemas com LLM.</b> Em <a href="https://www.youtube.com/watch?v=2Ls_uc0fo-Y">System Design para Aplicações com IA</a>, os princípios são clássicos aplicados a um fornecedor caro, instável e não determinístico: o provedor atrás de um adapter; <b>saídas estruturadas</b> (JSON Schema) para domar o não determinismo; orçamentos de tokens por usuário; roteamento para modelos baratos em tarefas simples; cache; jobs assíncronos; máquinas de estado para fluxos; e observabilidade de custo e qualidade, com <i>failover</i> quando um modelo degrada.</p>
+
+<h2>Testes</h2>
+<div class="box intro"><b>Para começar</b> Um <b>teste automatizado</b> é um programa que confere se outro faz o que deveria, como o checklist do piloto antes de decolar. Não garante que nada dará errado, mas pega erros conhecidos de forma rápida e repetível. Com IA escrevendo código, ele vira a principal prova de que o código funciona.</div>
+<h3>Por que testar, e o que muda com IA</h3>
+<p>Para o vídeo <a href="https://www.youtube.com/watch?v=GRYZR2R20FI">Code Quality in the Age of AI: Why Great Code Isn't Enough</a>, a confiança no código vem “por evidência, não por autoria”, e os testes são a prova primária. O experimento do post do AkitaOnRails citado em “Tipagem” reforça o ponto. A <b>pirâmide de testes</b> segue útil:</p>
+<table>
+<tr><th>Nível</th><th>Testa</th><th>Ferramentas</th></tr>
+<tr><td>Unitário (muitos)</td><td>Uma unidade, dependências substituídas</td><td>JUnit + Mockito, Jest/Vitest, pytest</td></tr>
+<tr><td>Integração</td><td>Repositório + banco, módulo + fila</td><td>Testcontainers</td></tr>
+<tr><td>Contrato</td><td>Acordo entre consumidor e provedor de API</td><td>Pact, OpenAPI</td></tr>
+<tr><td>E2E (poucos)</td><td>Jornada completa no navegador</td><td>Playwright, Cypress</td></tr>
+</table>
+
+<h3>Exemplos: Spring e React</h3>
+<p>No vídeo <a href="https://www.youtube.com/watch?v=T6ChO8LQxRE">COMEÇANDO com TESTES UNITÁRIOS no JAVA SPRING | Junit + Mockito</a>, as dependências do serviço viram <code>@Mock</code>, o serviço recebe <code>@InjectMocks</code> e o teste segue <i>Arrange, Act, Assert</i>. Uma lição: foi preciso extrair a chamada ao autorizador externo para um serviço próprio antes de conseguir mocká-la. Testabilidade exige design (é o DIP na prática). Para queries com sintaxe específica do Postgres, prefira Testcontainers a um banco em memória.</p>
+<pre><code>@Test
+void transfere_quando_autorizado() {
+    when(authService.authorize(any(), any())).thenReturn(true);          // Arrange
+    service.createTransaction(new TransactionDTO(new BigDecimal("10"), 1L, 2L)); // Act
+    verify(repository, times(1)).save(any());                             // Assert
+    assertEquals(new BigDecimal("0"), sender.getBalance());
+}</code></pre>
+<p>No front, a filosofia da Testing Library (<a href="https://www.youtube.com/watch?v=0dRPPmRYM3o">Elevando os Testes Unitários da sua aplicação React usando Jest &amp; Testing Library</a>) é testar o que o usuário vê, não a implementação. Prefira <code>getByRole('button', { name: /salvar/i })</code> a IDs de teste, o que verifica acessibilidade de graça; para chamadas assíncronas, use <code>findBy*</code> ou <code>waitFor</code>.</p>
+
+<h3>TDD e testes como especificação</h3>
+<p>O <b>Test-Driven Development</b>, de Kent Beck, segue o ciclo <b>red → green → refactor</b>. Com agentes de IA, o teste vira a <b>especificação executável</b> que impede o agente de “trapacear”. Daí regras de AGENTS.md (o arquivo de instruções para agentes) como as de <a href="https://www.youtube.com/watch?v=ytTJtfg9HCw">Práticas do Akita com IA. Deu bom? (Boas Práticas de IA)</a>: “use TDD”, “nunca delete testes sem aprovação”, “rode os linters”.</p>
+<div class="box fact"><b>Você sabia?</b> Em 1968, uma conferência da OTAN em Garmisch, na Alemanha, popularizou o termo “engenharia de software” para enfrentar a “crise do software”: projetos atrasados, caros e cheios de defeitos.</div>
+
+<h2>DevOps, entrega e operação</h2>
+<div class="box intro"><b>Para começar</b> O código ainda precisa chegar aos usuários e continuar funcionando. <b>DevOps</b> une quem desenvolve e quem opera, como uma linha de montagem com inspeções automáticas e sensores que avisam quando algo quebra. Veremos contêineres, CI/CD, nuvem e monitoramento.</div>
+<h3>Contêineres e Docker</h3>
+<p>Uma <b>imagem</b> é um sistema de arquivos em camadas, imutável, descrito por um <code>Dockerfile</code>. Um <b>contêiner</b> é um processo isolado que compartilha o kernel do host, e não uma VM. O <b>Compose</b> descreve vários serviços (app, banco, cache) para desenvolvimento local reproduzível.</p>
+<pre><code>FROM node:22-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci                 # camada cacheada enquanto o lockfile não mudar
+COPY . .
+RUN npm run build
+
+FROM node:22-alpine        # imagem final sem ferramentas de build
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+USER node                  # não rodar como root
+CMD ["node", "dist/server.js"]</code></pre>
+<p>Boas práticas: copiar o manifesto antes do código, multi-stage, imagens base enxutas e fixadas, <code>.dockerignore</code> e nenhum segredo na imagem.</p>
+
+<h3>CI/CD</h3>
+<p>A <b>integração contínua</b> roda build, lint e testes a cada push. A <b>entrega contínua</b> deixa cada versão pronta para produção; a <b>implantação contínua</b> a publica automaticamente (CD é <i>delivery</i> ou <i>deployment</i>, não “development”). O vídeo <a href="https://www.youtube.com/watch?v=PADhI0fZnTI">Como Eu Começo Um Projeto do Zero</a> recomenda <b>publicar o “Hello World” em produção no primeiro dia</b>, com deploy a cada merge na <code>main</code>, para que os problemas de “funciona na minha máquina” apareçam quando ainda são baratos.</p>
+<pre><code># .github/workflows/ci.yml (esqueleto)
+on: [pull_request, push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci &amp;&amp; npm run lint &amp;&amp; npm test
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps: [ { uses: actions/checkout@v4 }, { run: ./scripts/deploy.sh } ]</code></pre>
+<p>Regras de arquitetura e segurança devem morar no pipeline (análise estática, <i>policy as code</i>), não numa wiki: o objetivo é “tornar o caminho certo o mais fácil”. A infraestrutura também vira código (<b>IaC</b>: Terraform, manifestos do Kubernetes), versionado e revisado. Na nuvem, o serverless “escala pelo cartão de crédito”, então rate limiting e alarmes de cobrança são obrigatórios.</p>
+
+<h3>Observabilidade</h3>
+<p><b>Observabilidade</b> é entender o sistema pelos sinais que ele emite, como o painel de um carro: <b>logs</b> estruturados (com <i>correlation id</i> e sem dados sensíveis), <b>métricas</b> e <b>traces</b> distribuídos (OpenTelemetry). Os <i>golden signals</i> do Google SRE são latência (em percentis p95/p99, nunca só a média), tráfego, erros e saturação. O <b>monitoramento sintético</b> (<a href="https://www.youtube.com/watch?v=fPWjWTFveBQ">Synthetic Monitoring Explained: A Guide to Reliable DevOps Workflows</a>) simula usuários com scripts agendados, de várias regiões, e pega o caso “está no ar, mas inutilizável”. Comece por 3 a 5 jornadas críticas e alerte sobre <i>sintomas</i> que afetam o usuário (error budget queimando rápido), não sobre causas como CPU em 80%.</p>
+
+<h2>Git no dia a dia</h2>
+<div class="box intro"><b>Para começar</b> O <b>Git</b> guarda cada mudança como um <b>commit</b> (uma foto do projeto) e permite linhas paralelas de trabalho (<b>branches</b>) que depois se juntam. Depois do básico, todo mundo esbarra em “minha branch ficou desatualizada” ou “preciso só daquele commit”.</div>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=7Y5ywzYIfG4">TUTORIAL GIT | Git Rebase, Git Cherry Pick, Git Ammend, Git Rebase Interativo</a> apresenta quatro comandos:</p>
+<ul>
+<li><b><code>git rebase main</code></b> reaplica seus commits sobre a ponta da main, com <b>novos hashes</b> e histórico linear; o <code>merge</code> preserva a história com um <i>merge commit</i> (veja a figura a seguir). Para atualizar um PR: <code>git fetch</code>, <code>git rebase origin/main</code>, resolver conflitos, <code>git rebase --continue</code> e <code>git push --force-with-lease</code>.</li>
+<li><b><code>git stash</code></b> guarda o trabalho em andamento para atender um hotfix; <code>stash pop</code> o traz de volta.</li>
+<li><b><code>git cherry-pick &lt;hash&gt;</code></b> traz um commit específico.</li>
+<li><b><code>git commit --amend</code></b> refaz o último commit (também muda o hash).</li>
+</ul>
+<figure><img src="img/08_git.png"><figcaption>Merge × rebase: o merge cria o commit M e preserva os dois ramos; o rebase reescreve X e Y como X′ e Y′ sobre C. Fonte: elaboração própria com dados do vídeo “TUTORIAL GIT | Git Rebase, Git Cherry Pick, Git Ammend, Git Rebase Interativo”.</figcaption></figure>
+<p>Regra de ouro: <b>nunca reescreva histórico público</b>. Na sua própria branch, prefira <code>--force-with-lease</code>, que recusa o push se houver commits que você não viu. Outras práticas: PRs pequenos (algumas centenas de linhas), <i>Conventional Commits</i>, <code>main</code> protegida com CI obrigatório e <b>git worktrees</b> para trabalhar em várias branches ao mesmo tempo, hoje muito usados para rodar agentes de IA em paralelo (ver Livro 3, Capítulo 1 (Programando com IA)).</p>
+<div class="box fact"><b>Você sabia?</b> Linus Torvalds escreveu a primeira versão do Git em abril de 2005, em poucos dias, depois que o kernel Linux perdeu a licença gratuita do BitKeeper. “Git” é gíria britânica para pessoa teimosa e desagradável, e Torvalds brincou que batiza projetos em sua própria homenagem.</div>
+
+<h2>Boas práticas, documentação e engenharia na era da IA</h2>
+<div class="box intro"><b>Para começar</b> Bom profissional é quem deixa o trabalho fácil de entender e de continuar, como o cozinheiro que limpa a bancada e anota a receita. Esta seção reúne hábitos de código, documentos de decisão, código legado e o que a IA muda no ciclo de vida do software.</div>
+<h3>Código que um revisor confia</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=3ICKCyda8sE">5 Erros que Todo Júnior comete NO CÓDIGO que o Impedem de virar PLENO (E Como Resolvê-los)</a> resume o básico: <b>early return</b> em vez de <code>else</code>, tratar erros, <b>nomes</b> que se explicam, conhecer <code>map</code>/<code>filter</code>/<code>reduce</code> e <b>DRY</b>. Uma ressalva: DRY é sobre <i>conhecimento</i> duplicado; duas funções parecidas que mudam por motivos diferentes não devem ser fundidas (“a duplicação é melhor que a abstração errada”). Some a isso <b>KISS</b> (mantenha simples) e <b>YAGNI</b> (você não vai precisar disso).</p>
+
+<h3>Documentação: PRD, RFC, Design Doc e ADR</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=FY8dRVejhD0">Como Manter CONTEXTO em 1 MILHÃO de Linhas de CÓDIGO</a> propõe documentos proporcionais ao risco:</p>
+<table>
+<tr><th>Documento</th><th>Responde</th><th>Regra de ouro</th></tr>
+<tr><td><b>PRD</b></td><td>O quê, para quem, por quê</td><td>Uma página, com métricas de sucesso; nunca a solução técnica</td></tr>
+<tr><td><b>RFC</b></td><td>Qual caminho?</td><td>Só para decisões caras ou irreversíveis; inclua a opção “não fazer nada”</td></tr>
+<tr><td><b>Design Doc</b></td><td>Como construir</td><td>Alternativas, riscos, testes, monitoramento e rollback</td></tr>
+<tr><td><b>ADR</b></td><td>O que decidimos e por quê</td><td>Uma página, imutável; se substituído, marque como revogado</td></tr>
+</table>
+<p>Mudança pequena e reversível vai direto para a spec; pagamentos e dados pessoais pedem o pacote completo. Documento desatualizado é pior que nenhum. Para trabalhar com agentes, mantenha curtos o <b>README</b> (como instalar, rodar e testar) e o <b>AGENTS.md</b> (regras para o agente); um AGENTS.md de mil linhas dilui as instruções.</p>
+
+<h3>Começando do zero e modernizando o legado</h3>
+<p>O checklist de “dia 1” de <a href="https://www.youtube.com/watch?v=PADhI0fZnTI">Como Eu Começo Um Projeto do Zero</a>: escolher a stack pelo objetivo (para ganhar dinheiro, use o que já domina; frameworks “baterias incluídas” como Django, Rails e Laravel ajudam o dev solo), planejar o MVP num documento no repositório, publicar o Hello World com CD, configurar migrações, pôr testes no pipeline e escrever README e AGENTS.md.</p>
+<p>Código <b>legado</b> funciona, mas não tem testes, documentação nem quem entenda todas as regras, e os especialistas em COBOL estão se aposentando. O vídeo <a href="https://www.youtube.com/watch?v=CKC47S92wA4">What Is Legacy Code? How AI Is Modernizing Legacy Systems</a> defende modernização <b>incremental</b>. A IA acelera a descoberta, a tradução e a geração de testes, mas uma tradução sintaticamente correta pode se comportar errado; por isso o primeiro passo continua sendo cobrir o comportamento atual com <b>testes de caracterização</b>.</p>
+
+<h3>O ciclo de vida do software com IA</h3>
+<p>Os vídeos <a href="https://www.youtube.com/watch?v=4wMRXmLpdA8">AI in the SDLC: Rethinking AI Coding Tools &amp; AI Agents</a> e <a href="https://www.youtube.com/watch?v=J0zbWsutyA8">What Is RAD? Why It Matters in the Age of AI Coding</a> partem de um dado incômodo: num ensaio controlado da METR (2025), desenvolvedores experientes se <i>sentiram</i> ~20% mais rápidos com IA, mas foram ~20% mais <i>lentos</i>. Acelerar a digitação adianta pouco se o tempo vai para as esperas entre etapas e para revisar milhares de linhas não lidas. A <b>superdelegação</b> (“construa um e-commerce”) deixa decisões implícitas; a <b>subdelegação</b> desperdiça a ferramenta. O caminho é redesenhar o ciclo: <b>spec-driven development</b> no lugar do vibe coding, testes gerados a partir das histórias de usuário e métricas de resultado, não de linhas de código. O RAD de James Martin, dos anos 1980, já previa protótipos rápidos com o usuário; faltavam ferramentas, e os agentes agora as oferecem.</p>
+<p>A <b>revisão de código</b>, segundo <a href="https://www.youtube.com/watch?v=c57vAe-mMLo">How AI Is Changing Code Reviews &amp; Software Development</a>, foi das inspeções formais de Michael Fagan na IBM, nos anos 1970, aos pull requests e agora à IA. O foco migrou de “como construímos?” para “construímos o que queríamos?”, com base em evidências: testes, checagens automáticas e dados de execução.</p>
+<div class="box key"><b>Em resumo</b> Qualidade de implementação está ficando barata; qualidade de decisão é o diferencial. Diante de uma feature gerada por IA, pergunte: síncrona ou assíncrona? O que acontece se o serviço downstream cair? Quantos retries? E se os usuários passarem de 10 mil para 10 milhões? Este capítulo existe para que você saiba responder.</div>
+
+<h2>Fontes deste capítulo</h2>
+<p>Vídeos e posts citados neste capítulo, todos públicos.</p>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=yYst7puZXjw">CS50x - Lecture 8 - HTML, CSS, JavaScript</a></td><td>https://www.youtube.com/watch?v=yYst7puZXjw</td><td>CS50</td><td>Internet, HTTP e o trio HTML/CSS/JS.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0dRPPmRYM3o">Elevando os Testes Unitários da sua aplicação React usando Jest &amp; Testing Library</a></td><td>https://www.youtube.com/watch?v=0dRPPmRYM3o</td><td>Fernanda Kipper</td><td>Testes de componentes React com Testing Library.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=nODe5lFcGpg">Curso de PROGRAMAÇÃO JAVA para INICIANTES | Fundamentos + Programação Orientada Objetos</a></td><td>https://www.youtube.com/watch?v=nODe5lFcGpg</td><td>Fernanda Kipper</td><td>Fundamentos de Java e orientação a objetos.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=yaNjUYg6yY0">É isso que um SENIOR precisa saber sobre SYSTEM DESIGN</a></td><td>https://www.youtube.com/watch?v=yaNjUYg6yY0</td><td>Fernanda Kipper</td><td>Roteiro de system design e notificações em escala.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=JBivKeZVex0">ARQUITETANDO O YOUTUBE NA PRÁTICA | SYSTEM DESIGN</a></td><td>https://www.youtube.com/watch?v=JBivKeZVex0</td><td>Renato Augusto</td><td>Upload multipart, transcodificação e streaming adaptativo.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=gd_cUmwzgEM">APRENDA NGINX DO ZERO | Curso de NGINX em 1 HORA</a></td><td>https://www.youtube.com/watch?v=gd_cUmwzgEM</td><td>Fernanda Kipper</td><td>Nginx como proxy reverso e balanceador.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=bhw4-Kq_RPs">Como Escolher o Banco de Dados Correto pra sua Aplicação | System Design &amp; Arquitetura de Software</a></td><td>https://www.youtube.com/watch?v=bhw4-Kq_RPs</td><td>Renato Augusto</td><td>Escolher banco: replicação, consistência, CAP, PACELC.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jLropHUgI1A">CURSO de JAVA INTERMEDIÁRIO | Estruturas de dados, Stream API, Generics, Packages, Records</a></td><td>https://www.youtube.com/watch?v=jLropHUgI1A</td><td>Fernanda Kipper</td><td>Collections, generics, records e Stream API.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=xJllDyCIyws">Aprenda a Escalar Bancos de Dados Usando SHARDING | System Design &amp; Arquitetura de Software</a></td><td>https://www.youtube.com/watch?v=xJllDyCIyws</td><td>Renato Augusto</td><td>Sharding: escalar o banco horizontalmente.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=o2_RBMABx4s">Criando APLICAÇÃO COMPLETA e ESCALÁVEL com Angular + Edge Computing</a></td><td>https://www.youtube.com/watch?v=o2_RBMABx4s</td><td>Fernanda Kipper</td><td>Angular com geração estática servida na borda.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9g7twJrXqoY">System Design: Escalando uma Arquitetura do Zero a Um Milhão de Usuários | Arquitetura de Software</a></td><td>https://www.youtube.com/watch?v=9g7twJrXqoY</td><td>Renato Augusto</td><td>Evolução de um servidor a milhões de usuários.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=QoqDr4H2G8U">CURSO DE TYPESCRIPT para INICIANTES | Aprenda Typescript na Prática</a></td><td>https://www.youtube.com/watch?v=QoqDr4H2G8U</td><td>Fernanda Kipper</td><td>TypeScript: tipagem estática e tsconfig.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=T6ChO8LQxRE">COMEÇANDO com TESTES UNITÁRIOS no JAVA SPRING | Junit + Mockito</a></td><td>https://www.youtube.com/watch?v=T6ChO8LQxRE</td><td>Fernanda Kipper</td><td>JUnit 5 e Mockito no Spring Boot.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=uiT4oK19hu4">SERVER-SENT EVENTS: Aprenda a Construir Sistemas que se Comunicam em Tempo Real</a></td><td>https://www.youtube.com/watch?v=uiT4oK19hu4</td><td>Renato Augusto</td><td>SSE com Redis Pub/Sub para tempo real.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=UYOr-rpQs1I">O QUE NINGUÉM TE ENSINOU SOBRE BUSCAS INTELIGENTES NO BANCO DE DADOS!</a></td><td>https://www.youtube.com/watch?v=UYOr-rpQs1I</td><td>Renato Augusto</td><td>Full-Text Search no MySQL e PostgreSQL.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jzMghF8n26E">EVENT SOURCING: APRENDA A CONSTRUIR SISTEMAS QUE VÃO ALÉM DO CRUD</a></td><td>https://www.youtube.com/watch?v=jzMghF8n26E</td><td>Renato Augusto</td><td>Event store, projeções, snapshots e replay.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2Ls_uc0fo-Y">System Design para Aplicações com IA</a></td><td>https://www.youtube.com/watch?v=2Ls_uc0fo-Y</td><td>Augusto Galego</td><td>Princípios de system design para apps com LLM.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=FY8dRVejhD0">Como Manter CONTEXTO em 1 MILHÃO de Linhas de CÓDIGO</a></td><td>https://www.youtube.com/watch?v=FY8dRVejhD0</td><td>O Novo Programador</td><td>PRD, RFC, Design Doc e ADR por feature.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=vRO0UfvsbDw">CACHE-ASIDE: Escalabilidade, Performance e Arquitetura de Software pra Mandar Bem na Entrevista!</a></td><td>https://www.youtube.com/watch?v=vRO0UfvsbDw</td><td>Renato Augusto</td><td>Cache-aside com Redis para aliviar o banco.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=mlzPJlQeqBM">Rate Limiter | Explicação Completa</a></td><td>https://www.youtube.com/watch?v=mlzPJlQeqBM</td><td>Augusto Galego</td><td>Algoritmos de rate limiting e onde aplicá-los.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=7Y5ywzYIfG4">TUTORIAL GIT | Git Rebase, Git Cherry Pick, Git Ammend, Git Rebase Interativo</a></td><td>https://www.youtube.com/watch?v=7Y5ywzYIfG4</td><td>Fernanda Kipper</td><td>Rebase, stash, cherry-pick e amend.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=cgUfurMJosE">Entendendo COLETOR DE LIXO DO JAVA (memória Heap, Stack, Garbage Collector)</a></td><td>https://www.youtube.com/watch?v=cgUfurMJosE</td><td>Fernanda Kipper</td><td>Stack, heap e coletores de lixo do Java.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=8Z8JAtEEan0">CQRS: O PADRÃO ARQUITETURAL QUE TODO PROGRAMADOR PRECISA CONHECER!</a></td><td>https://www.youtube.com/watch?v=8Z8JAtEEan0</td><td>Renato Augusto</td><td>Quando separar comandos de consultas (CQRS).</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=6bTkTy6DjOQ">ARQUITETURA BACKEND DO FACEBOOK | System Design</a></td><td>https://www.youtube.com/watch?v=6bTkTy6DjOQ</td><td>Fernanda Kipper</td><td>Como o Facebook escalou a Timeline.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Qdw3Dt_-tzc">5 BOAS PRÁTICAS de UI/UX para melhorar seus PROMPTS (frontend)</a></td><td>https://www.youtube.com/watch?v=Qdw3Dt_-tzc</td><td>Fernanda Kipper</td><td>Princípios de UI/UX para interfaces geradas por IA.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=S-TqflGxHd4">TUTORIAL COMPLETO CSS MEDIA QUERY - Criando layouts responsivos na PRÁTICA</a></td><td>https://www.youtube.com/watch?v=S-TqflGxHd4</td><td>Fernanda Kipper</td><td>Media queries, mobile first e breakpoints.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jwBpiEoo8rI">Fundamentos de Arquitetura de Software para Backend</a></td><td>https://www.youtube.com/watch?v=jwBpiEoo8rI</td><td>Fernanda Kipper</td><td>Definição de arquitetura e seis conceitos-base.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=HTrLgUKQLvs">Me de 30 minutos para aprender Arquitetura Limpa e Hexagonal</a></td><td>https://www.youtube.com/watch?v=HTrLgUKQLvs</td><td>Fernanda Kipper</td><td>Clean e Hexagonal protegem o núcleo de negócio.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ooJjxNsQnK4">Quando usar Monolitos vs Microserviços</a></td><td>https://www.youtube.com/watch?v=ooJjxNsQnK4</td><td>Augusto Galego</td><td>Que benefício justifica uma chamada de rede?</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0B20k31Gyq0">CQRS  e EVENT SOURCING | Design de Software Maduro</a></td><td>https://www.youtube.com/watch?v=0B20k31Gyq0</td><td>Augusto Galego</td><td>CQRS e eventos como fonte da verdade.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=YNHKO_74sLU">Todo DEV precisa entender isso: IDEMPOTÊNCIA</a></td><td>https://www.youtube.com/watch?v=YNHKO_74sLU</td><td>Augusto Galego</td><td>Idempotência e chaves de idempotência em pagamentos.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=LBTY5BaWLH0">O que é WebSocket? Entenda na prática em 20 minutos (Guia para programadores)</a></td><td>https://www.youtube.com/watch?v=LBTY5BaWLH0</td><td>Attekita Dev</td><td>WebSocket: conexão persistente e bidirecional.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=f6-5ANuTkys">O Princípio SOLID mais CRÍTICO de TODOS! | Princípio de Substituição de LISKOV</a></td><td>https://www.youtube.com/watch?v=f6-5ANuTkys</td><td>Renato Augusto</td><td>Liskov: pré-condições, pós-condições e invariantes.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5_fmI1nmWOQ">Dominando príncipios de design de código | SOLID</a></td><td>https://www.youtube.com/watch?v=5_fmI1nmWOQ</td><td>Fernanda Kipper</td><td>SOLID num sistema de matrículas em Java.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2yqHlJ2HbTo">Princípios SOLID Pelos Olhos de um Dev Sr.</a></td><td>https://www.youtube.com/watch?v=2yqHlJ2HbTo</td><td>Augusto Galego</td><td>SOLID com olhar crítico, sem dogma.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=n8RLfLunQzc">JAMAIS cometa esses ERROS em JavaScript</a></td><td>https://www.youtube.com/watch?v=n8RLfLunQzc</td><td>Fernanda Kipper</td><td>Erros clássicos: mutação, null, this, assincronia.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=HBi6jJUltKQ">Microfrontends Explicado Simples: A Arquitetura que Está Mudando o Frontend</a></td><td>https://www.youtube.com/watch?v=HBi6jJUltKQ</td><td>Attekita Dev</td><td>Micro front-ends: benefícios, custos e integração.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=xsCOMiUwpeg">Como sistemas evitam requisições duplicadas</a></td><td>https://www.youtube.com/watch?v=xsCOMiUwpeg</td><td>Augusto Galego</td><td>Camadas de defesa contra requisições duplicadas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9sI8KHEjs0M">5 Design Patterns Que Todo Dev Deveria Conhecer</a></td><td>https://www.youtube.com/watch?v=9sI8KHEjs0M</td><td>Augusto Galego</td><td>Strategy, Observer, Adapter, retry e circuit breaker.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=3ICKCyda8sE">5 Erros que Todo Júnior comete NO CÓDIGO que o Impedem de virar PLENO (E Como Resolvê-los)</a></td><td>https://www.youtube.com/watch?v=3ICKCyda8sE</td><td>O Novo Programador</td><td>Hábitos que minam a confiança do revisor.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ecev-RuuKVg">Quando Vale a Pena Desacoplar Seu Código?</a></td><td>https://www.youtube.com/watch?v=ecev-RuuKVg</td><td>Augusto Galego</td><td>Acoplamento é espectro: quando abstrair ou enfileirar.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Ss6LAFC_9pw">Separando Dev Júnior de Dev Senior (Object Calisthenics)</a></td><td>https://www.youtube.com/watch?v=Ss6LAFC_9pw</td><td>Augusto Galego</td><td>As nove regras do Object Calisthenics.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=8KUyqiSkQlQ">ACID e BASE explicado de forma simples</a></td><td>https://www.youtube.com/watch?v=8KUyqiSkQlQ</td><td>Augusto Galego</td><td>Garantias ACID e BASE e seus trade-offs.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Go7rKLtJ0ec">Como Fazer Migrações de Banco de Dados do Jeito Certo</a></td><td>https://www.youtube.com/watch?v=Go7rKLtJ0ec</td><td>Augusto Galego</td><td>Migrações versionadas, nunca à mão em produção.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=upn1vRXg-Og">Como ORMs Mentem pra Você</a></td><td>https://www.youtube.com/watch?v=upn1vRXg-Og</td><td>Augusto Galego</td><td>ORMs escondem N+1 e joins caros.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=sVfFxC5pC8k">ERROS COMUNS | Null Pointer e None</a></td><td>https://www.youtube.com/watch?v=sVfFxC5pC8k</td><td>Augusto Galego</td><td>Causas comuns de erro por None.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=LHhm1gzIzOE">Arquitetura Hexagonal | Explicação de um Dev Sr.</a></td><td>https://www.youtube.com/watch?v=LHhm1gzIzOE</td><td>Augusto Galego</td><td>Ports and Adapters explicado na prática.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=k0QTuaK6LX4">WEBHOOKS vs WEBSOCKETS (na prática)</a></td><td>https://www.youtube.com/watch?v=k0QTuaK6LX4</td><td>Augusto Galego</td><td>Webhook é API invertida; WebSocket, conexão persistente.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5vKcNaWXtCY">Como Uma Requisição Contamina Outra</a></td><td>https://www.youtube.com/watch?v=5vKcNaWXtCY</td><td>Augusto Galego</td><td>Estado global contamina requisições paralelas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=llC6b8g6FgY">Pare de quebrar o banco em produção: Aprenda Database Branching</a></td><td>https://www.youtube.com/watch?v=llC6b8g6FgY</td><td>Fernanda Kipper</td><td>Banco isolado por branch com copy-on-write.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=CwIyDq6nhdk">Aprenda MONOLITO MODULAR ANTES de MICROSERVIÇOS</a></td><td>https://www.youtube.com/watch?v=CwIyDq6nhdk</td><td>Fernanda Kipper</td><td>Módulos com fronteiras num único deploy.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=V3tyJSEDiuM">Console log pode TRAVAR a sua aplicação (explicação)</a></td><td>https://www.youtube.com/watch?v=V3tyJSEDiuM</td><td>Augusto Galego</td><td>console.log síncrono pode bloquear o event loop.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=S2mMFopw_ww">4 Sintomas de que Seu Código Está APODRECENDO e Você Precisa Identificar Agora!</a></td><td>https://www.youtube.com/watch?v=S2mMFopw_ww</td><td>Renato Augusto</td><td>Rigidez, fragilidade, imobilidade e viscosidade.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=WpVF3S4kuK0">5 RECURSOS DO JAVA QUE VOCÊ PRECISA CONHECER</a></td><td>https://www.youtube.com/watch?v=WpVF3S4kuK0</td><td>Fernanda Kipper</td><td>Text blocks, records, switch com seta, lambdas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jpeUKuCexGc">DTOs, o que é e porque usar</a></td><td>https://www.youtube.com/watch?v=jpeUKuCexGc</td><td>Augusto Galego</td><td>DTO como contrato para validar e transportar dados.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Cvr0cGtq3fQ">O que fazer quando RESTful não for suficiente</a></td><td>https://www.youtube.com/watch?v=Cvr0cGtq3fQ</td><td>Augusto Galego</td><td>gRPC e Protocol Buffers comparados a REST.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=SWgCLOW1bCE">VOCÊ NÃO SABE ARQUITETURA DE SOFTWARE (veja esse vídeo)</a></td><td>https://www.youtube.com/watch?v=SWgCLOW1bCE</td><td>Fernanda Kipper</td><td>Arquitetura torna o sistema fácil de manter.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=RsSE7ZWUC6k">Como Validar Email do Jeito Certo!</a></td><td>https://www.youtube.com/watch?v=RsSE7ZWUC6k</td><td>Augusto Galego</td><td>Validar e-mail de verdade exige confirmação.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=aqmt_3UWItA">Como 1.000 Requests Usam 20 Conexões | Connection Pooling</a></td><td>https://www.youtube.com/watch?v=aqmt_3UWItA</td><td>Augusto Galego</td><td>Pool de conexões e o problema no serverless.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=PADhI0fZnTI">Como Eu Começo Um Projeto do Zero</a></td><td>https://www.youtube.com/watch?v=PADhI0fZnTI</td><td>Augusto Galego</td><td>Primeiro dia: stack, MVP, deploy e migrações.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=nJpXU6RSvO8">O custo de usar muitas dependências</a></td><td>https://www.youtube.com/watch?v=nJpXU6RSvO8</td><td>Augusto Galego</td><td>Custos ocultos de cada dependência externa.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=c57vAe-mMLo">How AI Is Changing Code Reviews &amp; Software Development</a></td><td>https://www.youtube.com/watch?v=c57vAe-mMLo</td><td>IBM Technology</td><td>Cinco eras da revisão de código.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=GRYZR2R20FI">Code Quality in the Age of AI: Why Great Code Isn't Enough</a></td><td>https://www.youtube.com/watch?v=GRYZR2R20FI</td><td>IBM Technology</td><td>Com IA, confiança vem de evidência, não autoria.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pOFToA0Upek">O que é uma CDN? Para que serve a CDN?</a></td><td>https://www.youtube.com/watch?v=pOFToA0Upek</td><td>Fernanda Kipper</td><td>CDN entrega arquivos perto do usuário.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=4wMRXmLpdA8">AI in the SDLC: Rethinking AI Coding Tools &amp; AI Agents</a></td><td>https://www.youtube.com/watch?v=4wMRXmLpdA8</td><td>IBM Technology</td><td>Ganhos da IA somem nas esperas entre etapas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=J0zbWsutyA8">What Is RAD? Why It Matters in the Age of AI Coding</a></td><td>https://www.youtube.com/watch?v=J0zbWsutyA8</td><td>IBM Technology</td><td>RAD de James Martin revisitado com agentes.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5RtmQSKKQo8">IDE vs CLI: What Every DevOps Engineer Should Know</a></td><td>https://www.youtube.com/watch?v=5RtmQSKKQo8</td><td>IBM Technology</td><td>O atrito está nas passagens entre ferramentas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fWZylhIHF9w">What Is an AI IDE? How AI Is Changing Developer &amp; Coding Tools</a></td><td>https://www.youtube.com/watch?v=fWZylhIHF9w</td><td>IBM Technology</td><td>IDEs e o impacto da IA integrada.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=CKC47S92wA4">What Is Legacy Code? How AI Is Modernizing Legacy Systems</a></td><td>https://www.youtube.com/watch?v=CKC47S92wA4</td><td>IBM Technology</td><td>IA na modernização incremental de código legado.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9nyiY-psbMs">Apache vs NGINX</a></td><td>https://www.youtube.com/watch?v=9nyiY-psbMs</td><td>IBM Technology</td><td>Apache × Nginx, proxy reverso e balanceamento.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Qw8qVSZEWBc">What Is an API? Types, Uses, &amp; AI Integration</a></td><td>https://www.youtube.com/watch?v=Qw8qVSZEWBc</td><td>IBM Technology</td><td>O que é uma API e seu papel.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0gXiTWMikDU">O que é CORS? Análise frontend e backend</a></td><td>https://www.youtube.com/watch?v=0gXiTWMikDU</td><td>Augusto Galego</td><td>CORS, preflight e por que só no navegador.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fPWjWTFveBQ">Synthetic Monitoring Explained: A Guide to Reliable DevOps Workflows</a></td><td>https://www.youtube.com/watch?v=fPWjWTFveBQ</td><td>IBM Technology</td><td>Simular usuários para detectar falhas antes deles.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=OdgZ0jr4jpM">MySQL vs MongoDB</a></td><td>https://www.youtube.com/watch?v=OdgZ0jr4jpM</td><td>IBM Technology</td><td>MySQL relacional × MongoDB de documentos.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=THwPB7OrMyw">O que é SQL injection e como resolver</a></td><td>https://www.youtube.com/watch?v=THwPB7OrMyw</td><td>Augusto Galego</td><td>SQL injection e consultas parametrizadas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ytTJtfg9HCw">Práticas do Akita com IA. Deu bom? (Boas Práticas de IA)</a></td><td>https://www.youtube.com/watch?v=ytTJtfg9HCw</td><td>Augusto Galego</td><td>PRs pequenos, AGENTS.md enxuto e TDD.</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a></td><td>https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/</td><td>Blog AkitaOnRails (11/10/2026)</td><td>Tipagem não reduziu reparos; testes sim.</td></tr>
+</table>
+</section>

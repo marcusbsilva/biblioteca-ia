@@ -1,0 +1,274 @@
+<section class="chapter" id="ch03"><h1><span class="num">Capítulo 03</span>Engenharia de Contexto e de Prompt</h1>
+<p class="lead">Durante alguns anos, "saber usar IA" significou escrever um bom prompt. Com os agentes, que trabalham em loop por dezenas ou centenas de passos, chamam ferramentas e acumulam histórico, a pergunta mudou: é preciso decidir, a cada passo, <em>quais tokens</em> o modelo vê. Este capítulo trata isso como disciplina de engenharia: por que o contexto é finito, como montar system prompts, ferramentas e exemplos, como sobreviver a tarefas longas e como transformar tudo em artefatos versionados (CLAUDE.md, AGENTS.md, specs, skills). No fim há templates prontos.</p>
+<div class="box intro"><b>Para começar</b> Imagine um assistente brilhante que chega toda manhã sem lembrar de nada: ele só sabe o que está na mesa dele. O <b>prompt</b> é o bilhete; o <b>contexto</b> é a mesa inteira, medida em <b>tokens</b> (pedaços de texto), até o limite da <b>janela de contexto</b>. As bases estão no Livro 1, Capítulo 2 (LLMs, Transformers e MoE) e no Capítulo 4 (Agentes e MCP).</div>
+
+<h2>De prompt a contexto (e a harness)</h2>
+<h3>Três camadas que costumam ser confundidas</h3>
+<ul>
+<li><b>Prompt</b> é o que você quer <em>agora</em>: a instrução da vez.</li>
+<li><b>Contexto</b> é <em>tudo</em> o que está na janela quando o modelo gera o próximo token: system prompt, instruções do projeto, ferramentas, documentos, histórico, resultados de ferramentas, memória. A Anthropic define engenharia de contexto como a arte de curar e manter o conjunto ótimo desses tokens durante a inferência.</li>
+<li><b>Harness</b> é o sistema em volta do modelo que <em>monta</em> esse contexto e lhe dá capacidade de ação: ferramentas, permissões, loop, compactação, hooks, validação. Agente = modelo + harness.</li>
+</ul>
+<p>A analogia da cebola, de Fernanda Kipper em <a href="https://www.youtube.com/watch?v=FNYA82Fn5m4">Harness Engineering é muito mais que CLAUDE.MD</a>: o modelo é o miolo; em volta está o harness da ferramenta (Claude Code, Codex, Cursor, OpenCode); na casca está o <em>user harness</em> que você configura (CLAUDE.md/AGENTS.md, rules, skills, hooks, MCPs). Em <a href="https://www.youtube.com/watch?v=4iCEoHXo__g">Harness Engineering: A Nova Corrida do Mercado de IA</a>, do Attekita Dev, a consequência fica clara: com modelos de fronteira cada vez mais parecidos, o resultado depende cada vez mais do que está em volta.</p>
+<figure><img src="img/v4_03_prompt_vs_contexto.png"><figcaption>Engenharia de prompt (tarefa discreta) vs. engenharia de contexto para agentes (curadoria repetida a cada volta do loop). Fonte: elaboração própria, baseado em Anthropic, "Effective context engineering for AI agents" (2025).</figcaption></figure>
+
+<h3>Por que a mudança aconteceu</h3>
+<ol>
+<li><b>Agentes trabalham em loop.</b> Cada volta adiciona resultados de ferramenta; depois de 50 voltas, o prompt original é uma fração mínima do que o modelo lê.</li>
+<li><b>Retornos decrescentes do ajuste de palavras.</b> Trocar um adjetivo rende pouco perto de entregar o documento certo.</li>
+<li><b>Janelas grandes não resolveram.</b> Mais tokens degradam a precisão: contexto melhor não é mais contexto.</li>
+</ol>
+<p>Os vídeos da IBM Technology <a href="https://www.youtube.com/watch?v=UC4vDpSJCkM">How to Pass Context in an Agentic AI Flow</a> e <a href="https://www.youtube.com/watch?v=pN-LfxNFiTc">How RAG, GraphRAG, and Context Engineering Improve AI Performance</a> acrescentam o ângulo de governança: contexto inclui identidade, cadeia de agentes e permissões. Ao preparar uma reunião com cliente, o agente deve puxar tickets e histórico, mas <em>não</em> a discussão interna de preços que aquele usuário não pode ver. Engenharia de contexto também decide o que o modelo não deve ver.</p>
+
+<h2>Por que o contexto é finito: context rot e orçamento de atenção</h2>
+<div class="box intro"><b>Para começar</b> Estudar com dez livros abertos não ensina mais que estudar com um. Com LLMs é parecido: mesmo quando "cabe tudo" na janela, a informação importante se dilui no resto.</div>
+<h3>O fenômeno</h3>
+<p><b>Context rot</b> é a observação, vinda de testes de "agulha no palheiro", de que a capacidade de recuperar com precisão uma informação da janela cai à medida que a janela cresce. Acontece em todos os modelos e é um gradiente, não um precipício; <a href="https://www.youtube.com/watch?v=BwXremQ-i6I">Context Engineering for AI Agents: 4 Failure Modes to Avoid</a> cita um estudo com 18 modelos de fronteira com o mesmo padrão. O modelo tem um <b>orçamento de atenção</b>: uma página de instruções funciona melhor que 4.000 páginas de Slack, mesmo que estas caibam.</p>
+<h3>A causa arquitetural</h3>
+<p>No transformer, cada token pode atender a todos os outros: <i>n</i> tokens geram cerca de <i>n</i>² pares de relações, e a softmax da atenção divide uma massa de probabilidade fixa entre mais candidatos. Somam-se a escassez de sequências longas no treino e as técnicas que esticam a janela além do comprimento treinado (interpolação de RoPE, YaRN). Há ainda o efeito <em>lost in the middle</em> (Liu et al., 2023): o início e o fim da janela são lembrados melhor que o meio. Por isso, instruções críticas vão no início, a tarefa atual perto do fim.</p>
+<figure><img src="img/03_context_rot.png"><figcaption>Esquerda: curva conceitual de context rot (valores ilustrativos). Direita: crescimento quadrático dos pares de atenção (escala log). Fonte: elaboração própria a partir de Anthropic (2025) e IBM Technology.</figcaption></figure>
+<div class="box fact"><b>Você sabia?</b> O artigo "Attention Is All You Need" (2017), que apresentou o Transformer, tem oito autores do Google listados como contribuição igual. O mecanismo de atenção que ele popularizou é justamente o que torna o contexto longo caro: o custo cresce com o quadrado do tamanho da sequência.</div>
+
+<h3>As quatro falhas de contexto</h3>
+<p>A taxonomia do vídeo da IBM (que ecoa a de Drew Breunig) mostra que todas as correções consistem em tirar informação da janela:</p>
+<table>
+<tr><th>Falha</th><th>Sintoma</th><th>Correção</th></tr>
+<tr><td>Envenenamento</td><td>Um erro entra na janela e vira "verdade"</td><td>Validar antes de registrar em notas</td></tr>
+<tr><td>Distração</td><td>O histórico longo domina; o agente repete o que já fez</td><td>Compactar; mover detalhes para arquivos</td></tr>
+<tr><td>Confusão</td><td>Ferramentas ou informação demais (um modelo falhou com 46 ferramentas e passou com 19)</td><td>Curar o conjunto de ferramentas</td></tr>
+<tr><td>Conflito</td><td>Versões contraditórias coexistem</td><td>Podar ou recomeçar com o estado corrigido</td></tr>
+</table>
+<p>Quando o agente esquece instruções, repete erros ou relê arquivos, a primeira reação deve ser limpar o contexto, não subir o esforço de raciocínio; um <code>/clear</code> entre tarefas resolve boa parte dos casos. A maior parte da janela costuma ser <em>resultado de ferramentas</em> (um arquivo inteiro, um log de testes), então as técnicas de maior retorno são as que reduzem essas saídas. No Claude Code, <code>/context</code> mostra como a janela está distribuída.</p>
+
+<h2>Anatomia de um bom contexto</h2>
+<div class="box intro"><b>Para começar</b> Se o contexto é a mesa, esta parte trata do que colocar nela: o <b>system prompt</b> (instruções permanentes), as ferramentas, os exemplos e o formato da resposta. Pense no kit de boas-vindas de um funcionário novo: claro e completo, sem papelada inútil.</div>
+<p>O princípio guia da Anthropic: <b>encontrar o menor conjunto de tokens de alto sinal que maximize a probabilidade do resultado desejado.</b></p>
+<h3>System prompts na "altitude certa"</h3>
+<p>O system prompt fica entre dois modos de falha: <b>específico demais</b> (lógica if-else em prosa, frágil no primeiro caso não previsto) e <b>vago demais</b> ("seja um assistente útil", que presume contexto que o modelo não tem). O ponto certo dá heurísticas fortes: papel, objetivo, um framework de resposta e diretrizes para os casos difíceis. Boas práticas:</p>
+<ul>
+<li>Organize em seções com tags XML ou cabeçalhos Markdown.</li>
+<li><b>Mínimo não é curto</b>: descreva todo o comportamento esperado, sem nada que não o altere.</li>
+<li>Itere: comece mínimo no melhor modelo, observe falhas e acrescente o que as corrige.</li>
+<li>Explique o <em>porquê</em>: uma regra com motivo generaliza melhor que uma regra nua.</li>
+</ul>
+<h3>Papel e persona</h3>
+<p>Em <a href="https://www.youtube.com/watch?v=0Y3aUZrQtPs">This Secret Prompt Technique Is Changing AI Forever</a>, Corey McClain leva a atribuição de papel ao extremo: uma persona com biografia completa mudou o tipo de raciocínio da resposta num caso de consultoria. A explicação mais sóbria é que uma persona detalhada condiciona densamente vocabulário e nível técnico. Vale como hipótese de trabalho, não como regra estabelecida. Teste nos seus casos: personas longas também consomem orçamento de atenção.</p>
+<h3>Ferramentas: o contrato entre agente e mundo</h3>
+<p>Ferramentas devem ser como boas funções: <b>autocontidas, de propósito inequívoco, com parâmetros descritivos e retorno enxuto em tokens</b>. "Se um engenheiro humano não sabe dizer qual ferramenta usar, não espere que o agente saiba."</p>
+<table>
+<tr><th>Ruim</th><th>Melhor</th></tr>
+<tr><td><code>search</code>, <code>find</code>, <code>lookup</code> parecidas</td><td>Uma <code>search_orders(customer_id, status?, since?)</code> bem descrita</td></tr>
+<tr><td>JSON cru de 40 KB</td><td>Campos relevantes, paginados</td></tr>
+<tr><td><code>500 Internal Error</code></td><td>"customer_id inválido; use o formato C-12345"</td></tr>
+<tr><td>Todos os MCPs sempre carregados</td><td>Carregamento sob demanda</td></tr>
+</table>
+<p>O mesmo vale para saídas de terminal: filtre na fonte (<code>tail</code>, <code>grep</code>, <code>--quiet</code>). Proxies como o RTK, mostrado em <a href="https://www.youtube.com/watch?v=PNco78D42G4">Como Eu Economizo Até 80% em Tokens no Claude Code</a>, compactam essas saídas automaticamente, com economia relatada de 30% a 80%.</p>
+<h3>Exemplos (few-shot)</h3>
+<p>Prefira um conjunto <b>pequeno, diverso e canônico</b> de exemplos a uma lista de casos-limite. O modelo imita bem o que você mostra e inventa mal o que só descreve: "siga o estilo de <code>src/routes/users.ts</code>" vale mais que três parágrafos de convenções. Exemplos parecidos demais provocam cópia superficial; varie o conteúdo e mantenha constante só o que deve ser imitado.</p>
+<h3>Técnicas clássicas, situadas</h3>
+<table>
+<tr><th>Técnica</th><th>Mecanismo</th><th>Observação</th></tr>
+<tr><td>RAG</td><td>Recupera trechos e os injeta</td><td>Para conhecimento privado ou recente (ver Capítulo 3, RAG)</td></tr>
+<tr><td>Chain-of-Thought</td><td>Decompor em passos</td><td>Em modelos com raciocínio nativo rende menos; dê critério de verificação</td></tr>
+<tr><td>ReAct</td><td>Pensar → agir → observar</td><td>É, na prática, o loop agêntico moderno</td></tr>
+<tr><td>Grounding + "não sei"</td><td>Responder só a partir das fontes</td><td>Reduz alucinação</td></tr>
+<tr><td>Fine-tuning</td><td>Altera pesos</td><td>Não é engenharia de contexto; venha depois</td></tr>
+</table>
+<p>A IBM, em <a href="https://www.youtube.com/watch?v=pZjpNS9YeVA">Context Optimization vs LLM Optimization</a>, resume: prompt e RAG otimizam a <em>janela</em>; fine-tuning otimiza o <em>modelo</em>. Comece pelo prompt e meça contra uma baseline. Lembre que <em>greedy decoding</em> equivale a temperatura zero, e que vários modelos de raciocínio ignoram a temperatura.</p>
+<h3>Saída estruturada como contrato</h3>
+<p>Quando a saída alimenta software, o prompt vira interface. <a href="https://www.youtube.com/watch?v=cgVppD6paYo">Prompt Engineering for LLMs, PDL, &amp; LangChain in Action</a> propõe três pilares: <b>contrato</b> (esquema), <b>laço de controle</b> (validar, reparar, tentar de novo) e <b>observabilidade</b>.</p>
+<pre><code>{"summary": str, "severity": "low"|"medium"|"high", "steps": [str]}
+
+out = llm(prompt + schema)
+if not valid(out): out = repair(out)
+if not valid(out): out = llm_strict(prompt)   # structured outputs</code></pre>
+<p>Structured outputs eliminam boa parte do reparo; a validação continua necessária para regras semânticas.</p>
+
+<h2>Recuperação just-in-time e revelação progressiva</h2>
+<div class="box intro"><b>Para começar</b> Ninguém leva a biblioteca inteira para a mesa: você anota onde estão os livros e busca o capítulo certo quando precisa. Agentes podem fazer o mesmo, guardando referências e carregando o conteúdo sob demanda.</div>
+<p>Em vez de pré-carregar tudo, o agente mantém <b>identificadores leves</b> (caminhos, consultas, links) e lê o conteúdo via ferramentas (<code>grep</code>, <code>glob</code>, <code>head</code>). Nomes de pastas e arquivos viram sinal. Isso habilita a <b>revelação progressiva</b>: o contexto é descoberto em camadas. É o desenho das <b>skills</b>: só nome e descrição ficam na janela; o corpo do <code>SKILL.md</code> é lido quando acionado.</p>
+<table>
+<tr><th></th><th>Pré-carregado</th><th>Just-in-time</th></tr>
+<tr><td>Latência</td><td>Baixa</td><td>Maior</td></tr>
+<tr><td>Frescor</td><td>Depende de reindexar</td><td>Sempre atual</td></tr>
+<tr><td>Risco</td><td>Ruído, chunks errados</td><td>Agente se perde sem bons nomes</td></tr>
+</table>
+<p>A recomendação da Anthropic é híbrida: pouco material de alto valor no início (o CLAUDE.md) e exploração para o resto. E: <b>faça a coisa mais simples que funcione</b>.</p>
+
+<h2>Tarefas de longo horizonte</h2>
+<div class="box intro"><b>Para começar</b> Uma tarefa de horas estoura a janela. As saídas são as de um profissional num projeto longo: resumir o que foi feito, manter um caderno e delegar partes a colegas.</div>
+<figure><img src="img/03_loop_agente.png"><figcaption>O loop agêntico como problema de contexto: o harness monta a janela, o modelo decide, a ferramenta age e o resultado passa por curadoria antes de voltar. Fonte: elaboração própria a partir de Anthropic (2025) e Fernanda Kipper.</figcaption></figure>
+<h3>Compactação</h3>
+<p>Perto do limite, o histórico é resumido e a sessão continua numa janela nova. No Claude Code, o resumo preserva decisões, bugs abertos e detalhes de implementação, mais os arquivos acessados recentemente. Ao ajustar um prompt de compactação, maximize primeiro o recall e depois a precisão. A forma mais segura é limpar resultados de ferramentas antigos. Compactação tem perdas: o que vai importar depois deve ir para arquivos antes. <code>/compact</code> aceita instruções; <code>/clear</code> zera a sessão ao trocar de tarefa.</p>
+<h3>Notas estruturadas</h3>
+<p>O agente grava notas fora da janela (<code>NOTES.md</code>, lista de tarefas) e as relê depois. O exemplo da Anthropic é o Claude jogando Pokémon: ao longo de milhares de passos ele mantém contagens, mapas e estratégias, e retoma tudo após um reset de contexto. Notas são também o vetor clássico de envenenamento: separe fatos de hipóteses e "sugestão da IA" de "decisão do usuário", e date as entradas.</p>
+<h3>Sub-agentes</h3>
+<p>Sub-agentes executam tarefas focadas em janelas limpas e devolvem ao líder só um resumo, em geral de 1.000 a 2.000 tokens. Servem para ler dezenas de arquivos, rodar testes de saída enorme ou pesquisas paralelas. Mas protegem a janela, não a fatura: o sistema de pesquisa multiagente da Anthropic superou um agente único em 90,2%, gastando cerca de 15× mais tokens.</p>
+<figure><img src="img/03_subagentes_tokens.png"><figcaption>Mesmo trabalho num contexto único (1,2M tokens) vs. 12 sub-agentes de até 100k que devolvem resumos de ~1–2k tokens. Fonte: elaboração própria com dados de Anthropic (2025); valores de 12 × 100k ilustrativos.</figcaption></figure>
+<table>
+<tr><th>Técnica</th><th>Melhor para</th><th>Risco</th></tr>
+<tr><td>Compactação</td><td>Trocas longas e contínuas</td><td>Perda de detalhe sutil</td></tr>
+<tr><td>Notas</td><td>Desenvolvimento com marcos claros</td><td>Notas envenenadas ou velhas</td></tr>
+<tr><td>Sub-agentes</td><td>Trabalho paralelizável e buscas ruidosas</td><td>Custo alto; perda de coerência</td></tr>
+<tr><td><code>/clear</code></td><td>Troca de tarefa</td><td>Esquecer de registrar o estado</td></tr>
+</table>
+<p>Cada modelo tem seu tokenizer, e a mesma frase pode custar quantidades diferentes de tokens. Compare modelos por custo por tarefa, não por token. Uma troca de tokenizer funciona como inflação silenciosa: o preço por token pode ficar igual enquanto a mesma tarefa passa a consumir mais tokens, o que afeta tanto a fatura quanto o espaço útil da janela.</p>
+
+<h2>Contexto persistente: CLAUDE.md, AGENTS.md e o repositório como memória</h2>
+<div class="box intro"><b>Para começar</b> Como o modelo acorda sem memória, a forma mais confiável de lembrá-lo de algo é deixar por escrito num arquivo que ele sempre lê, como o manual de integração de um funcionário novo.</div>
+<h3>O que são</h3>
+<p>O arquivo de instruções do projeto é lido a cada sessão naquela pasta. O Claude Code usa <code>CLAUDE.md</code>; Codex, Gemini CLI, OpenCode, Cursor e outros convergiram em <code>AGENTS.md</code>; o formato <code>SKILL.md</code> é comum a todos. Os arquivos podem ser aninhados (empresa, cliente, projeto).</p>
+<h3>O que colocar (e o que não)</h3>
+<p>O arquivo deve ser um <b>índice enxuto</b>, não uma enciclopédia. Engenheiros da OpenAI relataram que um AGENTS.md gigante atrapalhava o agente; a solução foi transformá-lo num mapa que aponta onde buscar cada coisa. Um teto de ~200 linhas é a sugestão usual.</p>
+<table>
+<tr><th>Coloque</th><th>Evite</th></tr>
+<tr><td>Mapa do workspace</td><td>Documentação completa colada</td></tr>
+<tr><td>Comandos exatos de build, teste, lint</td><td>Regras que o linter já impõe</td></tr>
+<tr><td>Convenções não óbvias e o porquê</td><td>Generalidades ("código limpo")</td></tr>
+<tr><td>Decisões vigentes (ou link para ADRs)</td><td>Decisões revogadas (geram conflito)</td></tr>
+<tr><td>O que nunca fazer</td><td>Procedimentos numerados (viram skill)</td></tr>
+</table>
+<p>Distribua o conteúdo entre mecanismos: <b>CLAUDE.md</b> (sempre no contexto), <b>rules por caminho</b>, <b>skills</b> (carregamento progressivo), <b>sub-agentes</b> (isolamento), <b>hooks</b> (garantias determinísticas) e <b>MCP</b> (sistemas externos). Regra de bolso: o que precisa acontecer <em>sempre</em> deve ser hook, porque instruções são probabilísticas.</p>
+<h3>Repositório agnóstico a agentes</h3>
+<p>Para trocar de ferramenta sem duplicar nada, <a href="https://www.youtube.com/watch?v=najOUxYfD5g">parei de escolher entre Claude Code e Codex (rodo os dois no MESMO CÉREBRO)</a>, do Ratos de IA, propõe: AGENTS.md como fonte canônica e um CLAUDE.md contendo só <code>@AGENTS.md</code>; skills num diretório único, com symlink para o caminho que a outra ferramenta espera; e auditorias periódicas feitas pelo próprio agente.</p>
+<figure><img src="img/03_repo_agnostico.png"><figcaption>Repositório agnóstico: AGENTS.md canônico, CLAUDE.md importando-o, skills num diretório único, specs e ADRs sob demanda e notas separadas. Fonte: elaboração própria a partir dos vídeos citados.</figcaption></figure>
+<h3>O "segundo cérebro" em Markdown</h3>
+<p>A ideia vale fora do código, como mostram <a href="https://www.youtube.com/watch?v=XqxtzRhrYfQ">tu NÃO precisa de OBSIDIAN pra ter um segundo cérebro de IA (com Claude Code/Cowork ou Codex)</a>, <a href="https://www.youtube.com/watch?v=jKwevOnJAL0">Como eu fiz meu segundo cérebro com Obsidian e IA</a> e <a href="https://www.youtube.com/watch?v=cneGlxsKlaE">How to Train Claude Cowork Better Than 99%</a>: o agente não precisa de um app de notas, e sim de pastas Markdown bem organizadas com um bom arquivo de instruções. Padrões recorrentes: por projeto, arquivos <code>context</code>, <code>plan</code> e <code>decisions</code>; "tudo que fazemos duas vezes vira skill"; sincronização via Git; segredos num cofre, nunca no Markdown.</p>
+<h3>Skills como contexto empacotado</h3>
+<p>Uma skill é um <code>SKILL.md</code> com instruções, referências e scripts carregados progressivamente. Três cuidados: o conteúdo importa mais que o formato (<a href="https://www.youtube.com/watch?v=3uyGViQr7BU">Did This Claude Feature FINALLY Kill Prompting For Good?</a>); fontes enviesadas geram skills enviesadas (<a href="https://www.youtube.com/watch?v=zHCdl_vzBk8">meu agente de IA assistiu 20 vídeos por mim e transformou em skill (Claude Code e Codex)</a> cruza consensos e divergências para diluir viés); e skills de terceiros podem conter prompt injection, então leia antes de instalar. Como são arquivos, também são portáveis, por exemplo para projetos do ChatGPT via Google Drive (<a href="https://www.youtube.com/watch?v=9tD4eLkQONQ">ChatGPT Projects Just Got BIGGEST Update Ever!</a>).</p>
+<div class="box fact"><b>Você sabia?</b> Donald Knuth propôs a "programação literária" em 1984: escrever o programa como texto para pessoas, com o código intercalado na explicação. Arquivos como CLAUDE.md e specs bem escritas são parentes dessa ideia, agora com uma IA como leitora.</div>
+
+<div class="box fact"><b>Você sabia?</b> O termo "prompt injection" foi cunhado pelo programador Simon Willison em 2022, por analogia com SQL injection. A diferença incômoda é que, em LLMs, instruções e dados chegam pelo mesmo canal de texto, o que torna a defesa bem mais difícil.</div>
+
+<h2>Specs e Spec-Driven Development (SDD)</h2>
+<div class="box intro"><b>Para começar</b> Antes de construir uma casa, alguém desenha a planta. Uma <b>spec</b> é a planta de uma funcionalidade: o que fazer e como saber que ficou pronto. No SDD ela é escrita antes do código e entregue ao agente; o Livro 3, Capítulo 1 (Programando com IA) retoma o tema.</div>
+<p>A spec é o contexto mais valioso que você pode escrever: comprime intenção, critérios e decisões num artefato versionado. Ela ataca as dores do "vibe coding" apontadas em <a href="https://www.youtube.com/watch?v=ZM8WW8_HEeE">SPEC Driven: A MELHOR FORMA De Usar IA em 2026!</a>: a intenção se perde no chat, o "pronto" vira opinião da IA e o código diverge em silêncio. <a href="https://www.youtube.com/watch?v=B1FWIGA3kHw">Harness Engineering: O Próximo Passo Da Era da IA!</a> acrescenta que uma boa spec permite entender a estrutura sem ler todos os arquivos.</p>
+<h3>Guias e sensores</h3>
+<p>O modelo de Martin Fowler divide o harness em <b>guias</b> (antes da ação: spec, AGENTS.md, exemplos) e <b>sensores</b> (depois: testes, compilador, linter, análise de segurança). Guias sem sensores produzem ficção bem escrita; sensores sem guias produzem código certo para o problema errado.</p>
+<h3>O fluxo em fases</h3>
+<ol>
+<li><b>Especificar</b>: histórias com critérios Dado/Quando/Então; suposições e perguntas em aberto explícitas.</li>
+<li><b>Projetar</b> se necessário (design.md, ADR) e <b>quebrar em tarefas</b> se for grande.</li>
+<li><b>Executar</b>: teste antes do código, uma tarefa por sessão limpa.</li>
+<li><b>Auditar</b>: a tarefa só termina com testes passando e exit code verificado.</li>
+<li><b>Aprender</b>: transformar erros repetidos em teste ou regra de lint.</li>
+</ol>
+<p>O tamanho da spec escala com a feature. Ferramentas citadas: GitHub Spec Kit, BMAD, OpenSpec, AWS Kiro. O workshop <a href="https://www.youtube.com/watch?v=yKLedmyUDMA">App do Zero com IA: Harness, Sub Agents, Spec-Driven, Novas Skills e Workflows</a> lembra que SDD pesado ajuda modelos fracos, mas vira babysitting com modelos fortes: para estes, spec enxuta, checklist e verificação independente bastam. Erros típicos de iniciante: critério vago ("tem que ser rápido"), esconder suposições, concluir tarefa sem teste passando, aceitar "pronto" sem exit code e manter spec sem ninguém que a audite, o que a transforma em ficção em poucas semanas.</p>
+<h3>Diagnóstico quando o agente erra</h3>
+<p>Antes de trocar de modelo, percorra: (1) a <b>instrução</b> era clara e tinha critério de conclusão? (2) o <b>contexto</b> trazia a informação certa, sem artefato velho? (3) havia <b>ferramenta e gate</b> para verificar o trabalho? Código limpo e testes legíveis também são contexto de alta qualidade.</p>
+
+<h2>Prompts pessoais de comportamento: o "Gabarito"</h2>
+<p>O "Gabarito" (Adapta.org), material de referência sem URL pública, é um system prompt pessoal em português enviado no início da conversa. Ele pede que o assistente sinalize que o leu e define dez diretrizes ligadas a técnicas nomeadas, entre elas anti-bajulação (não reverter sob pressão sem argumento novo), perguntas de esclarecimento, critério de sucesso explícito, step-back, Chain of Verification e confiança calibrada. Sua disciplina de estilo combate os tiques de texto de IA: preâmbulos, palavras de enchimento, ritmo staccato. Algumas diretrizes, com gatilho e ação:</p>
+<table>
+<tr><th>Diretriz</th><th>Técnica</th><th>Gatilho → ação</th></tr>
+<tr><td>Anti-bajulação</td><td>Sycophancy mitigation</td><td>Discordar com clareza; só reverter com argumento novo</td></tr>
+<tr><td>Pense antes de responder</td><td>Clarification prompting</td><td>Ambiguidade crítica → fazer a pergunta mais importante</td></tr>
+<tr><td>Execução orientada por meta</td><td>Self-eval prompting</td><td>Declarar critérios de sucesso, executar, checar item a item</td></tr>
+<tr><td>Recuo estratégico</td><td>Step-back prompting</td><td>Enunciar o princípio geral antes de aplicar</td></tr>
+<tr><td>Verificação em cadeia</td><td>Chain of Verification</td><td>Rascunho → perguntas de verificação isoladas → corrigir</td></tr>
+<tr><td>Confiança calibrada</td><td>Verbalized confidence</td><td>Expressar grau de certeza; dizer "não sei"</td></tr>
+</table>
+<p>O Gabarito é um bom exemplo de altitude certa, com dois limites: ocupa orçamento de atenção em toda conversa (em agentes de código, funciona melhor como skill) e técnicas caras como verificação em cadeia devem ser acionadas por gatilho, não sempre.</p>
+
+<h2>Templates práticos</h2>
+<h3>System prompt de agente</h3>
+<pre><code>&lt;role&gt;
+Você é o agente de suporte da Loja X. Objetivo: resolver o problema do
+cliente na primeira interação, sem prometer o que a política não cobre.
+&lt;/role&gt;
+&lt;background&gt;
+Clientes são pequenos varejistas. Políticas em policies/ (consulte via
+read_policy; não cite de memória).
+&lt;/background&gt;
+&lt;instructions&gt;
+1. Identifique o problema real, não só a queixa de superfície.
+2. Verifique dados com as ferramentas antes de afirmar.
+3. Proponha a solução mais simples; dê prazos realistas.
+&lt;/instructions&gt;
+## Casos difíceis
+- Reembolso fora da política, jurídico ou saúde: escale (human_handoff).
+- Sem certeza, diga e verifique; não invente número de pedido.
+## Formato
+Português, cordial e direto, até 120 palavras.</code></pre>
+<h3>AGENTS.md enxuto (com CLAUDE.md de uma linha)</h3>
+<pre><code># AGENTS.md
+## Projeto
+API de pedidos (Node 22, Fastify, Postgres). Frontend em web/.
+## Mapa
+- src/routes/  endpoints (padrão: src/routes/users.ts)
+- docs/adr/    decisões vigentes (leia antes de mudar arquitetura)
+- docs/specs/  specs por feature
+## Comandos
+- testes: pnpm test -- --reporter=dot
+- lint+tipos: pnpm check  (deve passar antes de declarar concluído)
+## Regras
+- Validação com Zod nos endpoints (contrato único com o front).
+- Nunca editar migrations aplicadas. Segredos só via .env.
+## Ao terminar
+Atualize NOTES.md: feito, decisões, pendências.
+
+# CLAUDE.md
+@AGENTS.md</code></pre>
+<h3>NOTES.md</h3>
+<pre><code># NOTES.md — feature: reembolso parcial
+## Estado
+- [x] spec aprovada   - [ ] T2 endpoint POST /refunds  &lt;- próximo
+## Decisões (do usuário)
+- Reembolso limitado a 90 dias (ADR-0011).
+## Hipóteses (não verificadas)
+- Gateway aceita estorno parcial? -&gt; verificar antes de T3.</code></pre>
+<h3>Spec mínima</h3>
+<pre><code># Spec: reembolso parcial
+Como operador, quero reembolsar parte de um pedido.
+## Critérios de aceite
+- Dado pedido pago há ≤ 90 dias, quando reembolso R$ 30 de R$ 100,
+  então o saldo reembolsável passa a R$ 70.
+- Dado pedido com 91 dias, quando tento reembolsar, recebo 422.
+## Perguntas em aberto (bloqueiam implementação): nenhuma
+## Fora de escopo: reembolso em lote.</code></pre>
+<h3>Compactação e delegação</h3>
+<pre><code>/compact Preserve: objetivo, decisões (com motivo), bugs abertos,
+arquivos modificados, próximos passos. Descarte saídas de comandos.
+
+# sub-agente
+Investigue por que os testes de src/billing falham em CI mas não
+localmente. Devolva em até 300 palavras: causa provável, evidência
+(arquivo:linha), correção sugerida e confiança. Não edite arquivos.</code></pre>
+<h3>Checklist de revisão de contexto</h3>
+<ul>
+<li>System prompt com papel, objetivo, framework e casos difíceis, sem if-else?</li>
+<li>Ferramentas poucas, de propósito único e saída enxuta?</li>
+<li>Exemplos poucos, diversos e canônicos?</li>
+<li>Arquivo de instruções como índice de menos de ~200 linhas?</li>
+<li>O que precisa acontecer sempre está em hook ou gate?</li>
+<li>Notas fora da janela separando fatos, hipóteses e decisões?</li>
+<li>Critério de conclusão verificável (teste, exit code)?</li>
+</ul>
+<div class="box key"><b>Em resumo</b> O contexto é finito e tem retornos decrescentes. Trate cada token como custo: prompts na altitude certa, poucas ferramentas, exemplos canônicos, recuperação just-in-time e, em tarefas longas, compactação, notas e sub-agentes. Persista o essencial em arquivos versionados e feche o ciclo com sensores. Quase sempre, melhorar o resultado é tirar informação da janela.</div>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=cneGlxsKlaE">How to Train Claude Cowork Better Than 99%</a></td><td>https://www.youtube.com/watch?v=cneGlxsKlaE</td><td>Corey McClain</td><td>Camadas de contexto e blueprints no Cowork.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=XqxtzRhrYfQ">tu NÃO precisa de OBSIDIAN pra ter um segundo cérebro de IA (com Claude Code/Cowork ou Codex)</a></td><td>https://www.youtube.com/watch?v=XqxtzRhrYfQ</td><td>Ratos de IA</td><td>Segundo cérebro em pastas Markdown.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=najOUxYfD5g">parei de escolher entre Claude Code e Codex (rodo os dois no MESMO CÉREBRO)</a></td><td>https://www.youtube.com/watch?v=najOUxYfD5g</td><td>Ratos de IA</td><td>AGENTS.md canônico e skills via symlink.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=4iCEoHXo__g">Harness Engineering: A Nova Corrida do Mercado de IA</a></td><td>https://www.youtube.com/watch?v=4iCEoHXo__g</td><td>Attekita Dev</td><td>Harness; AGENTS.md como índice; guias e sensores.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jKwevOnJAL0">Como eu fiz meu segundo cérebro com Obsidian e IA</a></td><td>https://www.youtube.com/watch?v=jKwevOnJAL0</td><td>ViktorKav</td><td>Vault com context, plan e decisions.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=FNYA82Fn5m4">Harness Engineering é muito mais que CLAUDE.MD</a></td><td>https://www.youtube.com/watch?v=FNYA82Fn5m4</td><td>Fernanda Kipper</td><td>User harness vs. harness da ferramenta.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=zHCdl_vzBk8">meu agente de IA assistiu 20 vídeos por mim e transformou em skill (Claude Code e Codex)</a></td><td>https://www.youtube.com/watch?v=zHCdl_vzBk8</td><td>Ratos de IA</td><td>Skills cruzando fontes para reduzir viés.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=PNco78D42G4">Como Eu Economizo Até 80% em Tokens no Claude Code</a></td><td>https://www.youtube.com/watch?v=PNco78D42G4</td><td>Attekita Dev</td><td>Sub-agentes, /compact e RTK.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=3uyGViQr7BU">Did This Claude Feature FINALLY Kill Prompting For Good?</a></td><td>https://www.youtube.com/watch?v=3uyGViQr7BU</td><td>Corey McClain</td><td>Conteúdo da skill importa mais que formato.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0Y3aUZrQtPs">This Secret Prompt Technique Is Changing AI Forever</a></td><td>https://www.youtube.com/watch?v=0Y3aUZrQtPs</td><td>Corey McClain</td><td>Persona detalhada muda o raciocínio.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=B1FWIGA3kHw">Harness Engineering: O Próximo Passo Da Era da IA!</a></td><td>https://www.youtube.com/watch?v=B1FWIGA3kHw</td><td>O Novo Programador</td><td>Rules, skills, specs e gates mecânicos.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9tD4eLkQONQ">ChatGPT Projects Just Got BIGGEST Update Ever!</a></td><td>https://www.youtube.com/watch?v=9tD4eLkQONQ</td><td>Corey McClain</td><td>Skills em projetos do ChatGPT.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=UC4vDpSJCkM">How to Pass Context in an Agentic AI Flow</a></td><td>https://www.youtube.com/watch?v=UC4vDpSJCkM</td><td>IBM Technology</td><td>Identidade, delegação e permissões no contexto.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pZjpNS9YeVA">Context Optimization vs LLM Optimization: Choosing the Right Approach</a></td><td>https://www.youtube.com/watch?v=pZjpNS9YeVA</td><td>IBM Technology</td><td>Otimizar contexto antes do modelo.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pN-LfxNFiTc">How RAG, GraphRAG, and Context Engineering Improve AI Performance</a></td><td>https://www.youtube.com/watch?v=pN-LfxNFiTc</td><td>IBM Technology</td><td>Recuperação precisa e governança em execução.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=BwXremQ-i6I">Context Engineering for AI Agents: 4 Failure Modes to Avoid</a></td><td>https://www.youtube.com/watch?v=BwXremQ-i6I</td><td>IBM Technology</td><td>Quatro falhas de contexto; 46 vs. 19 ferramentas.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=cgVppD6paYo">Prompt Engineering for LLMs, PDL, & LangChain in Action</a></td><td>https://www.youtube.com/watch?v=cgVppD6paYo</td><td>IBM Technology</td><td>Contrato, laço de controle e observabilidade.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ZM8WW8_HEeE">SPEC Driven: A MELHOR FORMA De Usar IA em 2026!</a></td><td>https://www.youtube.com/watch?v=ZM8WW8_HEeE</td><td>O Novo Programador</td><td>Spec versionada como contrato auditável.</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=yKLedmyUDMA">App do Zero com IA: Harness, Sub Agents, Spec-Driven, Novas Skills e Workflows</a></td><td>https://www.youtube.com/watch?v=yKLedmyUDMA</td><td>Waldemar Neto - Dev Lab</td><td>Spec enxuta basta para modelos fortes.</td></tr>
+<tr><td><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Effective context engineering for AI agents</a></td><td>https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents</td><td>Anthropic (29/09/2025)</td><td>Base do capítulo: context rot a sub-agentes.</td></tr>
+<tr><td>Gabarito: modo de trabalho em dez diretrizes (material de referência)</td><td>—</td><td>Adapta.org</td><td>System prompt pessoal com dez técnicas.</td></tr>
+</table>
+</section>

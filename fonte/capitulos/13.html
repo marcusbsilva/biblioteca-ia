@@ -1,0 +1,385 @@
+<section class="chapter" id="ch13"><h1><span class="num">Capítulo 13</span>Prompts na prática: como conversar com qualquer IA</h1>
+<p class="lead">Este capítulo é um manual de bancada para quem quer <em>usar</em> IA no dia a dia: conversar, criar imagens, gerar vídeos, analisar planilhas, programar, escrever um livro, roteirizar um vídeo ou compor uma música. Começamos pelo que acontece quando você digita um pedido, apresentamos um método simples para escrever bons prompts, percorremos cada tipo de ferramenta com exemplos prontos e fechamos com preços, cuidados de segurança, uma biblioteca de prompts e um checklist.</p>
+<div class="box intro"><b>Para começar</b> Pense na IA como um prestador de serviço rápido e culto que acabou de chegar à cidade: não conhece você e não adivinha o que você deixou de dizer. O <b>prompt</b> é o briefing. Nada aqui exige programar; agentes e contexto avançado estão no Capítulo 2 (Engenharia de Contexto), e o funcionamento interno dos modelos no Livro 1, Capítulo 2 (LLMs, Transformers e MoE).</div>
+
+<h2>O que é um prompt e como a IA "lê" e responde a ele</h2>
+<div class="box intro"><b>Para começar</b> O corretor do celular sugere a próxima palavra enquanto você digita. Os grandes modelos de linguagem fazem o mesmo em escala gigantesca: escolhem a continuação mais plausível do texto, um pedaço por vez. Por isso tudo o que você escreve (tom, exemplos, ordem, formato) puxa a resposta para algum lado.</div>
+<h3>Tokens: as "sílabas" que a IA enxerga</h3>
+<p>A IA lê <b>tokens</b>: pedaços de texto que podem ser uma palavra curta, parte de uma palavra ou uma pontuação. Em inglês, 1 token vale cerca de 3/4 de palavra; em português costuma haver um pouco mais de tokens por palavra. Isso importa porque <b>limites e preços são medidos em tokens</b>; porque <b>contar letras é difícil</b> para a IA (ela vê pedaços, não letras); e porque <b>conversas longas pesam</b>: o histórico inteiro é reenviado a cada mensagem e pode piorar a qualidade (o <i>context rot</i> do Capítulo 2).</p>
+<h3>Previsão da próxima palavra</h3>
+<p>Um modelo de linguagem (LLM) responde a uma pergunta: <em>dado este texto, qual o próximo token mais provável?</em> Ele devolve uma lista de probabilidades (depois de "O céu está", talvez "azul" 41%, "nublado" 22%), escolhe um token, o acrescenta e repete. Etapas de ajuste ensinam o modelo a seguir pedidos e recusar o que é perigoso, mas o mecanismo continua o mesmo. Modelos de "raciocínio" apenas escrevem um rascunho interno antes de responder, ao custo de mais tempo e tokens.</p>
+<figure><img src="img/13_fluxo.png"><figcaption>Do prompt à resposta: o texto vira tokens, o modelo calcula probabilidades, um token é sorteado conforme a temperatura e volta como entrada. Fonte: elaboração própria.</figcaption></figure>
+<h3>Por que contexto, exemplos e formato mudam a resposta</h3>
+<ul>
+<li><b>Contexto</b>: "explique inflação" gera uma aula genérica; "explique inflação para minha avó de 80 anos, assustada com o preço do mercado, em 5 frases e sem números" gera outra coisa.</li>
+<li><b>Exemplos</b>: mostrar dois ou três costuma valer mais que descrever, e o modelo copia até padrões que você não queria.</li>
+<li><b>Formato</b>: "tabela com colunas X, Y e Z" ou "e-mail de até 120 palavras" reduz a ambiguidade.</li>
+</ul>
+<p>Há ainda as <b>instruções de sistema</b>, o texto que a empresa (ou você, em "instruções personalizadas" e "projetos") põe antes da conversa. Quando duas ferramentas com o mesmo modelo respondem diferente, a diferença costuma estar aí.</p>
+<h3>Temperatura: o botão da criatividade</h3>
+<p>A <b>temperatura</b> controla o quanto o sorteio respeita a lista de probabilidades. Baixa (perto de 0): respostas estáveis e repetíveis. Alta: respostas variadas, mas mais propensas a sair dos trilhos. O <b>top-p</b> corta a cauda da lista. Nos apps de chat a temperatura já vem calibrada; você a encontra em APIs, no Ollama e no LM Studio. No chat, o efeito se obtém com palavras: "seja conservador e factual" ou "me dê 20 ideias malucas". Note que decodificação <i>greedy</i> (gananciosa) é escolher sempre o token mais provável, ou seja, temperatura zero.</p>
+<figure><img src="img/13_temperatura.png"><figcaption>Faixas de temperatura sugeridas por tipo de tarefa: cerca de 0,3 para fatos, 0,5 a 0,7 para textos de negócio e 0,8 para poesia. Fonte: elaboração própria com as faixas citadas em <a href="https://www.youtube.com/watch?v=ZFKvTIADp0k">Tuning Your AI Model to Reduce Hallucinations</a> (IBM Technology).</figcaption></figure>
+<h3>Alucinação: quando a IA inventa com confiança</h3>
+<p><b>Alucinação</b> é uma resposta fluente, convincente e errada: um livro que não existe, uma lei com número inventado, um link quebrado. É consequência direta do mecanismo: uma referência inventada pode ser perfeitamente plausível. O risco cresce com assuntos raros, recentes ou cheios de números e nomes, e quando o prompt pressupõe algo falso ("por que Santos Dumont ganhou o Nobel?"). O vídeo <a href="https://www.youtube.com/watch?v=ZFKvTIADp0k">Tuning Your AI Model to Reduce Hallucinations</a> sugere ajustar a temperatura, dar papel, ser específico, ancorar a resposta num conteúdo fornecido (<i>grounding</i>, que em escala vira RAG, assunto do Capítulo 3 (RAG)) e dizer o que fazer e o que não fazer. Três hábitos completam:</p>
+<ol>
+<li><b>Dê permissão para não saber</b>: "se não tiver certeza, diga".</li>
+<li><b>Peça fontes verificáveis</b> e abra os links.</li>
+<li><b>Separe criação de checagem</b>: em outra conversa, peça a lista de afirmações factuais com grau de confiança.</li>
+</ol>
+
+<h2>Como escrever um bom prompt</h2>
+<div class="box intro"><b>Para começar</b> Ao pedir uma pizza, você diz sabor, tamanho, borda e endereço. Ninguém chama isso de engenharia: é um pedido completo. Um bom prompt é o mesmo, para alguém que não conhece você.</div>
+<h3>O framework de sete itens</h3>
+<p>Há dezenas de siglas (CO-STAR, RTF, CRISPE) que dizem quase a mesma coisa. O tutorial <a href="https://www.youtube.com/watch?v=0vZ_UVLhSQQ">Getting started with Claude.ai</a>, da Anthropic, resume em preparar o cenário, definir a tarefa e especificar regras; <a href="https://www.youtube.com/watch?v=wC9rQSNhAX8">WordPress com IA: como criar o PROMPT perfeito para criar um site</a>, do Attekita Dev, resume numa frase: prompt não é comando, é briefing. Juntando, usamos sete itens, lembrados pela frase <b>"Para Obter Coisas Realmente Excelentes, Faça Certo"</b> (POCREFC).</p>
+<figure><img src="img/13_framework.png"><figcaption>Os sete itens de um bom prompt. Fonte: elaboração própria.</figcaption></figure>
+<table>
+<tr><th>Item</th><th>Pergunta</th><th>Exemplo</th></tr>
+<tr><td>Papel</td><td>Que especialista a IA deve ser?</td><td>"Atue como nutricionista esportivo."</td></tr>
+<tr><td>Objetivo</td><td>O que quero e para quê?</td><td>"Cardápio semanal para ganhar massa magra."</td></tr>
+<tr><td>Contexto</td><td>Quem sou, qual a situação?</td><td>"34 anos, treino 4x por semana, vegetariano, orçamento apertado."</td></tr>
+<tr><td>Restrições</td><td>O que evitar?</td><td>"Sem suplementos caros; preparo de até 20 minutos."</td></tr>
+<tr><td>Exemplos</td><td>Como é um bom resultado?</td><td>"Café: aveia com banana e pasta de amendoim (25 g de proteína)."</td></tr>
+<tr><td>Formato</td><td>Como a resposta deve vir?</td><td>"Tabela dia × refeição e lista de compras."</td></tr>
+<tr><td>Critérios</td><td>Como saber se ficou bom?</td><td>"Pelo menos 120 g de proteína por dia; mostre a soma."</td></tr>
+</table>
+<p>Nem todo prompt precisa dos sete: quanto mais o resultado depende de gosto, público ou situação, mais itens você precisa. O mais esquecido e valioso é o último: dizer como o resultado será julgado faz a IA conferir a própria lição. O papel ajuda menos do que se imagina; gaste mais palavras em contexto e critérios.</p>
+<h3>Anatomia anotada de um prompt</h3>
+<pre><code>[PAPEL] Você é um consultor de marketing para pequenos negócios.
+[OBJETIVO] Quero 5 ideias de posts para o Instagram da minha
+lavanderia, para atrair clientes novos no bairro em novembro.
+[CONTEXTO] Fica em Pinheiros (SP), público de 25 a 40 anos em
+apartamento, coleta por app, faz 3 anos em novembro. Tom leve.
+[RESTRIÇÕES] Nada de desconto acima de 15%. Não use "imperdível".
+[FORMATO] Tabela: título, legenda (até 300 caracteres), sugestão
+de imagem e melhor dia para postar.
+[EXEMPLO] "Sua máquina de lavar não cabe no seu apê? A nossa cabe
+no seu app."
+[CRITÉRIOS] 2 ideias usam o aniversário. Antes de entregar, confira
+o limite de caracteres e as palavras proibidas.</code></pre>
+<p>O contexto traz fatos que a IA não adivinharia, o formato já prepara o uso e a autoconferência final evita boa parte dos deslizes.</p>
+<h3>Prompt ruim × prompt bom</h3>
+<table>
+<tr><th>Ruim</th><th>Problema</th><th>Bom</th></tr>
+<tr><td>"Escreve um e-mail pro meu chefe."</td><td>Sem objetivo nem tom.</td><td>"E-mail de até 120 palavras para minha gestora pedindo adiar o relatório de sexta para terça porque o fornecedor atrasou os dados. Tom direto. Proponha entrega parcial na sexta."</td></tr>
+<tr><td>"Resume esse PDF."</td><td>Para quê? Que tamanho?</td><td>"Resuma o contrato anexo para eu decidir se assino: prazo, multa, reajuste, minhas obrigações e cláusulas incomuns, com o número de cada cláusula."</td></tr>
+<tr><td>"Faz uma imagem de um gato."</td><td>Sem estilo nem uso.</td><td>"Aquarela de um gato laranja dormindo sobre livros perto de uma janela com chuva, luz de fim de tarde, vertical 4:5 para post de livraria."</td></tr>
+</table>
+<h3>Iteração e refinamento</h3>
+<p>O melhor prompt raramente sai na primeira tentativa. O ciclo é escrever, ler, comparar com os critérios e ajustar <em>uma</em> coisa por vez. Frases úteis: "mantenha a estrutura, mas corte 40%"; "a ideia 3 é a melhor, desenvolva só ela"; "critique sua resposta como um editor exigente e entregue a versão melhorada". Quando a conversa desandar, abra uma nova com um prompt já corrigido: contexto limpo vale mais que dez mensagens de correção. Quando um prompt funcionar, guarde-o em "Projetos" (ChatGPT, Claude), "Gems" (Gemini) ou instruções personalizadas.</p>
+<h3>Few-shot: ensinar com exemplos</h3>
+<pre><code>Classifique como POSITIVO, NEGATIVO ou MISTO e extraia o assunto.
+
+Comentário: "Entrega rápida, mas a caixa veio amassada."
+Resposta: MISTO | embalagem
+Comentário: "Melhor pão de queijo da cidade!"
+Resposta: POSITIVO | produto
+Comentário: "Fiquei 40 minutos esperando e ninguém atendeu."
+Resposta: NEGATIVO | atendimento
+
+Agora classifique, um por linha: [comentários]</code></pre>
+<p>Varie os exemplos, cubra os casos difíceis (o MISTO) e mantenha o formato idêntico, porque a IA vai copiá-lo à risca.</p>
+<h3>Cadeia de pensamento e modelos que "pensam"</h3>
+<p>Por volta de 2022, descobriu-se que pedir "vamos pensar passo a passo" (<i>chain-of-thought</i>) melhorava matemática e lógica, porque dava ao modelo espaço para "fazer as contas". O vídeo <a href="https://www.youtube.com/watch?v=1c9iyoVIwDs">4 Methods of Prompt Engineering</a>, da IBM, apresenta a técnica ao lado de RAG e ReAct. Hoje os modelos de raciocínio fazem isso sozinhos; o que continua útil é pedir a <b>exibição</b> do raciocínio para auditar, decompor tarefas em etapas que você aprova e ligar o modo de raciocínio só quando valer o tempo extra.</p>
+<h3>Perguntas de esclarecimento, decomposição e autocrítica</h3>
+<p>Uma das frases mais poderosas é <b>"antes de começar, me faça as perguntas de que precisa para fazer isso bem"</b>: a IA aponta as lacunas em vez de você tentar prever tudo. A <b>decomposição</b> divide uma tarefa grande em etapas com verificação própria, e a <b>autocrítica</b> pede que o modelo revise o rascunho contra critérios concretos (para fatos, não substitui checagem externa). Um prompt que deu certo, salvo com lacunas, vira <b>template</b>.</p>
+<pre><code>Tarefa: guia de onboarding para novos funcionários.
+Etapa 1: proponha só o sumário e espere meu ok.
+Etapa 2: escreva uma seção por vez, até 400 palavras.
+Etapa 3: ao fim de cada seção, aponte o que um funcionário no
+primeiro dia não entenderia e corrija antes de me mostrar.</code></pre>
+<h3>Os erros mais comuns</h3>
+<table>
+<tr><th>Erro</th><th>Sintoma</th><th>Correção</th></tr>
+<tr><td>Pedido vago</td><td>Texto de folheto</td><td>Público, situação e critério de sucesso</td></tr>
+<tr><td>Tudo num só prompt</td><td>Resultado raso</td><td>Esboço → aprovação → desenvolvimento</td></tr>
+<tr><td>Pressupor fatos</td><td>A IA confirma premissa falsa</td><td>Pergunte de forma neutra</td></tr>
+<tr><td>Só dizer o que não quer</td><td>"Não use jargão" e ele aparece</td><td>Diga o que quer no lugar</td></tr>
+<tr><td>Conversa infinita</td><td>A IA esquece regras</td><td>Recomece com prompt consolidado</td></tr>
+<tr><td>Colar dados sensíveis</td><td>Risco de vazamento</td><td>Anonimize (veja "Segurança, privacidade e ética")</td></tr>
+</table>
+
+<h2>Texto e conversa: o chat do dia a dia</h2>
+<div class="box intro"><b>Para começar</b> O uso mais comum é abrir um chat e conversar: tirar dúvidas, reescrever um e-mail, planejar uma viagem, resumir. É um assistente generalista sempre à mão, que às vezes fala com segurança sobre o que não sabe.</div>
+<table>
+<tr><th>Assistente</th><th>Ponto forte prático</th></tr>
+<tr><td>ChatGPT</td><td>O mais completo em recursos: voz, imagem, análise de dados, pesquisa profunda, GPTs.</td></tr>
+<tr><td>Claude</td><td>Texto longo e natural, documentos, programação, Projetos e Artifacts.</td></tr>
+<tr><td>Gemini</td><td>Integração com Gmail, Docs e Drive; janela grande; imagem e vídeo.</td></tr>
+<tr><td>Microsoft Copilot</td><td>Integração com Windows e Office.</td></tr>
+<tr><td>Perplexity</td><td>Respostas com fontes citadas; substituto de buscador.</td></tr>
+<tr><td>DeepSeek, Mistral Le Chat, Grok</td><td>Alternativas gratuitas com perfis próprios.</td></tr>
+<tr><td>Local (Ollama, LM Studio)</td><td>Roda no seu computador, sem enviar dados (ver Livro 3, Capítulo 2, Hardware e IA local).</td></tr>
+</table>
+<p>O panorama <a href="https://www.youtube.com/watch?v=--8pJvYNcX4">Every AI Model Explained In 20 Minutes (Update)</a>, de Tina Huang, divide os modelos em flagship (mais capazes e caros), intermediários (cerca de 80% do trabalho diário) e leves. Comece com o modelo padrão e só suba quando a tarefa exigir. No chat, a conversa inteira é o prompt (mudou de assunto, abra outro chat); anexos valem mais que descrições; revise a memória salva de tempos em tempos; e ligue a busca na web para tudo que dependa de informação recente.</p>
+<pre><code>Estou decidindo entre [A] e [B] para [objetivo]. Contexto: [orçamento,
+prazo, prioridades]. Monte uma tabela de prós e contras com pesos de 1
+a 5, calcule uma nota e diga o que faria você mudar de ideia.</code></pre>
+<pre><code>Atue como professor paciente. Quero aprender [assunto] do zero.
+Explique o primeiro conceito em até 150 palavras, com uma analogia,
+e termine com uma pergunta para checar se entendi.</code></pre>
+<div class="box warn"><b>Atenção</b> Assistentes tendem a concordar com o usuário (<i>bajulação</i>). Em vez de "minha ideia é boa, né?", peça "aponte os três maiores riscos desta ideia". Para decisões importantes, compare dois assistentes: as divergências são o que merece checagem.</div>
+<div class="box fact"><b>Você sabia?</b> O primeiro chatbot famoso, o ELIZA, foi criado por Joseph Weizenbaum no MIT entre 1964 e 1966. Ele só reformulava as frases do usuário como um terapeuta, mas muita gente se apegou a ele, o que ficou conhecido como "efeito ELIZA".</div>
+
+<h2>Geração de imagens</h2>
+<div class="box intro"><b>Para começar</b> Gerar imagem é encomendar uma ilustração a um artista que só entende o que está escrito. A maioria usa <b>modelos de difusão</b>, que partem de pura estática e removem o ruído passo a passo guiados pelo texto, como explica <a href="https://www.youtube.com/watch?v=x2GRE-RzmD8">Diffusion Models for AI Image Generation</a> (IBM Technology). O prompt é uma <em>descrição de cena</em>.</div>
+<table>
+<tr><th>Ferramenta</th><th>Destaque</th></tr>
+<tr><td>Midjourney</td><td>Estética refinada; parâmetros <code>--ar</code>, <code>--stylize</code>, <code>--no</code>, <code>--seed</code>.</td></tr>
+<tr><td>GPT Image (ChatGPT)</td><td>Segue instruções complexas e escreve texto legível; edição por conversa.</td></tr>
+<tr><td>Gemini / Imagen</td><td>Edição conversacional; mantém o mesmo personagem.</td></tr>
+<tr><td>Flux</td><td>Fotorrealismo; pesos abertos em algumas versões.</td></tr>
+<tr><td>Stable Diffusion / ComfyUI</td><td>Gratuito e local; prompt negativo, LoRAs, ControlNet. Exige GPU.</td></tr>
+<tr><td>Ideogram</td><td>Tipografia: logos, cartazes.</td></tr>
+<tr><td>Adobe Firefly</td><td>Treinado com conteúdo licenciado; integrado ao Photoshop.</td></tr>
+</table>
+<p>Uma boa descrição cobre, em ordem: <b>sujeito</b> concreto, <b>ação e cenário</b>, <b>estilo</b> (técnica, época, movimento, em vez de nomes de artistas vivos), <b>composição</b>, <b>luz e cor</b>, <b>lente</b> (para fotorrealismo) e <b>proporção</b> (1:1 feed, 4:5 Instagram, 9:16 stories, 16:9 YouTube). Em ferramentas como Stable Diffusion e Midjourney valem ainda o <b>prompt negativo</b> (o que não deve aparecer), a <b>seed</b> (mesma seed + mesmo prompt = imagem quase igual, útil para variações controladas) e o <b>CFG</b> (quanto a imagem obedece ao texto). Nos modelos conversacionais, "sem pessoas" às vezes faz aparecer pessoas; prefira descrever positivamente ("rua deserta").</p>
+<pre><code>Fotografia editorial de uma feira livre em São Paulo às 7h, foco numa
+barraca de frutas tropicais, feirante de boné sorrindo ao fundo
+desfocado, luz dourada lateral, 35 mm, f/2.8, 16:9, espaço livre no
+terço superior para título.</code></pre>
+<pre><code>(Stable Diffusion) Prompt: retrato de uma astronauta brasileira, reflexo
+da Terra no visor, luz de estúdio dramática, fotografia de revista
+Negativo: cartoon, texto, marca d'água, mãos deformadas, borrado
+Steps: 30 | CFG: 6 | Seed: 123456 | 832x1216</code></pre>
+<p>Texto na imagem ainda falha (confira letra por letra ou diagrame depois); mãos e objetos contáveis também. Consistência de personagem exige imagem de referência. Gere variações em lote e escolha: ninguém acerta a imagem perfeita na primeira geração. Para peças finais com texto, muitas vezes é melhor gerar a arte limpa e diagramar o título no Canva ou no Photoshop.</p>
+<div class="box warn"><b>Atenção</b> Imagens de pessoas reais geradas por IA podem violar termos de uso, direitos de imagem e leis eleitorais. Nunca gere imagens íntimas ou comprometedoras de pessoas reais.</div>
+
+<h2>Vídeo</h2>
+<div class="box intro"><b>Para começar</b> Gerar vídeo é encomendar uma <em>cena de filme</em>: além do que vale para imagem, diga o que se mexe, como a câmera se move e quanto dura. Os clipes costumam ter de 4 a 10 segundos, alguns com som. Escreva o prompt como linha de roteiro: plano, sujeito, ação, câmera, luz, som.</div>
+<p>Ferramentas: <b>Veo</b> (Google, com áudio nativo; referência do setor no panorama de Tina Huang), <b>Sora</b> (OpenAI), <b>Runway</b> (edição e controle de câmera), <b>Kling</b> (movimento humano, bom custo), <b>Luma</b> (animar imagens) e modelos locais como Wan e LTX-Video, que exigem muita VRAM. Regras práticas: <b>uma ação por clipe</b>; descreva a câmera (estática, <i>dolly in</i>, drone subindo); <b>imagem → vídeo</b> dá mais controle que texto → vídeo; descreva o áudio separadamente; e teste em baixa resolução, porque vídeo é a mídia mais cara.</p>
+<pre><code>Plano geral, câmera estática. Uma pescadora idosa puxa uma rede num
+barco de madeira ao nascer do sol, névoa leve, luz alaranjada.
+Movimento lento. Som: ondas e gaivotas, sem música.
+Estilo documentário, 16:9, 8 segundos.</code></pre>
+<pre><code>(imagem → vídeo, a partir de uma foto de produto)
+A câmera faz um giro lento de 90 graus ao redor da garrafa de café
+gelado sobre a bancada, gotas de condensação escorrendo, fundo
+desfocado de cafeteria. Luz de estúdio suave. Sem texto. 5 segundos.</code></pre>
+<p>Física de líquidos, mãos e multidões ainda falha; rostos mudam entre clipes. Muitas ferramentas aplicam marca d'água visível ou invisível (SynthID, metadados C2PA): não tente removê-la.</p>
+
+<h2>Relatórios inteligentes e análise de dados</h2>
+<div class="box intro"><b>Para começar</b> Há dois modos. Na <b>análise de dados</b>, a IA escreve e roda código sobre seu arquivo, e os números são confiáveis se o código estiver certo. Na <b>pesquisa profunda</b>, ela lê dezenas de páginas e escreve um relatório citado, e a qualidade depende das fontes escolhidas. A estatística para conferir os resultados está no Livro 4, Capítulo 3 (Dados e Recomendação).</div>
+<table>
+<tr><th>Ferramenta</th><th>Para quê</th></tr>
+<tr><td>ChatGPT</td><td>Python sobre planilhas, gráficos; pesquisa profunda citada.</td></tr>
+<tr><td>Claude</td><td>PDFs longos, painéis como Artifacts; Research com relatório citado.</td></tr>
+<tr><td>Gemini</td><td>Deep Research e integração com Planilhas e Drive.</td></tr>
+<tr><td>Perplexity</td><td>Respostas rápidas com fontes.</td></tr>
+<tr><td>NotebookLM</td><td>Responde <em>só</em> com as fontes que você envia; gera áudio, slides, mapas mentais e tabelas.</td></tr>
+</table>
+<p><a href="https://www.youtube.com/watch?v=MhWkBgfKJX0">A Feature Mais Esperada do Notebook LM Finalmente Chegou (E É Melhor do Que Eu Esperava)</a>, do Attekita Dev, mostra slides, infográficos e tabelas exportáveis do NotebookLM. Em <a href="https://www.youtube.com/watch?v=z6o1H31uxKk">Is NotebookLM Still the BEST Deep Research Tool?</a>, Corey McClain compara ferramentas de pesquisa profunda e conclui que a maioria "vai amplo" e sintetiza blogs de fornecedores. É um teste único, mas a lição é geral: <b>pesquisa profunda não é sinônimo de pesquisa confiável</b>. Em <a href="https://www.youtube.com/watch?v=75EhP_W2g54">Claude Cowork Fable 5 + NotebookLM: My Smartest AI Workflow</a>, ele usa o NotebookLM para mapear o material e reserva o modelo mais caro para a etapa final.</p>
+<p>No prompt, descreva os dados (colunas, unidades, período), peça o código ou o método, defina a hierarquia de fontes e peça uma seção "o que não consegui confirmar".</p>
+<pre><code>Anexei a planilha de vendas (jan–set/2026). Colunas: data, produto,
+categoria, quantidade, preço unitário (R$), canal.
+1) Relate problemas de qualidade dos dados.
+2) Faturamento mensal por canal em gráfico de linhas.
+3) 10 produtos com maior queda no 3º trimestre.
+4) Resumo de 5 tópicos para o dono, sem jargão. Mostre o código.</code></pre>
+<pre><code>Pesquisa profunda: impacto da energia solar por assinatura na conta de
+luz de pequenos comércios no Brasil. Priorize ANEEL, EPE e artigos
+acadêmicos; marque blogs de empresas. Entregue achados com fonte,
+tabela de números com data e "o que não consegui confirmar".</code></pre>
+<div class="box warn"><b>Atenção</b> Na análise de dados, a IA pode "consertar" dados sujos em silêncio (descartar linhas, inverter formato de datas). Pergunte quantas linhas entraram e saíram de cada etapa.</div>
+
+<h2>Programação</h2>
+<div class="box intro"><b>Para começar</b> Programar com IA vai do autocompletar que sugere a próxima linha até agentes que leem o projeto, editam arquivos e rodam testes. É um colega júnior muito rápido, que precisa de instruções claras e revisão. O tema completo está no Livro 3, Capítulo 1 (Programando com IA).</div>
+<p>Ferramentas: <b>Claude Code</b> e <b>Codex</b> (agentes inclusos nos planos de Claude e ChatGPT), <b>Cursor</b> e <b>Windsurf</b> (editores com agente), <b>GitHub Copilot</b> (extensão e agente, com plano gratuito), <b>Gemini CLI</b> (código aberto, cota gratuita) e opções locais com Ollama. Ao pedir: planeje antes de codar (aprove o plano), dê critérios verificáveis ("os testes devem passar"), aponte um arquivo como padrão e peça explicações quando estiver aprendendo.</p>
+<pre><code>Quero adicionar exportação para CSV na tela de relatórios. Antes de
+editar: leia o código relevante, explique como a tela funciona e
+proponha um plano. Sem dependências novas; siga src/export/pdf.ts;
+escreva testes. Espere minha aprovação.</code></pre>
+<pre><code>Este erro aparece em npm test: [erro]. Investigue a causa raiz,
+explique em 3 frases, corrija com a menor mudança possível e rode
+os testes de novo.</code></pre>
+<div class="box warn"><b>Atenção</b> Código gerado pode compilar e estar errado, inseguro ou usar bibliotecas inexistentes. Leia o que vai para produção, nunca cole chaves ou senhas e limite as permissões de agentes. Segurança e injeção de prompt aparecem no Livro 3, Capítulo 4 (Desenvolvimento seguro e Pull Request).</div>
+
+<h2>Escrita de textos e livros</h2>
+<div class="box intro"><b>Para começar</b> Quem pede 300 páginas de uma vez recebe um texto genérico que esquece de si mesmo no quinto capítulo. Pense numa editora: você é autor e editor-chefe; a IA é a equipe que planeja, rascunha e revisa.</div>
+<p>Claude, ChatGPT e Gemini servem bem (Projetos guardam o material); Sudowrite e NovelAI são voltados à ficção. O método:</p>
+<ol>
+<li><b>Premissa e público</b>: uma frase de premissa, gênero, tamanho, referências.</li>
+<li><b>Bíblia</b>: personagens, mundo, regras, linha do tempo. Vai em todo prompt.</li>
+<li><b>Estrutura</b>: para cada capítulo, objetivo, conflito e gancho.</li>
+<li><b>Rascunho capítulo a capítulo</b>, com bíblia, resumo anterior e plano atual.</li>
+<li><b>Revisão em camadas</b>: continuidade, ritmo, diálogo, linguagem.</li>
+</ol>
+<p>O maior problema é a "voz de IA": adjetivos em trio, frases de efeito no fim de cada parágrafo, "não é apenas X, é Y". Dê amostras do <em>seu</em> texto, descreva a voz com traços concretos e mantenha uma lista de construções proibidas.</p>
+<pre><code>[Bíblia e resumo dos capítulos 1–6 anexados]
+Escreva o capítulo 7 conforme o plano, 2.500 a 3.000 palavras, em 1ª
+pessoa pela detetive Marta, no presente. Voz: frases curtas, ironia
+contida. Evite "tapeçaria", "jornada" e frases de efeito no fim de
+parágrafos. Termine num gancho. Depois liste os fatos novos para a bíblia.</code></pre>
+<pre><code>Atue como editor de desenvolvimento. Leia o capítulo anexado e aponte,
+sem reescrever: (1) incoerências com a bíblia, (2) trechos lentos,
+(3) diálogos artificiais, (4) clichês. Cite o trecho e sugira uma
+correção em uma frase.</code></pre>
+<div class="box tip"><b>Dica</b> Atualizar a bíblia ao fim de cada capítulo é o que impede um personagem de trocar a cor dos olhos no meio do livro. Antes de publicar, verifique as regras de editoras e plataformas sobre declarar uso de IA.</div>
+
+<h2>Roteiros para vídeos do YouTube</h2>
+<div class="box intro"><b>Para começar</b> No YouTube, os primeiros segundos decidem se a pessoa fica, e cada minuto, sem exceção, precisa dar um motivo claro para ver o próximo, como numa série que termina cada episódio num gancho. O lado de negócio está no Livro 5, Capítulo 1 (Negócios, Carreira e Governança).</div>
+<table>
+<tr><th>Parte</th><th>Duração</th><th>Função</th></tr>
+<tr><td>Gancho</td><td>0–15 s</td><td>Promessa, curiosidade ou conflito; nada de "olá, pessoal".</td></tr>
+<tr><td>Aposta</td><td>15–45 s</td><td>Por que importa e o que se ganha ficando.</td></tr>
+<tr><td>Blocos</td><td>corpo</td><td>1 a 2 minutos cada, com mini-gancho de transição.</td></tr>
+<tr><td>Virada</td><td>perto do fim</td><td>A dica mais forte, cumprindo a promessa.</td></tr>
+<tr><td>CTA</td><td>final</td><td>Uma só ação.</td></tr>
+</table>
+<p>Em Shorts e Reels a estrutura encolhe: gancho em 1 a 2 segundos, uma ideia, cortes rápidos e final que volta ao início. <a href="https://www.youtube.com/watch?v=Vf4dXYvpPzg">Clone Any YouTube Channel With Claude Code (No Coding Needed)</a> (aiTrends) e <a href="https://www.youtube.com/watch?v=Bsxl-kKZ30I">Clonei um Canal Dark MILIONÁRIO com o CLAUDE: Tutorial Completo Edição Estilo VOX!</a> (Azev) mostram fluxos que estudam o estilo de canais de sucesso e mantêm aprovação humana do roteiro. Estudar estilo é legítimo; copiar conteúdo não é, e o YouTube desmonetiza conteúdo repetitivo produzido em massa.</p>
+<pre><code>Atue como roteirista de YouTube focado em retenção.
+Tema: "5 erros que fazem sua conta de luz explodir no verão".
+Público: famílias sem conhecimento técnico. 8 minutos (~1.200 palavras).
+Entregue: 5 ganchos e o melhor; roteiro em blocos com mini-ganchos;
+[B-ROLL: ...] para imagens; CTA para "Como ler sua conta de luz".</code></pre>
+<pre><code>Transforme o roteiro abaixo num Short de 45 segundos: gancho nos 2
+primeiros segundos, uma única dica (a mais surpreendente), frases de
+até 10 palavras, texto na tela para cada frase e final que se conecte
+com o início. Roteiro: [cole aqui]</code></pre>
+<pre><code>Analise estas 3 transcrições de vídeos do meu canal com retenção alta
+e 3 com retenção baixa [cole]. Compare ganchos, ritmo e tamanho dos
+blocos. Liste 7 regras concretas de estilo para os próximos roteiros.</code></pre>
+<p>Leia o roteiro em voz alta antes de gravar, ou peça à IA uma versão "para falar": texto escrito para os olhos soa artificial quando narrado.</p>
+
+<h2>Música</h2>
+<div class="box intro"><b>Para começar</b> Geradores de música criam canções completas a partir de uma descrição de estilo e, opcionalmente, de uma letra sua. É uma banda de estúdio que toca qualquer gênero, mas só sabe o que está na ficha. <a href="https://www.youtube.com/watch?v=83HMZrhL_Uw">AI &amp; Music: How AI Is Changing Music Creation &amp; Creativity</a> (IBM) lembra que a composição algorítmica é antiga.</div>
+<p>Ferramentas: <b>Suno</b> (o mais popular, com voz e edição por trechos), <b>Udio</b> (alta fidelidade; regras mudaram após acordos com gravadoras), <b>ElevenLabs Music</b>, <b>Stable Audio</b> (trilhas e loops) e modelos locais como MusicGen (pesos não comerciais) e ACE-Step.</p>
+<p>O prompt tem dois campos. <b>Estilo</b>: gênero, época, clima, instrumentos, voz, andamento ("MPB acústica anos 70, violão de nylon, flauta, voz feminina suave, 92 BPM"); evite nomes de artistas. <b>Letra</b>: organizada com <b>metatags</b> entre colchetes, que funcionam como marcações de partitura e são sugestões, não ordens.</p>
+<pre><code>[Intro: violão dedilhado]
+[Verse]
+Acordei com o barulho da chuva no telhado
+o café passou sozinho, o dia atrasado
+[Chorus]
+Fica mais um pouco, deixa a rua lá fora
+[Bridge]
+[Instrumental: solo de flauta]
+[Outro: fade out]</code></pre>
+<pre><code>Estilo: forró pé de serra, sanfona, zabumba e triângulo, voz
+masculina nordestina, 125 BPM, alegre, gravação de festa ao vivo.
+Letra: [Verse] ... [Chorus] ...</code></pre>
+<pre><code>(no chat, para escrever a letra antes)
+Escreva a letra de um samba-canção sobre um bar que fechou depois de
+40 anos: 2 versos de 4 linhas, refrão repetível, ponte de 2 linhas,
+rimas simples, linguagem coloquial carioca. Marque as seções.</code></pre>
+<h3>Direitos de uso comercial</h3>
+<ul>
+<li><b>Plano gratuito = uso não comercial.</b> No Suno e no Udio, assinar depois não torna comerciais as músicas antigas.</li>
+<li><b>Planos pagos concedem uso comercial "sujeito aos termos"</b>.</li>
+<li><b>Direito de uso não é direito autoral.</b> Em vários países, obras sem autoria humana suficiente não têm copyright.</li>
+</ul>
+<div class="box warn"><b>Atenção</b> Os termos mudaram várias vezes em 2025 e 2026. Antes de uso comercial, guarde uma cópia datada dos termos vigentes e o comprovante do plano ativo no dia da geração.</div>
+
+<h2>Voz, áudio e modelos locais</h2>
+<p><b>Texto para fala (TTS)</b> é ter um locutor de estúdio disponível a qualquer hora. A referência comercial é a <b>ElevenLabs</b> (vozes naturais, clonagem, dublagem); há alternativas da OpenAI, Google e Microsoft, e modelos abertos como Piper, Kokoro e XTTS. Para transcrever áudio, o Whisper (aberto) roda até em computadores modestos. No prompt de voz, a pontuação controla pausas e números e siglas devem vir escritos como devem ser falados ("dois mil e vinte e seis"; "I-B-G-E" ou "IBGE", conforme a pronúncia desejada). Modelos recentes aceitam marcações de emoção entre colchetes, como <code>[sussurrando]</code> ou <code>[rindo]</code>, que variam de ferramenta para ferramenta.</p>
+<pre><code>Voz feminina, 35–45 anos, calorosa, ritmo calmo.
+Texto: "Há trinta anos... a gente acorda antes do sol.
+Não por obrigação. Por gosto." [pausa] "Padaria Estrela.
+Desde mil novecentos e noventa e seis."</code></pre>
+<div class="box warn"><b>Atenção</b> Clonar a voz de alguém sem autorização é antiético e, muitas vezes, ilegal. Golpes com vozes clonadas de parentes já são comuns: combine com a família uma palavra-senha para emergências.</div>
+<div class="box fact"><b>Você sabia?</b> O Whisper, sistema de transcrição aberto pela OpenAI em 2022, foi treinado com cerca de 680 mil horas de áudio coletado da web em vários idiomas. Essa diversidade explica por que ele lida bem com sotaques e ruído de fundo.</div>
+<h3>Modelos locais: Ollama e LM Studio</h3>
+<p>Rodar um modelo no próprio computador é como cozinhar em casa: mais trabalho, cardápio menor, mas nada sai de casa. <b>Ollama</b> (linha de comando) e <b>LM Studio</b> (interface gráfica) executam modelos abertos como Llama, Qwen, Gemma e Mistral; a escolha de hardware está no Livro 3, Capítulo 2 (Hardware e IA local). Modelos menores pedem prompts mais curtos e explícitos, instruções numeradas, um prompt de sistema fixo, temperatura baixa para extração e código, exemplos few-shot e o texto de referência no próprio prompt, já que não têm busca na web.</p>
+<pre><code># Modelfile do Ollama: um resumidor de contratos local
+FROM qwen3:14b
+PARAMETER temperature 0.2
+PARAMETER num_ctx 16384
+SYSTEM """Resuma contratos em português em 3 blocos: partes e objeto;
+prazos e valores; cláusulas de risco. Se algo não constar, escreva
+"não consta". Nunca invente cláusulas."""</code></pre>
+<figure><img src="img/13_matriz.png"><figcaption>Matriz ferramenta × tarefa: ● uso principal, ◐ faz bem, ○ faz de forma limitada. Avaliação qualitativa em outubro de 2026. Fonte: elaboração própria.</figcaption></figure>
+
+<h2>Planos e preços das principais IAs</h2>
+<p>Quase toda IA é "freemium". Valores em US$ por mês, plano pago de entrada para pessoa física, <b>verificados nas páginas oficiais em 31/10/2026; podem mudar.</b> No Brasil, o cartão internacional soma IOF.</p>
+<table>
+<tr><th>IA</th><th>Para que é melhor</th><th>Grátis?</th><th>Entrada (US$/mês)</th><th>Preços oficiais</th></tr>
+<tr><td>ChatGPT</td><td>Uso geral</td><td>Sim</td><td>Plus: 20</td><td><a href="https://openai.com/chatgpt/pricing/">openai.com/chatgpt/pricing</a></td></tr>
+<tr><td>Claude</td><td>Textos longos, documentos, programação</td><td>Sim</td><td>Pro: 20</td><td><a href="https://claude.com/pricing">claude.com/pricing</a></td></tr>
+<tr><td>Gemini (Google AI)</td><td>Integração com Google</td><td>Sim</td><td>AI Plus: 9,99</td><td><a href="https://one.google.com/about/plans">one.google.com/about/plans</a></td></tr>
+<tr><td>Microsoft Copilot</td><td>IA no Office</td><td>Sim (chat)</td><td>Microsoft 365 Personal: 9,99</td><td><a href="https://www.microsoft.com/en-us/microsoft-365/buy/compare-all-microsoft-365-products">microsoft.com/microsoft-365</a></td></tr>
+<tr><td>Midjourney</td><td>Imagens artísticas</td><td>Não</td><td>Basic: 10</td><td><a href="https://docs.midjourney.com/docs/plans">docs.midjourney.com/docs/plans</a></td></tr>
+<tr><td>Suno</td><td>Músicas com voz</td><td>Sim (sem uso comercial)</td><td>Pro: 8</td><td><a href="https://suno.com/pricing">suno.com/pricing</a></td></tr>
+<tr><td>ElevenLabs</td><td>Narração e dublagem</td><td>Sim (sem uso comercial)</td><td>Starter: 6</td><td><a href="https://elevenlabs.io/pricing">elevenlabs.io/pricing</a></td></tr>
+<tr><td>Cursor</td><td>Editor de código com agente</td><td>Sim</td><td>Plus: 8</td><td><a href="https://cursor.com/pricing">cursor.com/pricing</a></td></tr>
+<tr><td>GitHub Copilot</td><td>Código no editor</td><td>Sim</td><td>Pro: 10</td><td><a href="https://github.com/features/copilot/plans">github.com/features/copilot/plans</a></td></tr>
+</table>
+<figure><img src="img/13v3_precos.png"><figcaption>Preço mensal do plano pago de entrada das IAs da tabela (US$). Preços verificados em 31/10/2026. Fonte: elaboração própria com dados das páginas oficiais.</figcaption></figure>
+<p>Comece no grátis e só assine quando bater no limite com frequência. Um assistente geral (US$ 20) basta para a maioria; ferramentas especializadas valem quando imagem, música ou voz fazem parte do trabalho. Se vai vender o resultado, assine antes de gerar. Quem programa deve testar o gratuito do GitHub Copilot e do Cursor no projeto real antes de pagar, e quem vive no Google ou no Office tende a aproveitar mais Gemini ou Copilot.</p>
+
+<h2>Segurança, privacidade e ética</h2>
+<div class="box intro"><b>Para começar</b> Com IA é fácil colar no chat o contrato de um cliente sem pensar para onde ele vai, ou publicar uma imagem que imita um artista vivo. Esta seção reúne os cuidados mínimos; governança corporativa está no Livro 5, Capítulo 1 (Negócios, Carreira e Governança) e propriedade intelectual no Livro 5, Capítulo 3 (Propriedade intelectual).</div>
+<h3>Privacidade: o que não colar</h3>
+<p>Trate o chat como um e-mail para um prestador externo. Não cole documentos pessoais, dados bancários, senhas e chaves, prontuários, dados de clientes ou funcionários e contratos confidenciais. Quando precisar: anonimize; verifique se o serviço usa suas conversas para treino e desative; use IA local para material realmente sensível; e lembre da LGPD, já que colar dados de terceiros pode ser tratamento sem base legal.</p>
+<h3>Direitos, artistas e deepfakes</h3>
+<p>Não peça a reprodução de obras protegidas (a violação é sua). Em vez de "no estilo de [artista vivo]", descreva técnica, paleta e época. Nunca gere imagem, vídeo ou voz de pessoas reais em situações que não viveram, e rotule conteúdo sintético realista sem remover marcas d'água e metadados.</p>
+<h3>Checagem de fatos</h3>
+<p>Tudo o que tiver número, data, nome, lei, citação ou link deve ser conferido numa fonte primária; abra as fontes citadas, porque uma citação real pode não sustentar a frase. Em saúde, direito e finanças, use a IA para entender e preparar perguntas, e um profissional para decidir.</p>
+<div class="box warn"><b>Atenção</b> Documentos, páginas e e-mails que a IA lê podem conter instruções escondidas para manipulá-la: a <b>injeção de prompt</b>, explicada em <a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a> (IBM Technology). Desconfie quando um agente "decide" fazer algo que você não pediu e não dê permissões além do necessário.</div>
+
+<div class="box fact"><b>Você sabia?</b> A palavra "deepfake" surgiu em 2017, como nome de usuário de alguém que publicava no Reddit vídeos com rostos trocados por redes neurais. Em poucos anos o termo passou a designar qualquer mídia sintética realista de pessoas reais.</div>
+
+<h2>Prompts reutilizáveis: sua biblioteca pessoal</h2>
+<p>Quem cozinha bem guarda as receitas que deram certo. O molde universal reúne os sete itens numa ordem que funciona em qualquer chat; apague o que não fizer sentido. Para agentes, o Capítulo 2 (Engenharia de Contexto) mostra como transformá-lo em contexto persistente.</p>
+<pre><code>PAPEL: Atue como [especialista] com experiência em [área].
+OBJETIVO: Quero [entregável] para [público], que sirva para [finalidade].
+CONTEXTO: [fatos, arquivos, o que já foi tentado].
+RESTRIÇÕES: Tamanho [ ]. Tom [ ]. Evite [ ]. Se não souber, diga.
+FORMATO: [tópicos / tabela / código / roteiro].
+EXEMPLO do que considero bom: """[exemplo curto]"""
+CRITÉRIOS: Antes de responder, confira [1], [2], [3].
+PROCESSO: Se faltar informação essencial, faça até 3 perguntas.</code></pre>
+<table>
+<tr><th>Cenário</th><th>Modelo de prompt</th></tr>
+<tr><td>Revisar texto</td><td>Revise para [objetivo], mantendo a voz. Liste mudanças e motivos. Texto: [ ]</td></tr>
+<tr><td>Imagem</td><td>[Estilo] de [sujeito] [ação] em [cenário], [enquadramento], [luz], [paleta], proporção [X:Y].</td></tr>
+<tr><td>Vídeo</td><td>[Plano], câmera [movimento]. [Sujeito] [uma ação] em [cenário]. Som: [ ]. [Duração].</td></tr>
+<tr><td>Dados</td><td>Anexei [arquivo]. Colunas: [ ]. Cheque qualidade; [análises]; resumo para [público]. Mostre o código.</td></tr>
+<tr><td>Pesquisa</td><td>Pesquise [pergunta]. Priorize [fontes]; marque fontes fracas; liste o que não confirmou.</td></tr>
+<tr><td>Programação</td><td>Quero [funcionalidade]. Leia o código, proponha um plano e espere aprovação. Critério: [testes].</td></tr>
+<tr><td>Música</td><td>Estilo: [gênero], [instrumentos], [voz], [BPM]. Letra com [Verse] [Chorus] [Bridge].</td></tr>
+<tr><td>Checagem</td><td>Liste cada afirmação factual com grau de confiança e como verificá-la. Texto: [ ]</td></tr>
+</table>
+
+<h2>Checklist final</h2>
+<ul>
+<li>Disse <b>quem</b> a IA deve ser e <b>para quem</b> é o resultado?</li>
+<li>A <b>tarefa</b> tem um verbo claro e um objetivo principal?</li>
+<li>Dei o <b>contexto</b> necessário, sem dado sensível?</li>
+<li>Listei <b>restrições</b>, <b>formato</b> e, se o estilo importa, um <b>exemplo</b>?</li>
+<li>Escrevi <b>critérios de qualidade</b> e deixei a IA perguntar?</li>
+<li>Para tarefas grandes, pedi <b>plano primeiro</b>?</li>
+<li>Escolhi a ferramenta e o <b>plano</b> certos para o uso (pessoal ou comercial)?</li>
+<li>Vou <b>verificar</b> fatos, números e código antes de usar? Deu certo? <b>Salvei como template</b>.</li>
+</ul>
+<div class="box key"><b>Em resumo</b> Um bom prompt é um briefing completo; uma boa sessão é uma conversa iterativa com critérios claros; a ferramenta certa depende do meio e do uso. Verifique fatos, proteja dados, respeite pessoas e artistas e confira os termos antes de monetizar.</div>
+
+<h2>Fontes deste capítulo</h2>
+<h3>Vídeos</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor ou canal</th><th>Ponto principal</th><th>Data de acesso</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0vZ_UVLhSQQ">Getting started with Claude.ai</a></td><td>https://www.youtube.com/watch?v=0vZ_UVLhSQQ</td><td>Anthropic</td><td>Primeiros passos: projetos, arquivos e instruções</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=wC9rQSNhAX8">WordPress com IA: como criar o PROMPT perfeito para criar um site</a></td><td>https://www.youtube.com/watch?v=wC9rQSNhAX8</td><td>Attekita Dev</td><td>Prompt como briefing completo</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ZFKvTIADp0k">Tuning Your AI Model to Reduce Hallucinations</a></td><td>https://www.youtube.com/watch?v=ZFKvTIADp0k</td><td>IBM Technology</td><td>Técnicas e temperatura contra alucinações</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=1c9iyoVIwDs">4 Methods of Prompt Engineering</a></td><td>https://www.youtube.com/watch?v=1c9iyoVIwDs</td><td>IBM Technology</td><td>RAG, CoT, ReAct e DSP</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=--8pJvYNcX4">Every AI Model Explained In 20 Minutes (Update)</a></td><td>https://www.youtube.com/watch?v=--8pJvYNcX4</td><td>Tina Huang</td><td>Panorama dos tipos de modelo</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=x2GRE-RzmD8">Diffusion Models for AI Image Generation</a></td><td>https://www.youtube.com/watch?v=x2GRE-RzmD8</td><td>IBM Technology</td><td>Difusão: imagens a partir de ruído</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=MhWkBgfKJX0">A Feature Mais Esperada do Notebook LM Finalmente Chegou (E É Melhor do Que Eu Esperava)</a></td><td>https://www.youtube.com/watch?v=MhWkBgfKJX0</td><td>Attekita Dev</td><td>Novos recursos do NotebookLM</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=z6o1H31uxKk">Is NotebookLM Still the BEST Deep Research Tool?</a></td><td>https://www.youtube.com/watch?v=z6o1H31uxKk</td><td>Corey McClain</td><td>Comparação de ferramentas de pesquisa profunda</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=75EhP_W2g54">Claude Cowork Fable 5 + NotebookLM: My Smartest AI Workflow</a></td><td>https://www.youtube.com/watch?v=75EhP_W2g54</td><td>Corey McClain</td><td>Fluxo Claude Cowork + NotebookLM</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Vf4dXYvpPzg">Clone Any YouTube Channel With Claude Code (No Coding Needed)</a></td><td>https://www.youtube.com/watch?v=Vf4dXYvpPzg</td><td>aiTrends</td><td>Roteiro a partir do estilo de canal</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Bsxl-kKZ30I">Clonei um Canal Dark MILIONÁRIO com o CLAUDE: Tutorial Completo Edição Estilo VOX!</a></td><td>https://www.youtube.com/watch?v=Bsxl-kKZ30I</td><td>Azev • Renda Online com IA</td><td>Pipeline de vídeo com aprovação humana</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=83HMZrhL_Uw">AI &amp; Music: How AI Is Changing Music Creation &amp; Creativity</a></td><td>https://www.youtube.com/watch?v=83HMZrhL_Uw</td><td>IBM Technology</td><td>Papéis da IA na música</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a></td><td>https://www.youtube.com/watch?v=jrHRe9lSqqA</td><td>IBM Technology</td><td>O que é injeção de prompt</td><td>30/10/2026</td></tr>
+</table>
+<h3>Páginas oficiais de preços</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor ou canal</th><th>Ponto principal</th><th>Data de acesso</th></tr>
+<tr><td><a href="https://openai.com/chatgpt/pricing/">Preços do ChatGPT</a></td><td>https://openai.com/chatgpt/pricing/</td><td>OpenAI</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://claude.com/pricing">Planos e preços do Claude</a></td><td>https://claude.com/pricing</td><td>Anthropic</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://one.google.com/about/plans">Planos do Google One / Google AI</a></td><td>https://one.google.com/about/plans</td><td>Google</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://www.microsoft.com/en-us/microsoft-365/buy/compare-all-microsoft-365-products">Comparar produtos Microsoft 365</a></td><td>https://www.microsoft.com/en-us/microsoft-365/buy/compare-all-microsoft-365-products</td><td>Microsoft</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://docs.midjourney.com/docs/plans">Planos do Midjourney</a></td><td>https://docs.midjourney.com/docs/plans</td><td>Midjourney</td><td>Planos e preço de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://suno.com/pricing">Preços do Suno</a></td><td>https://suno.com/pricing</td><td>Suno</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://elevenlabs.io/pricing">Preços da ElevenLabs</a></td><td>https://elevenlabs.io/pricing</td><td>ElevenLabs</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://cursor.com/pricing">Preços do Cursor</a></td><td>https://cursor.com/pricing</td><td>Anysphere (Cursor)</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+<tr><td><a href="https://github.com/features/copilot/plans">Planos do GitHub Copilot</a></td><td>https://github.com/features/copilot/plans</td><td>GitHub</td><td>Plano gratuito e de entrada</td><td>31/10/2026</td></tr>
+</table>
+</section>

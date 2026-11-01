@@ -1,0 +1,296 @@
+<section class="chapter" id="ch01"><h1><span class="num">Capítulo 01</span>Fundamentos de IA, Machine Learning e Deep Learning</h1>
+<p class="lead">Antes dos agentes, dos LLMs e dos modelos de difusão existe uma base que não envelhece: formular problemas como busca, raciocinar com lógica e probabilidade, otimizar, aprender com dados e empilhar neurônios artificiais em redes profundas. Este capítulo percorre esse caminho em ordem, do algoritmo de busca em largura ao Q-learning rodando no navegador, apoiado no curso CS50 AI de Harvard, em vídeos do canal IBM Technology e em textos técnicos da DataCamp, da Notable Capital, do CNN Explainer e de um tutorial de TensorFlow.js.</p>
+<div class="box intro"><b>Para começar</b> Ninguém aprende a andar de bicicleta com uma lista de regras: você tenta, cai, ajusta e, depois de muitos exemplos, o corpo “aprende”. A IA moderna funciona assim: em vez de escrever todas as regras, mostramos exemplos e o computador se ajusta. Mas antes disso a IA passou por ideias mais simples (procurar caminhos, deduzir, calcular probabilidades) que continuam dentro dos sistemas atuais.</div>
+
+<h2>O que é (e o que não é) inteligência artificial</h2>
+<div class="box intro"><b>Para começar</b> Pense em bonecas russas: a maior é a IA (qualquer técnica que faça o computador agir de modo “esperto”); dentro dela está o aprendizado de máquina (técnicas que aprendem com exemplos); dentro desta, o aprendizado profundo (redes neurais com muitas camadas).</div>
+<p>Inteligência artificial é o campo que constrói sistemas capazes de tarefas que, em humanos, exigiriam inteligência: entender linguagem, reconhecer padrões, planejar, decidir. Um jogo da velha que nunca perde é IA; um filtro de spam também; um LLM também. O que muda é <em>como</em> o comportamento é obtido. Regras escritas à mão (“se a bola está à esquerda, mova a raquete para a esquerda”) funcionam em domínios minúsculos, mas não escalam. A história da IA é, em boa parte, a troca de regras explícitas por <b>busca</b> e depois por <b>aprendizado</b>.</p>
+<figure><img src="img/01_ia_ml_dl.png"><figcaption>IA contém ML, que contém DL. Busca, lógica, probabilidade e otimização são IA “clássica”, sem necessariamente aprender de dados. Fonte: elaboração própria a partir de DataCamp (Crabtree, 2024) e CS50 AI.</figcaption></figure>
+<ul>
+<li><b>IA</b>: o objetivo geral; inclui técnicas simbólicas sem aprendizado.</li>
+<li><b>Machine Learning (ML)</b>: algoritmos que <em>aprendem com dados</em> em vez de serem programados explicitamente (árvores de decisão, Naive Bayes, SVM, k-NN, k-means).</li>
+<li><b>Deep Learning (DL)</b>: ML com redes neurais de várias camadas, que aprendem representações hierárquicas (de bordas a partes a objetos).</li>
+</ul>
+<h3>IA preditiva e IA generativa</h3>
+<p>Outra divisão, do vídeo <a href="https://www.youtube.com/watch?v=phOhGqpXss4">Predictive vs Generative AI: How They Work and When to Use Each</a>, é pela pergunta respondida. A <b>preditiva</b> responde “o que vai acontecer?” com um número, classe ou probabilidade verificável (“87% de chance de este cliente cancelar”). A <b>generativa</b> responde “como isso poderia ser?” com texto, imagem ou código, sem resposta única correta.</p>
+<table>
+<tr><th>Aspecto</th><th>IA preditiva</th><th>IA generativa</th></tr>
+<tr><td>Saída</td><td>Valor, classe, probabilidade</td><td>Texto, imagem, áudio, código</td></tr>
+<tr><td>Dados típicos</td><td>Estruturados (tabelas)</td><td>Não estruturados</td></tr>
+<tr><td>Avaliação</td><td>Contra a verdade observada</td><td>Qualidade subjetiva, preferência humana</td></tr>
+<tr><td>Algoritmos</td><td>Regressão, árvores, gradient boosting</td><td>Transformers, difusão, GANs</td></tr>
+</table>
+<p>As duas se combinam: um modelo preditivo aponta clientes com risco de cancelar e um generativo redige o e-mail de retenção. Um LLM tecnicamente <em>prevê o próximo token</em>, mas seu propósito é generativo.</p>
+<div class="box fact"><b>Você sabia?</b> O termo “inteligência artificial” nasceu numa proposta de 1955 de John McCarthy, Marvin Minsky, Nathaniel Rochester e Claude Shannon para um workshop em Dartmouth, realizado em 1956. Eles apostavam num “avanço significativo” em dois meses de trabalho de dez pessoas.</div>
+
+<h2>Busca</h2>
+<div class="box intro"><b>Para começar</b> Num labirinto, resolver o problema é <em>procurar</em>: experimentar caminhos, descartar becos sem saída e escolher o melhor. Rotas de GPS, quebra-cabeças e xadrez podem ser descritos assim.</div>
+<p>A primeira aula do curso <a href="https://www.youtube.com/watch?v=5NgNicANyqM">Harvard CS50’s Artificial Intelligence with Python – Full University Course</a> define um <b>problema de busca</b> por: estado inicial; <b>ações</b> possíveis em cada estado; <b>modelo de transição</b> (o estado resultante de uma ação); <b>teste de objetivo</b>; e <b>custo de caminho</b>. Estados e transições formam um grafo, e a <b>solução ótima</b> é o caminho de menor custo até o objetivo.</p>
+<pre><code>fronteira ← {nó(estado_inicial)}
+explorados ← ∅
+repita:
+    se fronteira vazia: retorne FALHA
+    n ← fronteira.remover()
+    se objetivo(n.estado): retorne caminho(n)
+    explorados.add(n.estado)
+    para cada a em ACTIONS(n.estado):
+        s' ← RESULT(n.estado, a)
+        se s' ∉ explorados e s' ∉ fronteira:
+            fronteira.add(nó(s', pai=n, ação=a))</code></pre>
+<p>O conjunto de explorados evita laços infinitos. A diferença entre os algoritmos clássicos está só na estrutura da fronteira:</p>
+<table>
+<tr><th>Algoritmo</th><th>Fronteira</th><th>Ótimo?</th><th>Observação</th></tr>
+<tr><td>DFS (profundidade)</td><td>Pilha (LIFO)</td><td>Não</td><td>Pouca memória; pode achar caminho longo</td></tr>
+<tr><td>BFS (largura)</td><td>Fila (FIFO)</td><td>Sim, com custos unitários</td><td>Memória cresce exponencialmente</td></tr>
+<tr><td>Custo uniforme (Dijkstra)</td><td>Prioridade por g(n)</td><td>Sim</td><td>BFS com custos variáveis</td></tr>
+<tr><td>Greedy best-first</td><td>Prioridade por h(n)</td><td>Não</td><td>Rápida, mas a heurística engana</td></tr>
+<tr><td>A*</td><td>Prioridade por g(n)+h(n)</td><td>Sim, se h admissível</td><td>Padrão em rotas e jogos</td></tr>
+</table>
+<h3>Busca informada e heurísticas</h3>
+<p>Busca <em>informada</em> usa uma <b>heurística</b> h(n), estimativa do custo restante; num labirinto em grade, a distância de Manhattan |Δx|+|Δy|. A greedy segue só h(n) e cai em corredores que terminam numa parede; o <b>A*</b> soma o custo já pago, g(n). Ele é ótimo se h for <b>admissível</b> (nunca superestima o custo real). Na prática, a qualidade do A* é a qualidade da heurística, e heurísticas obtidas “relaxando” o problema (ignorar paredes) costumam ser admissíveis.</p>
+<h3>Busca adversarial: Minimax e alfa-beta</h3>
+<p>Em jogos há um adversário. O <b>Minimax</b> atribui utilidade aos estados finais (no jogo da velha: X vence = +1, empate = 0, O vence = −1); MAX escolhe a ação de maior valor, MIN a de menor, recursivamente:</p>
+<pre><code>def valor(s):
+    if terminal(s): return utilidade(s)
+    if jogador(s) == MAX:
+        return max(valor(result(s, a)) for a in acoes(s))
+    return min(valor(result(s, a)) for a in acoes(s))</code></pre>
+<p>A <b>poda alfa-beta</b> abandona ramos que não podem mudar a decisão e, com boa ordenação, quase dobra a profundidade alcançável. O obstáculo é a <b>explosão combinatória</b>: o jogo da velha tem 255.168 partidas possíveis; o xadrez, segundo a palestra <a href="https://www.youtube.com/watch?v=pFq5szYIWQk">CS50 for Business - Lecture 4 - Approaching Artificial Intelligence</a>, cerca de 2,4 trilhões de sequências após 9 meio-movimentos.</p>
+<figure><img src="img/01_explosao_combinatoria.png"><figcaption>Crescimento do número de sequências de jogo (escala log): jogo da velha e xadrez. Fonte: elaboração própria com dados de “CS50 for Business - Lecture 4 - Approaching Artificial Intelligence” e contagens “perft” do xadrez.</figcaption></figure>
+<p>A saída é limitar a profundidade e usar uma <b>função de avaliação</b> (por exemplo, o saldo de material no xadrez). Foi aí que o aprendizado entrou nos jogos: o AlphaGo <em>aprende</em> a avaliação e a política de jogadas e as combina com busca em árvore Monte Carlo.</p>
+
+<h2>Conhecimento e lógica</h2>
+<div class="box intro"><b>Para começar</b> Um detetive junta pistas e deduz conclusões que <em>têm</em> de ser verdadeiras. A lógica dá ao computador essa capacidade: escrevemos fatos e regras, e ele tira conclusões garantidas.</div>
+<p>Na <b>lógica proposicional</b> há símbolos (P = “está chovendo”), conectivos (¬, ∧, ∨, →, ↔) e <b>modelos</b>, atribuições de verdadeiro/falso a cada símbolo. Uma <b>base de conhecimento</b> (KB) <b>acarreta</b> α (KB ⊨ α) se α é verdadeira em todo modelo em que a KB é verdadeira.</p>
+<ul>
+<li><b>Model checking</b>: enumerar os 2ⁿ modelos e verificar. Correto e completo, mas exponencial. O CS50 resolve com ele o jogo Detetive (Clue).</li>
+<li><b>Regras de inferência</b> (Modus Ponens, De Morgan etc.): encontrar uma prova vira, de novo, um problema de busca.</li>
+<li><b>Resolução</b>: com a KB em forma normal conjuntiva, acrescenta-se ¬α e combinam-se cláusulas (P∨Q e ¬P∨R produzem Q∨R) até chegar à cláusula vazia, uma contradição. É a base dos provadores automáticos e, indiretamente, dos solucionadores SAT usados em verificação de hardware e software.</li>
+</ul>
+<p>A <b>lógica de primeira ordem</b> acrescenta objetos, predicados e quantificadores (∀, ∃). Lógica dá certeza e explicabilidade, mas exige conhecimento escrito à mão e um mundo preto-no-branco.</p>
+
+<h2>Incerteza</h2>
+<div class="box intro"><b>Para começar</b> No mundo real quase nada é certo: “70% de chance de chuva”, exames com falso positivo. Em vez de “verdadeiro ou falso”, precisamos raciocinar com “quão provável”.</div>
+<p>O essencial: probabilidade condicional P(a | b) = P(a ∧ b) / P(b) e a <b>regra de Bayes</b>, P(b | a) = P(a | b)·P(b) / P(a), que inverte a direção do conhecimento: de “quão provável é a evidência dada a causa” para “quão provável é a causa dada a evidência”. Exemplo clássico: um teste com 99% de sensibilidade, 5% de falsos positivos e doença com prevalência de 1%. Um positivo indica doença em apenas 0,99·0,01 / (0,99·0,01 + 0,05·0,99) ≈ 16,7%. É o mesmo raciocínio do filtro de spam Naive Bayes.</p>
+<ul>
+<li><b>Redes bayesianas</b>: grafos acíclicos em que cada nó é uma variável e guarda P(X | pais). No exemplo do curso, chuva → manutenção da via → atraso do trem → comparecer à reunião. Quando a inferência exata é cara, usa-se amostragem.</li>
+<li><b>Modelos de Markov</b>: o estado atual depende só do anterior. Um <b>modelo oculto de Markov</b> (HMM) separa estados escondidos (está chovendo?) de observações (a pessoa trouxe guarda-chuva?). HMMs dominaram o reconhecimento de fala por décadas.</li>
+</ul>
+
+<h2>Otimização</h2>
+<div class="box intro"><b>Para começar</b> Às vezes queremos a melhor <em>arrumação</em>, não um caminho: onde construir hospitais, como montar um horário de provas sem conflitos. É como procurar o ponto mais alto de uma região montanhosa na neblina, enxergando só ao redor.</div>
+<ul>
+<li><b>Busca local</b>: o <b>hill climbing</b> anda sempre para o melhor vizinho e pode parar num máximo local. O <b>simulated annealing</b> aceita movimentos piores com probabilidade que cai ao longo do tempo: explora muito no início e pouco no fim.</li>
+<li><b>Programação linear</b>: com objetivo e restrições lineares, o simplex encontra o ótimo global (o curso usa <code>scipy.optimize.linprog</code>).</li>
+<li><b>Satisfação de restrições (CSP)</b>: variáveis, domínios e restrições, como agendar provas sem conflito ou resolver Sudoku. Usa consistência de arco (AC-3), backtracking e heurísticas como “variável com menos valores restantes”.</li>
+</ul>
+<p>A otimização é o elo com o aprendizado: treinar uma rede neural é minimizar uma função de perda, usando o <em>gradiente</em> em vez de vizinhos discretos.</p>
+
+<h2>Aprendizado de máquina: os três paradigmas</h2>
+<div class="box intro"><b>Para começar</b> No aprendizado de máquina entregamos exemplos e o computador descobre o padrão, como uma criança que aprende a reconhecer cachorros vendo muitos cachorros. Há três jeitos de ensinar: com gabarito, sem gabarito e por recompensa.</div>
+<table>
+<tr><th>Paradigma</th><th>Sinal de treino</th><th>Exemplos</th><th>Algoritmos típicos</th></tr>
+<tr><td>Supervisionado</td><td>Pares (entrada, rótulo)</td><td>Spam, preço de imóvel, diagnóstico</td><td>Regressão, k-NN, SVM, árvores, redes neurais</td></tr>
+<tr><td>Não supervisionado</td><td>Só entradas</td><td>Agrupar clientes, reduzir dimensão</td><td>k-means, PCA/SVD, autoencoders</td></tr>
+<tr><td>Por reforço</td><td>Recompensa após ações</td><td>Jogos, robótica, RLHF</td><td>Q-learning, PPO</td></tr>
+<tr><td>Autossupervisionado</td><td>Rótulos derivados dos próprios dados</td><td>Pré-treino de LLMs (prever o próximo token)</td><td>Modelos de linguagem, contrastivo</td></tr>
+</table>
+<h3>Aprendizado supervisionado</h3>
+<p>Dados pares (x, y), buscamos uma função h que aproxime y = f(x): <b>classificação</b> se y é discreto, <b>regressão</b> se contínuo. Os clássicos são k-NN (voto dos vizinhos mais próximos), perceptron (fronteira linear), SVM (fronteira de máxima margem; com <i>kernels</i>, não linear), regressão logística e árvores/gradient boosting, que seguem como estado da arte em dados tabulares.</p>
+<p><b>Overfitting</b> é decorar o treino e generalizar mal. O vídeo <a href="https://www.youtube.com/watch?v=C3Lr6Waw66g">What is Semi-Supervised Learning?</a> dá um exemplo: se todas as fotos de gatos foram tiradas dentro de casa e as de cães ao ar livre, o modelo aprende “ao ar livre ⇒ cão”. As defesas são regularização (penalizar complexidade, dropout), separar dados de teste nunca vistos (holdout, validação cruzada) e mais diversidade de dados.</p>
+<p>Um caso clássico de ML supervisionado, citado pela DataCamp: 1.000 casas, a feature “número de quartos” e uma árvore de decisão que aprende a relação entre quartos e preço. O algoritmo traça uma <b>fronteira de decisão</b> a partir das features, e a qualidade só é medida de verdade em dados que ele nunca viu. Funções de perda formalizam o erro: perda 0-1 (acertou ou errou), L1 = |y − ŷ|, L2 = (y − ŷ)² e entropia cruzada para probabilidades.</p>
+<h3>Avaliação: matriz de confusão</h3>
+<p>O tutorial <a href="https://www.youtube.com/watch?v=PoqGrCscJ7k">Confusion to Clarity: Mastering Confusion Matrix in Machine Learning</a> treina regressão logística no dataset de câncer de mama do scikit-learn e obtém acurácia de 95%, precisão de 94% e recall de 97%:</p>
+<pre><code>from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
+
+X, y = load_breast_cancer(return_X_y=True)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25)
+sc = StandardScaler(); X_tr = sc.fit_transform(X_tr); X_te = sc.transform(X_te)
+y_pred = LogisticRegression().fit(X_tr, y_tr).predict(X_te)
+print(metrics.confusion_matrix(y_te, y_pred))</code></pre>
+<table>
+<tr><th>Métrica</th><th>Fórmula</th><th>Pergunta que responde</th></tr>
+<tr><td>Acurácia</td><td>(VP+VN)/total</td><td>Quanto acertei no geral?</td></tr>
+<tr><td>Precisão</td><td>VP/(VP+FP)</td><td>Dos que marquei positivos, quantos eram?</td></tr>
+<tr><td>Recall</td><td>VP/(VP+FN)</td><td>Dos positivos reais, quantos encontrei?</td></tr>
+<tr><td>F1</td><td>2·P·R/(P+R)</td><td>Equilíbrio entre precisão e recall</td></tr>
+</table>
+<div class="box warn"><b>Atenção</b> Em <code>load_breast_cancer</code>, a classe 1 é <em>benigno</em>. Com o padrão do scikit-learn, você mede a detecção de tumores benignos; calcule as métricas para a classe que importa. E acurácia engana em dados desbalanceados: um detector que diz “nunca é fraude” tem 99,9% de acurácia.</div>
+<h3>Não supervisionado, poucos rótulos e zero-shot</h3>
+<p>Sem rótulos, procuram-se estruturas. O <b>k-means</b> alterna atribuir cada ponto ao centróide mais próximo e mover o centróide para a média dos seus pontos. A <b>redução de dimensionalidade</b>, tema de <a href="https://www.youtube.com/watch?v=-KKxtHwxKhE">How Linear Algebra Powers Machine Learning (ML)</a>, usa a <b>SVD</b> (A = UΣVᵀ) para manter só as direções mais importantes; é a base do PCA e da ideia de atualizações de baixo posto do LoRA.</p>
+<p>Rotular é caro. O aprendizado <b>semissupervisionado</b> combina poucos rótulos com muitos dados sem rótulo: pseudo-rotulagem (o modelo rotula e as previsões confiantes entram no treino), clustering e <i>active learning</i> (os casos duvidosos vão para humanos). No limite, o <b>zero-shot learning</b> (<a href="https://www.youtube.com/watch?v=pVpr4GYLzAo">What is Zero-Shot Learning?</a>) classifica classes nunca vistas, por exemplo pondo imagens e descrições no mesmo espaço vetorial, a ideia do CLIP. Entre os dois extremos ficam o <i>few-shot</i> e o <i>one-shot</i>, que aprendem uma classe nova a partir de poucos exemplos ou de um só, e a geração de dados sintéticos, outra forma de contornar a falta de rótulos.</p>
+<h3>Classificação de texto como estudo de caso</h3>
+<p>A classificação de texto, tema de <a href="https://www.youtube.com/watch?v=hHiPs_wICsE">Text Classification: AI Techniques and Real-World Applications</a>, reúne quase tudo acima. Há três tipos: <b>binária</b> (spam ou não), <b>multiclasse</b> (pedido, suporte ou reclamação) e <b>multirrótulo</b> (um filme pode ser “ação” e “aventura”). O pipeline é iterativo: pré-processamento (a etapa mais demorada), extração de features por embeddings, modelo (de Naive Bayes a um LLM) e rótulos de saída. Os desafios recorrentes são desbalanceamento entre classes, ambiguidade (“manga” fruta ou de camisa) e <b>drift</b>: o sentimento sobre um tema muda com os eventos do mundo, e o modelo precisa de validação contínua.</p>
+<h3>Viés algorítmico</h3>
+<p>O viés raramente nasce do algoritmo; nasce dos dados. O vídeo <a href="https://www.youtube.com/watch?v=og67qeTZPYs">Algorithmic Bias in AI: What It Is and How to Fix It</a> aponta dados históricos enviesados, amostras não representativas e variáveis-proxy (o CEP como proxy de etnia), e defende dados diversos, auditorias e governança contínua.</p>
+
+<h2>O neurônio artificial</h2>
+<div class="box intro"><b>Para começar</b> Um comitê decide se haverá churrasco: cada membro opina (vai chover? tem dinheiro?), algumas opiniões pesam mais, e se a soma passa de um limite a resposta é “sim”. Um neurônio artificial é isso: soma entradas multiplicadas por pesos e decide quanto “disparar”.</div>
+<figure><img src="img/01_neuronio.png"><figcaption>Um neurônio artificial: soma ponderada das entradas mais viés, seguida de função de ativação. Fonte: elaboração própria a partir de “The Anatomy of a Neural Network” (Notable Capital) e “Inside a Neuron: The Building Blocks of a Neural Network &amp; AI” (IBM Technology).</figcaption></figure>
+<p>Formalmente, z = <b>w·x</b> + b e ŷ = g(z). O vídeo <a href="https://www.youtube.com/watch?v=H_jD5xa1nRg">Inside a Neuron: The Building Blocks of a Neural Network & AI</a> usa preço de imóvel: entradas como área e quartos, pesos dizendo o quanto cada uma importa, viés como deslocamento. “Treinar” é ajustar pesos e viés a partir de dados.</p>
+<figure><img src="img/01_ativacoes.png"><figcaption>Funções de ativação: o degrau não é diferenciável; sigmoide e tanh saturam; a ReLU não satura para z &gt; 0. Fonte: elaboração própria.</figcaption></figure>
+<table>
+<tr><th>Função</th><th>Fórmula</th><th>Uso / armadilha</th></tr>
+<tr><td>Degrau</td><td>1 se z ≥ 0, senão 0</td><td>Perceptron original; gradiente zero impede o treino</td></tr>
+<tr><td>Sigmoide</td><td>1/(1+e^{−z})</td><td>Saída binária; satura</td></tr>
+<tr><td>ReLU</td><td>max(0, z)</td><td>Padrão em camadas ocultas</td></tr>
+<tr><td>GELU / SiLU</td><td>variantes suaves</td><td>Comuns em Transformers</td></tr>
+<tr><td>Softmax</td><td>e^{zᵢ}/Σⱼe^{zⱼ}</td><td>Saída multiclasse (probabilidades)</td></tr>
+</table>
+<p>A ativação precisa ser <b>não linear</b>: compor transformações lineares dá outra transformação linear, e uma rede de cem camadas lineares equivale a uma só.</p>
+<p>O perceptron de Rosenblatt (1958) aprendia fronteiras lineares; em 1969, Minsky e Papert mostraram que ele não resolve o XOR, o que contribuiu para o primeiro “inverno da IA”. A solução é empilhar camadas: uma <b>rede multicamada</b> (MLP) com uma camada oculta já resolve o XOR, e o <b>teorema da aproximação universal</b> garante que uma camada larga o bastante aproxima qualquer função contínua. No exemplo do cão, as primeiras camadas detectam cor e bordas, depois contornos, patas e cauda, até o nó de saída “cão”.</p>
+<div class="box fact"><b>Você sabia?</b> Rosenblatt construiu o perceptron em hardware, o Mark I Perceptron, com 400 fotocélulas como “retina”. O New York Times noticiou a máquina como o embrião de um computador que um dia andaria, falaria e teria consciência de si.</div>
+
+<h2>Como uma rede aprende: perda, gradiente e retropropagação</h2>
+<div class="box intro"><b>Para começar</b> Imagine descer uma montanha de olhos vendados, sentindo com os pés para que lado o chão desce. Treinar uma rede é isso: o chão é o erro (a <b>perda</b>), a inclinação é o <b>gradiente</b> e cada passo é um pequeno ajuste nos pesos.</div>
+<p>Escolhida a perda L(w) (erro quadrático médio para regressão, entropia cruzada para classificação), anda-se no sentido oposto ao gradiente:</p>
+<p style="text-align:center"><b>w ← w − η · ∇L(w)</b></p>
+<p>η é a <b>taxa de aprendizado</b>: pequena demais, o treino é lento; grande demais, oscila ou diverge, como mostra a figura a seguir. Na prática, calcula-se o gradiente em <b>mini-batches</b> (dezenas a milhares de exemplos) e usa-se o otimizador Adam/AdamW, padrão em LLMs.</p>
+<figure><img src="img/01_gradiente.png"><figcaption>Gradiente descendente em L = ½w₁² + 2w₂² com três taxas de aprendizado: lenta, adequada e instável. Fonte: simulação própria.</figcaption></figure>
+<p>Calcular o gradiente de milhões de pesos é viável graças à <b>retropropagação</b>, popularizada por Rumelhart, Hinton e Williams em 1986: a regra da cadeia aplicada de trás para frente. Para um peso da última camada, ∂L/∂w = (ŷ − y) · g'(z) · x; cada camada reaproveita o gradiente da seguinte, e o custo do caminho de volta é da mesma ordem do de ida. PyTorch e TensorFlow fazem isso por <b>diferenciação automática</b>. O loop de treino descrito em <a href="https://www.youtube.com/watch?v=fJ40w_2h8kk">What is PyTorch? (Machine/Deep Learning)</a> é sempre o mesmo:</p>
+<pre><code>for x, y in dataloader:          # batches embaralhados
+    y_hat = model(x)             # forward
+    loss = loss_fn(y_hat, y)     # perda
+    optimizer.zero_grad()
+    loss.backward()              # autograd = backprop
+    optimizer.step()             # gradiente descendente</code></pre>
+<p>Problemas clássicos: o <b>gradiente que desaparece ou explode</b> ao multiplicar muitas derivadas (remédios: ReLU, boa inicialização, normalização, conexões residuais) e o overfitting (dropout, weight decay, early stopping). Redes não são incompreensíveis em princípio, pois cada número pode ser inspecionado; o que as torna opacas é a escala, e ver cada número não é o mesmo que entender o algoritmo que a rede implementa. Por isso, onde a interpretabilidade é requisito (saúde, crédito), o ML clássico costuma ser preferido.</p>
+
+<h2>Machine learning clássico vs. deep learning</h2>
+<div class="box intro"><b>Para começar</b> Para prever inadimplência a partir de uma planilha, uma árvore de decisão costuma ser rápida, barata e explicável. Para reconhecer rostos ou entender frases, redes profundas ganham com folga, mas cobram caro em dados, máquinas e energia.</div>
+<table>
+<tr><th>Critério</th><th>ML clássico</th><th>Deep learning</th></tr>
+<tr><td>Features</td><td>Engenharia manual</td><td>Aprendidas automaticamente</td></tr>
+<tr><td>Dados</td><td>Funciona com menos; satura</td><td>“Faminto”; continua melhorando</td></tr>
+<tr><td>Hardware</td><td>CPU costuma bastar</td><td>GPU/TPU</td></tr>
+<tr><td>Interpretabilidade</td><td>Alta</td><td>Baixa</td></tr>
+<tr><td>Onde brilha</td><td>Dados tabulares, finanças</td><td>Imagem, áudio, linguagem</td></tr>
+</table>
+<p>Com modelos pré-treinados e <em>transfer learning</em>, “DL precisa de muitos dados” vale para treinar do zero; para ajustar um modelo pronto, centenas de exemplos podem bastar. O custo, porém, é real: o vídeo <a href="https://www.youtube.com/watch?v=85RfazjDPwA">Scaling AI Model Training and Inferencing Efficiently with PyTorch</a> cita um Llama de 7 bilhões de parâmetros treinado com 2 trilhões de tokens em cerca de 200 mil horas de GPU, com técnicas como DDP (uma réplica por GPU) e FSDP (parâmetros fatiados entre GPUs). E a <b>inferência</b> domina o custo ao longo da vida do modelo, cerca de 90% segundo <a href="https://www.youtube.com/watch?v=XtT5i0ZeHHE">AI Inference: The Secret to AI's Superpowers</a>; por isso se usam poda e <b>quantização</b> (ex.: FP32 → INT8).</p>
+<div class="box tip"><b>Dica</b> Conta rápida de memória: parâmetros × bytes por parâmetro. 7B em FP16 = 14 GB; em INT4 ≈ 3,5 GB, mais o espaço do KV cache e das ativações.</div>
+
+<h2>Redes convolucionais (CNNs)</h2>
+<div class="box intro"><b>Para começar</b> Ao procurar um rosto numa foto, seus olhos buscam padrões locais: um olho, uma boca, uma borda. Uma rede convolucional faz o mesmo com uma “lupa” pequena (o filtro) que desliza pela imagem procurando sempre o mesmo padrão.</div>
+<p>Uma imagem 64×64 RGB tem 12.288 valores; uma camada densa de 1.000 neurônios teria 12 milhões de pesos e ignoraria que pixels vizinhos se relacionam. As <b>CNNs</b> usam <b>conectividade local</b> e <b>compartilhamento de pesos</b> (o mesmo filtro em toda a imagem). Existem desde os anos 1980 (LeNet, de LeCun), mas explodiram em 2012 com a <b>AlexNet</b>, treinada em GPU, que venceu o ImageNet por larga margem. O <a href="https://poloclub.github.io/cnn-explainer/">CNN Explainer</a> (Jay Wang et al.) mostra tudo isso de forma interativa no navegador, com a arquitetura <b>Tiny VGG</b>.</p>
+<p>Cada neurônio convolucional faz o produto elemento a elemento do kernel com uma janela da entrada, soma, desliza e repete. Os hiperparâmetros são o tamanho do kernel (3×3 é comum: dois 3×3 empilhados veem o mesmo que um 5×5 com menos parâmetros), o <b>stride</b> (passo) e o <b>padding</b> (bordas extras). A saída tem dimensão <b>O = ⌊(N − K + 2P) / S⌋ + 1</b>: entrada 64, kernel 3, sem padding, stride 1 → 62.</p>
+<pre><code>import numpy as np
+def conv2d(img, k, stride=1):
+    H, W = img.shape; kh, kw = k.shape
+    out = np.zeros(((H-kh)//stride+1, (W-kw)//stride+1))
+    for i in range(out.shape[0]):
+        for j in range(out.shape[1]):
+            r, c = i*stride, j*stride
+            out[i, j] = (img[r:r+kh, c:c+kw] * k).sum()
+    return out
+sobel_x = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])  # detector de borda vertical</code></pre>
+<p>Depois de cada convolução vem a <b>ReLU</b>; o <b>max-pooling</b> 2×2 mantém o maior valor de cada bloco, reduzindo computação e overfitting; o <b>flatten</b> transforma o tensor em vetor; e o <b>softmax</b> converte os escores finais (<b>logits</b>) em probabilidades, dando peso desproporcional ao maior, um “argmax suave”.</p>
+<table>
+<tr><th>Camada (Tiny VGG)</th><th>Forma da saída</th></tr>
+<tr><td>input</td><td>64×64×3</td></tr>
+<tr><td>conv_1_1 + relu → conv_1_2 + relu</td><td>62×62×10 → 60×60×10</td></tr>
+<tr><td>max_pool_1</td><td>30×30×10</td></tr>
+<tr><td>conv_2_1 + relu → conv_2_2 + relu</td><td>28×28×10 → 26×26×10</td></tr>
+<tr><td>max_pool_2</td><td>13×13×10</td></tr>
+<tr><td>flatten → dense → softmax</td><td>1.690 → 10 classes</td></tr>
+</table>
+<div class="box tip"><b>Dica</b> <code>CrossEntropyLoss</code> do PyTorch já aplica o softmax e espera logits crus; aplicar softmax antes é um bug comum.</div>
+<p>CNNs são usadas em classificação, segmentação e detecção de objetos. Uma variante em forma de U, a U-Net, é a peça que remove ruído nos modelos de difusão, descritos mais adiante.</p>
+<div class="box fact"><b>Você sabia?</b> Hinton, LeCun e Bengio dividiram o Prêmio Turing de 2018 pelo trabalho que tornou as redes profundas práticas. Nos anos 1990, redes convolucionais de LeCun já liam cheques em bancos dos EUA.</div>
+
+<h2>Redes recorrentes e sequências</h2>
+<div class="box intro"><b>Para começar</b> Para entender o fim de uma frase é preciso lembrar o começo. Uma rede recorrente carrega uma “memória de curto prazo” de um passo para o seguinte, como quem lê lembrando do que veio antes.</div>
+<p>Uma <b>RNN</b> mantém um <b>estado oculto</b> hₜ = tanh(W_h hₜ₋₁ + W_x xₜ + b). O vídeo <a href="https://www.youtube.com/watch?v=Gafjk7_w1i8">The Power of Recurrent Neural Networks (RNN)</a> descreve usos como legenda de imagem (um-para-muitos), análise de sentimento (muitos-para-um) e tradução (muitos-para-muitos). Ao longo de muitos passos o gradiente desaparece; a <b>LSTM</b> (1997) resolve parcialmente com uma célula de memória e portões. Em 2017, o Transformer trocou a recorrência por <b>atenção</b>, que olha todas as posições em paralelo e calcula a relevância entre palavras, tema do Capítulo 2.</p>
+
+<h2>Uma linha do tempo das arquiteturas</h2>
+<table>
+<tr><th>Ano</th><th>Marco</th><th>Ideia central</th></tr>
+<tr><td>1958</td><td>Perceptron (Rosenblatt)</td><td>Neurônio com pesos aprendidos</td></tr>
+<tr><td>1986</td><td>Retropropagação</td><td>Treinar redes multicamada</td></tr>
+<tr><td>1989–98</td><td>CNN / LeNet</td><td>Convolução e pesos compartilhados</td></tr>
+<tr><td>1991</td><td>Mixture of Experts</td><td>Especialistas + roteador</td></tr>
+<tr><td>1997</td><td>LSTM</td><td>Memória de longo prazo em RNNs</td></tr>
+<tr><td>2012</td><td>AlexNet</td><td>CNN profunda treinada em GPU</td></tr>
+<tr><td>2014</td><td>GAN</td><td>Gerador vs. discriminador</td></tr>
+<tr><td>2015/2020</td><td>Difusão (Sohl-Dickstein; DDPM)</td><td>Gerar removendo ruído passo a passo</td></tr>
+<tr><td>2017</td><td>Transformer</td><td>Atenção sem recorrência</td></tr>
+<tr><td>2018</td><td>GPT e BERT</td><td>Pré-treino em larga escala</td></tr>
+<tr><td>2021</td><td>CLIP</td><td>Texto e imagem no mesmo espaço</td></tr>
+</table>
+<ul>
+<li><b>Difusão</b> (<a href="https://www.youtube.com/watch?v=x2GRE-RzmD8">Diffusion Models for AI Image Generation</a>): soma-se ruído gaussiano à imagem por cerca de 1.000 passos até restar estática; uma U-Net aprende a prever e remover esse ruído, guiada pelo texto do prompt.</li>
+<li><b>Redes neurais de grafos</b> (<a href="https://www.youtube.com/watch?v=eGoszzMkGfU">Graph Neural Networks Explained: A Clear Guide to GNN Basics & Models</a>): generalizam a convolução para grafos com troca de mensagens entre nós vizinhos.</li>
+<li><b>Mixture of Experts</b> (<a href="https://www.youtube.com/watch?v=sYDlVVyJYn4">What is Mixture of Experts?</a>): um roteador ativa só alguns especialistas por token (2 de 8 no Mixtral 8x7B), escalando parâmetros sem escalar o cômputo na mesma proporção.</li>
+<li><b>Multimodalidade</b> (<a href="https://www.youtube.com/watch?v=J51oZYcNvP8">What is Multimodal AI? How LLMs Process Text, Images, and More</a>): um codificador de visão acoplado a um LLM ou um modelo nativo que trata imagens como sequências de patches.</li>
+</ul>
+
+<h2>Aprendizado por reforço</h2>
+<div class="box intro"><b>Para começar</b> Para treinar um cachorro, você não explica a regra: dá um petisco quando ele acerta. No aprendizado por reforço, um <b>agente</b> tenta ações, recebe pontos ou penalidades e ajusta o comportamento para ganhar mais ao longo do tempo.</div>
+<p>As palestras do CS50 (como <a href="https://www.youtube.com/watch?v=YFzkVvjiPmM">CS50x em Português - Inteligência Artificial</a>) mostram uma IA de Breakout que “descobre” sozinha que furar a fileira de cima e deixar a bola quicar atrás dos tijolos maximiza a pontuação. Formalmente, o problema é um <b>processo de decisão de Markov</b>: estados, ações, transições e recompensas. A <b>política</b> diz que ação tomar em cada estado, e o objetivo é maximizar o retorno descontado G = r₁ + γr₂ + γ²r₃ + …, com 0 ≤ γ &lt; 1.</p>
+<figure><img src="img/01_rl_loop.png"><figcaption>O ciclo agente–ambiente do aprendizado por reforço. Fonte: elaboração própria a partir do CS50 e de Rouhard (2020).</figcaption></figure>
+<p>O <b>Q-learning</b> aprende Q(s, a), o valor de tomar a ação a no estado s e agir bem depois:</p>
+<p style="text-align:center"><b>Q(s,a) ← Q(s,a) + α [ r + γ · max_{a'} Q(s',a') − Q(s,a) ]</b></p>
+<p>A atualização compara a nova estimativa (recompensa mais o melhor valor futuro, a <b>equação de Bellman</b>) com a antiga. No CS50 AI, o agente joga Nim milhares de vezes contra si mesmo e termina imbatível.</p>
+<pre><code>import random
+def escolher(Q, s, acoes, eps=0.1):
+    if random.random() &lt; eps:                 # explorar
+        return random.choice(acoes)
+    return max(acoes, key=lambda a: Q.get((s, a), 0))   # aproveitar
+
+def atualizar(Q, s, a, r, s2, acoes2, alpha=0.5, gamma=0.9):
+    futuro = max((Q.get((s2, a2), 0) for a2 in acoes2), default=0)
+    antigo = Q.get((s, a), 0)
+    Q[(s, a)] = antigo + alpha * (r + gamma * futuro - antigo)</code></pre>
+<p>O termo entre colchetes é chamado de <b>erro de diferença temporal</b>, e α é a taxa de aprendizado. A mesma lógica vale para problemas muito maiores, desde que o agente possa experimentar muitas vezes.</p>
+<p>Se o agente sempre escolher o melhor conhecido, nunca descobre alternativas, como quem sempre pede o mesmo prato no restaurante. A política <b>ε-greedy</b> escolhe uma ação aleatória com probabilidade ε e, no resto do tempo, a melhor conhecida. Quando há estados demais para uma tabela, uma rede neural estima Q: é o <b>DQN</b> da DeepMind, que aprendeu dezenas de jogos de Atari a partir dos pixels. Variantes como o PPO são usadas no RLHF, que alinha LLMs com feedback humano.</p>
+<div class="box fact"><b>Você sabia?</b> Em 2016, o AlphaGo venceu Lee Sedol por 4 a 1. Na segunda partida, o lance 37 parecia um erro para os comentaristas e acabou decisivo: a máquina estimara que um humano jogaria ali com chance de cerca de 1 em 10 mil.</div>
+
+<h2>Deep learning no navegador: TensorFlow.js</h2>
+<div class="box intro"><b>Para começar</b> Para cozinhar não é preciso fabricar o fogão. Bibliotecas como TensorFlow e PyTorch cuidam da matemática pesada e do uso da GPU, e algumas rodam até no navegador, sem enviar seus dados a servidor nenhum.</div>
+<p>O <b>TensorFlow</b> (Google, versão 1.0 em 2017) opera sobre <b>tensores</b>, arrays n-dimensionais, e tem a API de alto nível Keras (<a href="https://www.youtube.com/watch?v=GnGhI1vKi20">What is TensorFlow?</a>). O <b>TensorFlow.js</b>, segundo o artigo “Introduction to TensorFlow.js”, de Pierre Rouhard (2020), traz três vantagens no navegador: <b>privacidade</b> (os dados não saem do dispositivo), baixa latência e interatividade com câmera e microfone. A aceleração vem do WebGL e, mais recentemente, do WebGPU.</p>
+<p>O estudo de caso de Rouhard é o <b>Mountain Car</b>: um carro num vale precisa chegar ao topo, mas o motor é fraco demais para subir direto; a solução é ir e voltar para ganhar impulso, algo que um agente guloso nunca descobriria sem exploração. O modelo é uma rede rasa que recebe posição e velocidade e devolve um Q para cada uma das três ações:</p>
+<pre><code>const model = tf.sequential();
+model.add(tf.layers.dense({inputShape: [2], units: 50, activation: 'relu'}));
+model.add(tf.layers.dense({units: 3}));               // Q(s, a) para 3 ações
+model.compile({loss: 'meanSquaredError', optimizer: tf.train.adam(1e-3)});</code></pre>
+<p>A cada episódio, o agente escolhe ações com ε-greedy, guarda cada transição (estado, ação, recompensa, próximo estado) numa <b>memória de replay</b> e, de tempos em tempos, treina a rede com amostras aleatórias dessa memória, usando a equação de Bellman para calcular os alvos. Rouhard também ajusta a recompensa para crescer com a posição do carro, em vez de premiar só o topo, uma técnica chamada <i>reward shaping</i>.</p>
+<div class="box warn"><b>Atenção</b> Tensores no backend WebGL vivem na GPU e não são coletados pelo garbage collector do JavaScript. Envolva cálculos em <code>tf.tidy()</code> ou chame <code>dispose()</code>, senão a memória vaza a cada passo.</div>
+
+<h2>Fechando o ciclo</h2>
+<p>As palestras do CS50 terminam onde o próximo capítulo começa: <b>embeddings</b> (palavras como vetores, com “breakfast”, “lunch” e “dinner” próximas no espaço), <b>atenção</b> e Transformers que geram um token por vez. Os vídeos <a href="https://www.youtube.com/watch?v=VSFuqMh4hus">7 AI Terms You Need to Know: Agents, RAG, ASI & More</a> e <a href="https://www.youtube.com/watch?v=N_RLQ56d3Z4">What is Superalignment?</a> completam o vocabulário: RAG, IA agêntica, MCP e, no horizonte, AGI, ASI e o desafio de manter sistemas mais capazes que humanos alinhados a valores humanos.</p>
+<div class="box key"><b>Em resumo</b> Busca encontra caminhos; lógica deduz; probabilidade lida com incerteza; otimização encontra configurações; ML aprende com exemplos; redes neurais aprendem por gradiente e retropropagação; CNNs exploram a estrutura espacial; RL aprende a agir por tentativa e erro. Os LLMs usam quase todos esses ingredientes.</div>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5NgNicANyqM">Harvard CS50’s Artificial Intelligence with Python – Full University Course</a></td><td>https://www.youtube.com/watch?v=5NgNicANyqM</td><td>freeCodeCamp.org</td><td>Busca, lógica, incerteza, otimização, ML e redes</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pFq5szYIWQk">CS50 for Business - Lecture 4 - Approaching Artificial Intelligence</a></td><td>https://www.youtube.com/watch?v=pFq5szYIWQk</td><td>CS50</td><td>Minimax, explosão combinatória e reforço</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=YFzkVvjiPmM">CS50x em Português - Inteligência Artificial</a></td><td>https://www.youtube.com/watch?v=YFzkVvjiPmM</td><td>CS50</td><td>Aula introdutória de IA em português</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=85RfazjDPwA">Scaling AI Model Training and Inferencing Efficiently with PyTorch</a></td><td>https://www.youtube.com/watch?v=85RfazjDPwA</td><td>IBM Technology</td><td>DDP, FSDP e torch.compile</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=eGoszzMkGfU">Graph Neural Networks Explained: A Clear Guide to GNN Basics & Models</a></td><td>https://www.youtube.com/watch?v=eGoszzMkGfU</td><td>IBM Technology</td><td>Troca de mensagens em grafos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=PoqGrCscJ7k">Confusion to Clarity: Mastering Confusion Matrix in Machine Learning</a></td><td>https://www.youtube.com/watch?v=PoqGrCscJ7k</td><td>IBM Technology</td><td>Matriz de confusão, precisão e recall</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fJ40w_2h8kk">What is PyTorch? (Machine/Deep Learning)</a></td><td>https://www.youtube.com/watch?v=fJ40w_2h8kk</td><td>IBM Technology</td><td>Loop de treino com autograd</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=VSFuqMh4hus">7 AI Terms You Need to Know: Agents, RAG, ASI & More</a></td><td>https://www.youtube.com/watch?v=VSFuqMh4hus</td><td>IBM Technology</td><td>Vocabulário: agentes, RAG, MCP, ASI</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=x2GRE-RzmD8">Diffusion Models for AI Image Generation</a></td><td>https://www.youtube.com/watch?v=x2GRE-RzmD8</td><td>IBM Technology</td><td>Difusão direta e reversa com U-Net</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=phOhGqpXss4">Predictive vs Generative AI: How They Work and When to Use Each</a></td><td>https://www.youtube.com/watch?v=phOhGqpXss4</td><td>IBM Technology</td><td>IA preditiva vs. generativa</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=XtT5i0ZeHHE">AI Inference: The Secret to AI's Superpowers</a></td><td>https://www.youtube.com/watch?v=XtT5i0ZeHHE</td><td>IBM Technology</td><td>Inferência domina o custo; quantização</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=C3Lr6Waw66g">What is Semi-Supervised Learning?</a></td><td>https://www.youtube.com/watch?v=C3Lr6Waw66g</td><td>IBM Technology</td><td>Pseudo-rótulos, clustering, active learning</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pVpr4GYLzAo">What is Zero-Shot Learning?</a></td><td>https://www.youtube.com/watch?v=pVpr4GYLzAo</td><td>IBM Technology</td><td>Classificar classes nunca vistas</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-KKxtHwxKhE">How Linear Algebra Powers Machine Learning (ML)</a></td><td>https://www.youtube.com/watch?v=-KKxtHwxKhE</td><td>IBM Technology</td><td>Vetores, cosseno e SVD</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=og67qeTZPYs">Algorithmic Bias in AI: What It Is and How to Fix It</a></td><td>https://www.youtube.com/watch?v=og67qeTZPYs</td><td>IBM Technology</td><td>Viés vem sobretudo dos dados</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=J51oZYcNvP8">What is Multimodal AI? How LLMs Process Text, Images, and More</a></td><td>https://www.youtube.com/watch?v=J51oZYcNvP8</td><td>IBM Technology</td><td>Multimodalidade modular vs. nativa</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=sYDlVVyJYn4">What is Mixture of Experts?</a></td><td>https://www.youtube.com/watch?v=sYDlVVyJYn4</td><td>IBM Technology</td><td>Roteamento top-k e esparsidade</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=N_RLQ56d3Z4">What is Superalignment?</a></td><td>https://www.youtube.com/watch?v=N_RLQ56d3Z4</td><td>IBM Technology</td><td>AGI, ASI e técnicas de alinhamento</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=H_jD5xa1nRg">Inside a Neuron: The Building Blocks of a Neural Network & AI</a></td><td>https://www.youtube.com/watch?v=H_jD5xa1nRg</td><td>IBM Technology</td><td>Soma ponderada, viés e ativação</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Gafjk7_w1i8">The Power of Recurrent Neural Networks (RNN)</a></td><td>https://www.youtube.com/watch?v=Gafjk7_w1i8</td><td>IBM Technology</td><td>Estado oculto, LSTM e GRU</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=GnGhI1vKi20">What is TensorFlow?</a></td><td>https://www.youtube.com/watch?v=GnGhI1vKi20</td><td>IBM Technology</td><td>Tensores, Keras e deploy</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=hHiPs_wICsE">Text Classification: AI Techniques and Real-World Applications</a></td><td>https://www.youtube.com/watch?v=hHiPs_wICsE</td><td>IBM Technology</td><td>Tipos de classificação, pipeline e drift</td></tr>
+<tr><td>Deep Learning vs Machine Learning</td><td>—</td><td>Matt Crabtree (DataCamp, 2024)</td><td>IA ⊃ ML ⊃ DL e comparação</td></tr>
+<tr><td>The Anatomy of a Neural Network</td><td>—</td><td>Rares Crisan (Notable Capital, 2023)</td><td>Neurônio, pesos, backprop e linha do tempo</td></tr>
+<tr><td><a href="https://poloclub.github.io/cnn-explainer/">CNN Explainer</a></td><td>https://poloclub.github.io/cnn-explainer/</td><td>Jay Wang et al. (Georgia Tech / Oregon State)</td><td>Tiny VGG: convolução, pooling e softmax</td></tr>
+<tr><td>Introduction to TensorFlow.js</td><td>—</td><td>Pierre Rouhard (Medium, 2020)</td><td>Mountain Car com Q-learning no navegador</td></tr>
+</table>
+</section>

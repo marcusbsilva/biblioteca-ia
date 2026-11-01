@@ -1,0 +1,374 @@
+<section class="chapter" id="ch12"><h1><span class="num">Capítulo 12</span>Negócios, Carreira, Produtividade e Governança de IA</h1>
+<p class="lead">Este capítulo trata das pessoas e das organizações que operam a máquina: como muda o trabalho de quem desenvolve software quando a IA escreve boa parte do código, que competências ganham valor, como transformar a capacidade de construir rápido em negócio sustentável, como medir se a IA gera valor e como governá-la de modo auditável (ISO/IEC 42001, NIST AI RMF e EU AI Act).</p>
+<div class="box intro"><b>Para começar</b> Pense numa cozinha que ganhou um robô capaz de picar, refogar e montar pratos. A cozinha não acaba: o chef passa a decidir o cardápio, conferir o sabor e responder pelo prato que sai. Este capítulo trata dessa mudança no mundo do software: trabalho e carreira, produtividade e custo, negócios e governança.</div>
+
+<h2>O que mudou no trabalho de desenvolvimento</h2>
+<p>Quando surgiram as calculadoras, ninguém deixou de precisar de contadores; deixou de precisar de gente que somasse colunas à mão. Algo parecido acontece com a programação: "digitar código" ficou barato, porque agentes de IA (Livro 2, Capítulo 4 (Agentes e MCP)) fazem isso em minutos.</p>
+
+<h3>"Estamos no futuro": o trabalho mecânico virou automação</h3>
+<p>Em <a href="https://akitaonrails.com/2026/10/16/estamos-no-futuro-carros-voam-e-nao-temos-mais-que-fazer-html-css/"><i>Estamos no futuro… HTML/CSS</i></a> (out/2026), Fabio Akita relata ter redesenhado seis sites em cerca de um dia com agentes de código, trabalho que antes levaria semanas. O front-end não acabou: a parte repetitiva e bem especificada deixou de ser escassa, e o valor foi para as decisões em volta dela (o que redesenhar, com que critério, como verificar).</p>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=SI0le2zHTd8">COMO FICAR PERIGOSAMENTE BOM EM PROGRAMAÇÃO</a> leva o argumento ao extremo: competir com a IA em escrever <code>for</code> e <code>try/catch</code> é batalha perdida. A distinção central vale para qualquer senioridade:</p>
+<table>
+<tr><th>Codificador de prompt</th><th>Orquestrador</th></tr>
+<tr><td>Cola o enunciado e copia a resposta</td><td>Chega com uma hipótese, as estruturas de dados e os módulos já pensados</td></tr>
+<tr><td>Cola o erro de volta sem entender</td><td>Lê o erro, forma um diagnóstico e pede uma correção com restrições</td></tr>
+<tr><td>Aceita o primeiro resultado que compila</td><td>Define o critério de aceite antes e lê o código linha por linha</td></tr>
+<tr><td>Terceiriza o <b>pensamento</b></td><td>Terceiriza a <b>digitação</b></td></tr>
+</table>
+
+<h3>"Competente o suficiente": por que o harness importa mais que o modelo</h3>
+<p>O ensaio de Akita <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/"><i>LLMs + Agentes = competente o suficiente</i></a> explica por que isso aconteceu agora. Os modelos de base convergiram: a última grande virada de "inteligência" foi o raciocínio com aprendizado por reforço (o1, 2024); em 2025 o ganho veio de eficiência (MoE, prompt caching, contextos de 1M de tokens) e, em 2026, do harness agêntico, com o MCP. Segundo o Stanford AI Index, a diferença entre o 1º e o 10º colocado no Chatbot Arena caiu de 12% para 5% em um ano.</p>
+<p>Um agente não precisa ser um oráculo: a busca traz conhecimento para o contexto e os testes dão feedback real. Um modelo "competente o suficiente", dentro de um bom harness, resolve. Sem documentação nem testes, o loop gira no vazio. Por isso <b>a engenharia tradicional (testes, processo, invariantes) é o diferencial</b>.</p>
+<div class="box key"><b>Em resumo</b> Com modelos convergindo e o código ficando barato, o valor do profissional vai para três lugares: (1) especificar o problema de forma verificável, (2) montar o ambiente (harness, testes, contexto) em que o agente acerta e (3) julgar o resultado. Em uma frase: a execução ficou barata e o gargalo agora é verificar.</div>
+
+<h3>Os números do mercado: otimismo, ceticismo e o que conciliar</h3>
+<p>Os dados sobre produtividade parecem contraditórios. O vídeo <a href="https://www.youtube.com/watch?v=9LfJq4xXifg">6 Ways to Enhance Developer Productivity with AI</a>, da IBM, reúne os dois lados: a McKinsey vê ganhos de 16% a 30% nas melhores organizações, mas os devs rejeitam cerca de 70% das sugestões, e o estudo do METR com desenvolvedores experientes, em repositórios que dominavam e com ferramentas do início de 2025, encontrou tarefas 19% <i>mais</i> lentas com IA, embora os participantes se achassem mais rápidos. A percepção de produtividade não é uma medida.</p>
+<p>A conciliação, segundo o mesmo vídeo: a equipe média ganha algumas dezenas de pontos percentuais e as melhores, de 100% a 150%. As ferramentas são as mesmas; as melhores equipes redesenharam o fluxo com spec antes de código, testes como sensores, tarefas pequenas e revisão independente.</p>
+<h3>O mercado de entrada: a régua subiu</h3>
+<p>Entrar no mercado ficou mais difícil. A análise <a href="https://www.youtube.com/watch?v=Oa7uIYfl1pM">O que VAGAS de MOBILE estão pedindo? - Avaliando vagas</a>, de Fernanda Kipper, mostra Git, testes unitários, SOLID, CI/CD e APIs REST exigidos em qualquer nível, faixas salariais sumindo dos anúncios e pedidos contraditórios como "júnior com experiência prévia".</p>
+<p>A lição vale além do mobile: <b>os requisitos revelam o projeto</b>. Java junto com Kotlin indica código legado; Flutter sem exigir nativo sugere contenção de custos. Ler uma vaga como documento de arquitetura ajuda na entrevista e na decisão de aceitar a proposta.</p>
+<p>O teste técnico pede menos "escreva do zero em 20 minutos" e mais "explique por que este código funciona e onde ele quebra". Augusto Galego, em <a href="https://www.youtube.com/watch?v=WAQJZ6jrUw4">LeetCode ainda faz sentido em 2026?</a>, lembra que big techs ainda cobram LeetCode, mas sugere 10 a 20 horas de prática com problemas fáceis: problemas médios e difíceis têm retorno decrescente. Two Sum, da força bruta O(n²) ao hash map O(n), é o mínimo (Livro 4, Capítulo 2 (Algoritmos)).</p>
+
+<h3>As "habilidades blindadas"</h3>
+<p>Quais competências a IA não torna obsoletas? Há três grupos que o vídeo <a href="https://www.youtube.com/watch?v=SI0le2zHTd8">COMO FICAR PERIGOSAMENTE BOM EM PROGRAMAÇÃO</a> chama de "habilidades blindadas":</p>
+<ol>
+<li><b>Arquitetura de sistemas.</b> A IA perde o fio em sistemas grandes, com decisões antigas e regras não documentadas.</li>
+<li><b>Comunicação e entendimento do negócio.</b> A maioria dos bugs nasce de requisitos mal entendidos.</li>
+<li><b>Debug aprofundado.</b> Detectar alucinações e erros de invariante de domínio. No <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">experimento de Akita com sete linguagens</a>, tipagem forte não reduziu os reparos, e uma suíte de testes melhorou os modelos mais fracos: "disciplina vence compilador e vence linguagem".</li>
+</ol>
+<h2>Trilhas de carreira na era agêntica</h2>
+<p>Escolher uma trilha em tecnologia lembra escolher uma especialidade médica: a base é comum, o trabalho diário é bem diferente.</p>
+
+<h3>AI Engineer não é pesquisador de ML</h3>
+<p>Augusto Galego, em <a href="https://www.youtube.com/watch?v=VhAH_r5mqYk">Afinal, O Que um AI Engineer Faz?</a>, analisou vagas globais e concluiu que o cargo raramente envolve treinar modelos: o trabalho é integrar modelos prontos a aplicações e dados, medir qualidade e custo e transformar isso em produto. Na analogia da IBM (<a href="https://www.youtube.com/watch?v=XN3xNJvWXsc">Essential Skills for Becoming an AI Engineer: RAG, AI Agents, &amp; More</a>), o pesquisador de ML "constrói o motor" e o engenheiro de IA "constrói o carro".</p>
+<p>Nas vagas, aparecem por ordem de frequência: RAG e embeddings, evals, workflows com human-in-the-loop e, por último, fine-tuning (menos de metade das vagas). O pré-requisito quase universal é ser engenheiro de software, com Python à frente.</p>
+<figure><img src="img/12_pilha_ai_engineer.png"><figcaption>Pilha de habilidades do engenheiro de IA. Os níveis 1 a 3 seguem "Essential Skills for Becoming an AI Engineer" (IBM Technology), complementados pela análise de vagas de "Afinal, O Que um AI Engineer Faz?" (Augusto Galego). O topo ("medir valor") vem de "Goodbye Tokenmaxxing" (IBM Technology).</figcaption></figure>
+<p>Na frase de Galego, "a régua do dev comum é usar IA; a do AI Engineer é usar IA <i>dentro</i> do backend". Na prática: montar contexto, definir tools com schemas, validar structured outputs, criar baterias de avaliação (inclusive com LLM-as-judge) e controlar o custo por requisição. Para a maioria dos casos em que se pensa em fine-tuning, RAG resolve (Livro 2, Capítulo 3 (RAG)).</p>
+
+<h3>Arquiteto de software × arquiteto de soluções</h3>
+<p>Renato Augusto dedica dois vídeos à transição para arquitetura. Em <a href="https://www.youtube.com/watch?v=FfigYiI2fKc">Como Se Tornar Um ARQUITETO DE SOLUÇÕES | 4 Passos Que Vão Mudar Sua Carreira de PROGRAMADOR</a> ele separa dois papéis que costumam ser confundidos:</p>
+<table>
+<tr><th></th><th>Arquiteto de software</th><th>Arquiteto de soluções</th></tr>
+<tr><td>Nível</td><td>Low-level design (LLD)</td><td>High-level design (HLD)</td></tr>
+<tr><td>Foco</td><td>Requisitos funcionais, estrutura interna, comunicação entre módulos</td><td>Requisitos não funcionais: latência, vazão, disponibilidade, custo</td></tr>
+<tr><td>Ferramentas mentais</td><td>Camadas (Clean, Hexagonal, Onion), DDD estratégico e tático, padrões de projeto</td><td>Escala vertical/horizontal, cache, filas, bancos por atributo, CDN, multi-região</td></tr>
+<tr><td>Exemplo de requisito</td><td>"O pedido muda de estado só por eventos de domínio"</td><td>"200 ms no p99, 50 mil requisições simultâneas, 99,9% de disponibilidade, sem estourar o orçamento"</td></tr>
+<tr><td>Formação sugerida</td><td>Paradigmas, SOLID/DRY/KISS/YAGNI, padrões</td><td>Fundamentos de SO, redes e armazenamento → nuvem (AWS) → system design → certificação</td></tr>
+</table>
+<p>"Arquitetura sem controle de custo é vaidade": o exemplo é a venda de ingressos, que passa de 10 mil visitas por hora a 1 milhão de acessos simultâneos quando abre um show. Em <a href="https://www.youtube.com/watch?v=mKIltWid_L0">Como Virar Um ARQUITETO DE SOFTWARE  | 5 PASSOS Que Vão Mudar Sua Carreira de PROGRAMADOR</a>, Renato Augusto acrescenta que "um diagrama bem feito pode valer mil linhas de código". Com IA, a frase ficou literal: diagrama e spec são o insumo do qual o agente gera as linhas.</p>
+<h3>Escolher linguagem pela área, não pelo hype</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=IR7wXWeGcA0">Qual Linguagem de Programação escolher p/ 2027</a> troca "qual a melhor linguagem?" por "qual área quero seguir?".</p>
+<table>
+<tr><th>Área</th><th>Linguagens</th><th>Observação</th></tr>
+<tr><td>Web (front e back)</td><td>JavaScript / TypeScript</td><td>TS teve a maior alta da história do Octoverse e foi a mais rápida para agentes no <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">experimento de Akita</a></td></tr>
+<tr><td>Dados, IA, automação</td><td>Python</td><td>Recorde histórico no TIOBE em jan/2026, segundo o vídeo</td></tr>
+<tr><td>Corporativo, bancos, governo</td><td>Java</td><td>Perdeu fatia no TIOBE, mas segue como "infraestrutura invisível" (Java Cards, Kafka, sistemas bancários)</td></tr>
+<tr><td>Microsoft, jogos</td><td>C#</td><td>Unity, .NET; "linguagem do ano" de 2023 na TIOBE</td></tr>
+<tr><td>Sistemas, jogos AAA, embarcados</td><td>C / C++</td><td>Controle de memória; nichos bem pagos</td></tr>
+<tr><td>Mobile nativo</td><td>Swift / Kotlin</td><td>Flutter é a tendência multiplataforma, segundo a análise de vagas de Fernanda Kipper</td></tr>
+<tr><td>Web de conteúdo</td><td>PHP</td><td>WordPress roda em cerca de 40% dos sites</td></tr>
+</table>
+<p>Como lembra <a href="https://www.youtube.com/watch?v=dXD0VkP1fWc">Por que a IA está nos forçando a voltar para o Java?</a>, sistemas corporativos vivem de 10 a 20 anos, e quem os mantém fica <i>mais</i> valioso quando os novatos migram para a moda.</p>
+
+<h3>Como aprender (e continuar aprendendo)</h3>
+<p>Os vídeos sobre aprendizado (<a href="https://www.youtube.com/watch?v=kwDFNI8OXik">O básico que todo PROGRAMADOR iniciante precisa fazer</a>, <a href="https://www.youtube.com/watch?v=R-q5KRHDp5M">O plano realista para sair do zero na programação</a>, <a href="https://www.youtube.com/watch?v=lSHPYwyzFxk">COMO APRENDER JAVA E CONSEGUIR UM EMPREGO EM 6 MESES</a> e <a href="https://www.youtube.com/watch?v=IMWG7yx4UDk">4 Tips to Learn New Technologies Faster &amp; Smarter</a>) coincidem com o que a ciência cognitiva diz sobre prática deliberada:</p>
+<ul>
+<li><b>Estudo passivo não funciona.</b> Maratonar aulas sem abrir o editor dá ilusão de aprendizado; 30 minutos diários de prática valem mais que 10 horas num sábado.</li>
+<li><b>Não pular etapas.</b> Pensamento computacional, depois orientação a objetos, só então frameworks.</li>
+<li><b>Metas SMART</b>, como "construir em 2 semanas um agente que chama 2 ferramentas", e depois aumentar o desafio.</li>
+<li><b>IA como tutor</b>, não como quem resolve: "não me dê a resposta, me ajude passo a passo".</li>
+</ul>
+<div class="box tip"><b>Dica</b> O recrutador fecha um portfólio em segundos se só houver calculadoras e listas de tarefas copiadas. Prefira poucos projetos que resolvam dores reais, com README claro, commits descritivos e deploy público. Quem é de back-end pode gerar a página do portfólio com IA, como sugere <a href="https://www.youtube.com/watch?v=wC9rQSNhAX8">WordPress com IA: como criar o PROMPT perfeito para criar um site</a>.</div>
+<h3>Fluência em IA: os quatro Ds</h3>
+<p>O curso de fluência em IA da Anthropic (<a href="https://www.youtube.com/watch?v=W4Ua6XFfX9w">The 4D Framework</a>, <a href="https://www.youtube.com/watch?v=EljzyfdYkrc">A closer look at Delegation</a> e <a href="https://www.youtube.com/watch?v=Y0KidGr9Z2Y">A closer look at Discernment</a>) organiza a colaboração com IA em quatro competências que não dependem de ferramenta, válidas na automação, no aumento e na agência.</p>
+<figure><img src="img/12_quatro_ds.png"><figcaption>Os quatro Ds da fluência em IA e os destinos possíveis da delegação. O ciclo descrição ↔ discernimento é o núcleo do trabalho diário. Fonte: elaboração própria com base no curso "AI Fluency: Framework &amp; Foundations" (Anthropic).</figcaption></figure>
+<table>
+<tr><th>Competência</th><th>Pergunta-chave</th><th>Subdivisões e exemplos</th></tr>
+<tr><td>Delegação</td><td>O que faço eu e o que a IA faz?</td><td>Consciência do problema (como é o sucesso?), consciência da plataforma (pontos fortes e limites de cada sistema), divisão de tarefas. "Os melhores colaboradores de IA são especialistas no seu campo primeiro."</td></tr>
+<tr><td>Descrição</td><td>Comuniquei o que quero com contexto suficiente?</td><td>Produto (formato, público), processo (abordagem), desempenho (tom, concisão). "Faça um logo" contra valores, público, cores e referências.</td></tr>
+<tr><td>Discernimento</td><td>O resultado é bom e o processo foi sólido?</td><td>Produto (correto, coerente, útil?), processo (erros lógicos, fixação num detalhe, IA reinserindo ideias já rejeitadas), desempenho (a interação está produtiva?)</td></tr>
+<tr><td>Diligência</td><td>Estou usando de forma responsável?</td><td>Viés (triagem de candidatos), dados sensíveis, transparência sobre o uso de IA, assumir a responsabilidade pelo resultado</td></tr>
+</table>
+<p>Um bom feedback de discernimento diz qual é o problema, por que é um problema e o que mudar. Às vezes o erro está na delegação: a ferramenta ou a abordagem era a errada. Os quatro Ds são a versão para usuários do que os capítulos técnicos chamam de spec, harness, sensores e guardrails.</p>
+
+<div class="box fact"><b>Você sabia?</b> Em “The Mythical Man-Month” (1975), Fred Brooks, gerente do sistema OS/360 da IBM, formulou a Lei de Brooks: adicionar pessoas a um projeto atrasado o atrasa ainda mais. O motivo é o custo de comunicação e de integração, que cresce com o tamanho da equipe. A pergunta voltou com agentes: mais agentes também exigem mais coordenação.</div>
+<h2>Produtividade: individual, de equipe e de valor</h2>
+<p>Uma furadeira melhor não acelera a reforma se ninguém sabe onde furar: a IA só aumenta a produtividade quando o time muda a forma de trabalhar e mede o resultado certo.</p>
+
+<h3>Seis práticas para equipes</h3>
+<p>O vídeo da IBM propõe seis práticas; as três primeiras usam melhor a IA e as três últimas protegem o que ela não faz:</p>
+<ol>
+<li><b>Automatizar com inteligência</b>: CI/CD, IaC, testes, linters e scanners.</li>
+<li><b>Desenhar primeiro</b>: use a IA para gerar e criticar abordagens, não para decidir.</li>
+<li><b>Proteger o flow</b>: quatro horas de foco valem mais que oito fragmentadas.</li>
+<li><b>Reduzir a carga cognitiva</b>: cada interrupção custa cerca de 20 minutos (os estudos de Gloria Mark mediram ~23).</li>
+<li><b>Espaço para crescer</b>: code review como ensino e mentoria, que a IA não substitui.</li>
+<li><b>Afiar as ferramentas</b>: o atrito se multiplica por engenheiros × dias.</li>
+</ol>
+<p>Agentes criam uma nova fonte de interrupção: pedidos de aprovação a cada poucos minutos. Agrupar aprovações, pré-aprovar permissões dentro de um sandbox e rodar tarefas longas em segundo plano são as contrapartidas (Livro 2, Capítulo 4 (Agentes e MCP) e Livro 3, Capítulo 1 (Programando com IA)).</p>
+
+<h3>Métricas como guias, não metas</h3>
+<table>
+<tr><th>Framework</th><th>O que mede</th><th>Uso com IA</th></tr>
+<tr><td>DORA</td><td>Lead/cycle time, frequência de deploy, taxa de falha de mudança, tempo de recuperação</td><td>Detecta se o volume maior de código gerado aumenta a taxa de falha</td></tr>
+<tr><td>SPACE</td><td>Satisfação, Performance, Atividade, Colaboração (Communication), Eficiência/flow</td><td>Evita reduzir produtividade a "linhas" ou "PRs"</td></tr>
+<tr><td>DX Core 4</td><td>Velocidade, efetividade, qualidade, impacto</td><td>Acrescenta dimensões de IA: utilização, impacto e custo</td></tr>
+</table>
+<p>Pela lei de Goodhart, quando uma medida vira meta, deixa de ser boa medida. O vídeo <a href="https://www.youtube.com/watch?v=FheRqx7DjbU">Goodbye Tokenmaxxing: From AI Usage to Agentic AI Outcomes</a> mostra a versão atual: o <b>tokenmaxxing</b>, medir o sucesso da IA pelo consumo de tokens, gera dashboards que as pessoas aprendem a manipular. Cortar tokens às cegas erra pelo outro lado: tirar 500 tokens de contexto arquitetural pode custar 5.000 em retrabalho. A proposta é o <b>valuemaxxing</b>: medir deploys concluídos, retrabalho evitado e falhas corrigidas.</p>
+<table>
+<tr><th>Fase</th><th>Métrica dominante</th><th>Falha típica</th></tr>
+<tr><td>Tokenmaxxing</td><td>Tokens consumidos, número de usuários ativos</td><td>Confundir atividade com resultado; dashboards manipuláveis</td></tr>
+<tr><td>Minimização</td><td>Custo por usuário, tokens por tarefa</td><td>Cortar contexto útil e gerar retrabalho caro</td></tr>
+<tr><td>Valuemaxxing</td><td>Resultado por custo: deploys, retrabalho evitado, falhas corrigidas</td><td>Exige instrumentação que ligue consumo a resultado</td></tr>
+</table>
+<h3>Custo: API, assinatura ou pod próprio?</h3>
+<p>Usar IA custa de três formas. A <b>assinatura</b> é como academia: valor fixo mensal com limites de uso. A <b>API</b> é como conta de luz: paga-se por consumo, em <i>tokens</i> (mil tokens ≈ 750 palavras em inglês). O <b>hardware próprio</b> é como comprar um carro em vez de pegar táxi; uma variante é o <i>pod</i>, uma máquina com GPUs alugada por hora na nuvem para rodar um modelo aberto.</p>
+<p>Os benchmarks de Akita (<a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-can-my-team-fit-in-a-4x-b300-h200/">4× B300/H200</a> e <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">veredito open source</a>, out/2026) dão números para o lado do pod:</p>
+<ul>
+<li>Um nó 4× B300 custa cerca de <b>US$ 36/h</b> e atende ~32 sessões simultâneas confortáveis (~US$ 1,13 por sessão-hora).</li>
+<li>Modelos de pesos abertos chegaram ao tier A (nota 92,5 contra 100 dos fechados de topo).</li>
+<li>O <i>serving</i> pesa mais que a quantização: <b>o mesmo checkpoint tirou 94 na nuvem e 27 num pod</b> mal configurado (template de chat, parser de tool calling, amostragem). Rode sua suíte de avaliação nas duas configurações antes de migrar.</li>
+<li>Para classificação, um modelo de 9B empatou com o líder hospedado (<a href="https://akitaonrails.com/2026/10/10/qual-modelo-de-decisao-classificador-de-ia-tipo-jev-e-melhor/">Qual modelo de decisão/classificador de IA tipo Jev é melhor?</a>).</li>
+</ul>
+<p>A regra prática que sai daí lembra a decisão on-premise × nuvem de Livro 3, Capítulo 2 (Hardware e IA local). API é melhor para carga variável, qualidade máxima e times pequenos. Pod próprio compensa com carga alta e estável, dados que não podem sair de casa e equipe capaz de operar o serving. E muitas tarefas nem precisam de LLM generativo: um classificador ou um modelo pequeno resolve com uma fração do custo.</p>
+<pre><code># Ponto de equilíbrio aproximado (API × pod), em sessões-hora por mês
+custo_pod_mes   = 36 * 24 * 30           # US$ 25.920 com o nó ligado 24/7
+capacidade      = 32 * 24 * 30           # 23.040 sessões-hora
+custo_api_sessao = tokens_por_hora * preco_por_token   # mede no seu uso real
+# o pod compensa se: utilização × capacidade × custo_api_sessao > custo_pod_mes
+# + custo de engenharia para operar o serving (que não é zero)</code></pre>
+<h4>Assinar ou rodar local: o que compensa?</h4>
+<div class="box intro"><b>Para começar</b> Vale comprar uma placa de vídeo e rodar a IA em casa? Para a maioria, a assinatura ainda é mais barata e entrega modelos melhores; rodar local vence quando privacidade, volume alto, uso offline ou aprendizado pesam mais. Preços a seguir são aproximados, em dólares, de out/2026.</div>
+
+<p><b>As três contas.</b> Compare o <i>custo total de propriedade</i> (TCO) em, por exemplo, 3 anos: <b>assinatura</b> = preço mensal × meses (US$ 20 a 200/mês); <b>API</b> = tokens por mês × preço por milhão (de centavos a dezenas de dólares; prompt caching reduz muito a conta de agentes); <b>PC com GPU</b> = equipamento + energia − revenda (uma placa de 250 W usada 4 h/dia a US$ 0,15/kWh gasta ~US$ 4,50/mês).</p>
+<figure><img src="img/12_breakeven.png"><figcaption>Custo acumulado em 3 anos. Premissas: assinaturas de US$ 20 e US$ 200/mês; API com 30 milhões de tokens/mês a US$ 3 por milhão (≈ US$ 90/mês); PC com Arc B580 a US$ 900 (250 W, 4 h/dia); PC com RTX 5090 a US$ 6.000 (650 W, 6 h/dia); energia a US$ 0,15/kWh; sem revenda. Preços aproximados de out/2026. Fonte: elaboração própria.</figcaption></figure>
+<p>Contra uma assinatura de US$ 20, nenhum PC se paga em três anos. Contra US$ 200/mês ou uma conta de API de ~US$ 90/mês, um PC barato empata em 4 a 10 meses. Mas <b>a comparação só vale se o modelo local fizer o mesmo trabalho</b>: um modelo de 12 GB não substitui um de fronteira num agente de código complexo; empata em resumos, classificação, extração, RAG interno, tradução e transcrição.</p>
+
+<table>
+<tr><th>Critério</th><th>Assinatura</th><th>API</th><th>Local (PC ou servidor próprio)</th></tr>
+<tr><td>Qualidade de ponta</td><td>Vence: acesso aos melhores modelos</td><td>Vence: os mesmos modelos, com controle fino</td><td>Perde no topo; empata em tarefas simples e médias</td></tr>
+<tr><td>Privacidade e dados sensíveis</td><td>Depende da política do plano</td><td>Contratos empresariais ajudam</td><td>Vence: nada sai da máquina</td></tr>
+<tr><td>Volume alto e constante</td><td>Limites de uso atrapalham</td><td>Custo cresce linearmente</td><td>Vence: custo marginal ≈ energia</td></tr>
+<tr><td>Offline</td><td>Não</td><td>Não</td><td>Vence</td></tr>
+<tr><td>Integração em produto</td><td>Não serve (uso pessoal)</td><td>Vence: padrão do mercado</td><td>Possível, mas exige operar o serving</td></tr>
+<tr><td>Esforço de manutenção</td><td>Nenhum</td><td>Baixo</td><td>Alto: drivers, runtimes, quantizações, atualizações</td></tr>
+</table>
+<p>A melhor resposta costuma ser <b>híbrida</b>: assinatura ou API para as tarefas difíceis e um modelo local para o volume repetitivo e os dados que não podem sair de casa, com um roteador que manda cada tarefa ao modelo mais barato que dá conta.</p>
+
+<p><b>Quanta memória um modelo precisa?</b> Os parâmetros precisam caber na memória da placa (VRAM) ou na memória unificada. A <i>quantização</i> guarda cada número com menos bits: FP16 = 2 bytes por parâmetro, Q8 ≈ 1 byte, Q4 ≈ 0,5–0,6 byte.</p>
+<pre><code>VRAM ≈ parâmetros × bytes_por_parâmetro      (pesos)
+     + KV cache                               (memória do contexto)
+     + overhead                               (runtime, ativações: ~0,5–1,5 GB)
+
+KV cache ≈ 2 × camadas × cabeças_KV × dim_cabeça × tokens_de_contexto × bytes
+
+Exemplo: modelo denso de 27B em Q4_K_M, contexto de 32 mil tokens
+  pesos    = 27e9 × 0,58 B           ≈ 15,7 GB
+  KV cache = 2 × 64 × 8 × 128 × 32.768 × 2 B ≈ 8,6 GB  (FP16)
+             (≈ 4,3 GB com KV cache em Q8)
+  overhead ≈ 1 GB
+  total    ≈ 21 a 25 GB  → cabe numa placa de 24 GB ou 32 GB;
+                          numa de 16 GB, só com contexto curto ou offload para a RAM</code></pre>
+<p>O KV cache cresce linearmente com o contexto, por isso um modelo "cabe" com 4 mil tokens e não com 128 mil. Em modelos MoE (Livro 1, Capítulo 2 (LLMs, Transformers e MoE)), só os parâmetros ativos são lidos a cada token, então parte dos especialistas pode ficar na RAM do sistema, com a VRAM servindo de cache dos mais usados.</p>
+
+<p><b>Principais modelos abertos para rodar local (out/2026).</b> Memória estimada com a fórmula acima, com folga para 8 a 16 mil tokens de contexto.</p>
+<table>
+<tr><th>Família</th><th>Tamanhos de destaque</th><th>Memória aprox. Q4</th><th>Memória aprox. Q8</th><th>Uso indicado</th></tr>
+<tr><td>Qwen 3.5 / 3.6 / 3.8 (Alibaba, Apache 2.0)</td><td>0,8B a 14B; 27B denso; MoE de 30–35B com ~3B ativos; Qwen3.8 Flash-Next (~125B, ~6B ativos)</td><td>4B: 3 GB · 14B: 9 GB · 27B: 17–20 GB · 35B-A3B: 21 GB · Flash-Next: ~70 GB</td><td>4B: 5 GB · 14B: 16 GB · 27B: 30 GB · 35B-A3B: 37 GB · Flash-Next: ~130 GB</td><td>Uso geral, código, agentes, multilíngue (bom português). O 27B em Q8 tirou 80 no benchmark de Akita; o Flash-Next em 3 bits numa RTX 5090 tirou 91</td></tr>
+<tr><td>Gemma 4 (Google, Apache 2.0)</td><td>E2B, E4B; 26B-A4B (MoE); 31B denso</td><td>E4B: 4 GB · 26B-A4B: 16 GB · 31B: 19–22 GB</td><td>E4B: 6 GB · 26B-A4B: 28 GB · 31B: 34 GB</td><td>Multimodal (imagem, áudio nos menores), resumo, assistentes; E2B/E4B em notebooks e celulares</td></tr>
+<tr><td>gpt-oss (OpenAI, Apache 2.0)</td><td>20b, 120b (MoE)</td><td>20b: ~13–16 GB (formato nativo de 4 bits) · 120b: ~65 GB</td><td>(distribuído já quantizado)</td><td>Raciocínio e uso de ferramentas; o 20b é a opção clássica para placas de 16 GB; o 120b roda bem em 128 GB de memória unificada</td></tr>
+<tr><td>Mistral (Apache 2.0 na linha Small)</td><td>Mistral Small 3.x 24B; Devstral 24B</td><td>14–16 GB</td><td>25–27 GB</td><td>Devstral: agentes de código numa placa de 24 GB ou num Mac de 32 GB; Small: produtos comerciais com function calling</td></tr>
+<tr><td>DeepSeek (MIT)</td><td>V4 Flash (284B, 13B ativos); V4 Pro (1,6T)</td><td>Flash: ~160 GB (3 bits: ~110 GB)</td><td>Flash: ~300 GB</td><td>Qualidade próxima do topo; Flash em estação de 128–192 GB com quantização agressiva; Pro só em cluster</td></tr>
+</table>
+<p>Tamanho não garante qualidade: no benchmark de Akita, um modelo de 1 trilhão de parâmetros tirou 46, enquanto modelos de 27B passaram de 80. Q4 costuma ser o melhor custo-benefício pessoal; o que mais derruba a qualidade local é configuração errada.</p>
+
+<p><b>Hardware.</b> A regra é <b>memória primeiro, velocidade depois</b>: se o modelo não cabe, roda dividido com a RAM e fica de 5 a 20 vezes mais lento. A velocidade de geração depende sobretudo da largura de banda da memória. Em 2026, a escassez de memória elevou bastante o preço das placas.</p>
+<table>
+<tr><th>Faixa de memória</th><th>Exemplos (preço aprox. out/2026)</th><th>O que roda bem</th></tr>
+<tr><td>12 GB</td><td>RTX 3060 usada (US$ 200–300), Intel Arc B580 (US$ 250–350)</td><td>Modelos de 7–14B em Q4, Whisper, SDXL; porta de entrada</td></tr>
+<tr><td>16 GB</td><td>RTX 5060 Ti 16 GB, RX 9060 XT/9070 XT (US$ 400–700)</td><td>14B em Q8, 24B e gpt-oss-20b em Q4</td></tr>
+<tr><td>24–32 GB</td><td>RTX 3090 usada, RX 7900 XTX, Arc Pro B60 (US$ 650–1.200); RTX 5090 (US$ 3.500–4.500)</td><td>27–32B em Q4 a Q8; MoE grandes com offload</td></tr>
+<tr><td>48–96 GB</td><td>RTX PRO 5000/6000 Blackwell (US$ 5.000–10.000+)</td><td>70B numa só placa; uso profissional</td></tr>
+<tr><td>64–512 GB unificados</td><td>AMD Strix Halo 128 GB (US$ 2.000–4.000), Mac Studio (US$ 3.500–10.000+)</td><td>MoE grandes (gpt-oss-120b, DeepSeek quantizado); densos grandes ficam lentos</td></tr>
+</table>
+<p><b>Software.</b> NVIDIA (CUDA) é o padrão: tudo funciona primeiro ali. AMD (ROCm, ou Vulkan no Windows), Intel (oneAPI/SYCL, OpenVINO) e Apple (Metal, MLX) funcionam bem para inferência, com suporte mais tardio em ferramentas novas. Ollama e LM Studio são as portas de entrada; llama.cpp dá mais controle; vLLM e SGLang servem vários usuários.</p>
+<table>
+<tr><th>Perfil</th><th>Recomendação</th><th>Por quê</th></tr>
+<tr><td>Iniciante / curioso</td><td>Assinatura de US$ 20 + experimentar modelos pequenos no PC que já tem (Ollama com Qwen 4–8B ou Gemma 4 E4B). Se quiser placa, Arc B580 12 GB ou RTX 3060 12 GB usada</td><td>Aprende o essencial gastando pouco; o modelo de ponta da assinatura continua disponível para o que importa</td></tr>
+<tr><td>Dev individual</td><td>Assinatura intensiva (US$ 100–200) ou API para agentes de código + placa de 16–24 GB (5060 Ti 16 GB, 3090 usada, 7900 XTX) ou Mac com 32–64 GB para RAG, autocompletar e dados privados</td><td>Modelo de fronteira onde a qualidade faz diferença; local para volume e privacidade</td></tr>
+<tr><td>Time pequeno (3–15 pessoas)</td><td>API com controle de custo e roteamento por tarefa + um servidor compartilhado (RTX 5090 / PRO, Strix Halo 128 GB ou Mac Studio) servindo um modelo aberto via vLLM ou Ollama para tarefas internas</td><td>Um servidor atende várias pessoas e amortiza o custo; a API cobre picos e tarefas difíceis. Rode evals antes de trocar qualquer modelo</td></tr>
+</table>
+<div class="box key"><b>Em resumo</b> Assinatura vence no uso pessoal moderado; API, em produtos e carga variável; local, em privacidade, volume constante e offline. A memória define que modelo roda, a largura de banda define a velocidade. Antes de comprar hardware, teste o modelo pretendido num serviço de nuvem barato.</div>
+
+<h3>Produtividade pessoal com ferramentas de IA</h3>
+<p>Dois usos fora do código mostram a mesma lógica de ancorar a IA em fontes:</p>
+<ul>
+<li><b>NotebookLM</b> (<a href="https://www.youtube.com/watch?v=MhWkBgfKJX0">A Feature Mais Esperada do Notebook LM Finalmente Chegou (E É Melhor do Que Eu Esperava)</a>): gera áudio, mapas mentais, slides e tabelas a partir das fontes do usuário, uma forma de RAG que reduz alucinação.</li>
+<li><b>Análise profissional</b> (<a href="https://www.youtube.com/watch?v=Y6wiWlcH5jM">Generating real-time credit intelligence with Claude</a>): um analista de crédito prepara em 30 minutos uma tese sobre bonds, com link para a fonte de cada afirmação.</li>
+</ul>
+
+<h2>Construir negócios e SaaS com IA</h2>
+<p>Abrir uma padaria nunca foi difícil por causa do forno; o difícil é ter clientes que voltam. Com IA, construir software ficou barato, mas a parte difícil (quem paga, por quanto tempo e por que não copia você) continua.</p>
+
+<h3>A ideia não vale nada; o modelo de receita vale</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=9JwCjBjOR2I">O Guia OBRIGATÓRIO Para Iniciar um SaaS em 2026 (E não FALIR em 3 MESES)</a> propõe um funil: se a ideia falha em qualquer etapa, é descartada.</p>
+<figure><img src="img/12_saas_funil.png"><figcaption>Funil de validação de uma ideia de SaaS. Fonte: elaboração própria com base em "O Guia OBRIGATÓRIO Para Iniciar um SaaS em 2026" (O Novo Programador).</figcaption></figure>
+<ol>
+<li><b>Anunciável</b>: passa nas políticas de anúncio e você já sabe escrever os três primeiros anúncios.</li>
+<li><b>Escalável</b>: público de pelo menos ~1 milhão de pessoas.</li>
+<li><b>Quem paga</b>: o público precisa ter poder e motivo para pagar; o motivo mais forte é a dependência (como emitir nota fiscal).</li>
+<li><b>Recorrência</b>: vender o software uma vez é "fábrica de software", não SaaS.</li>
+<li><b>MVP</b>: extraia só o "coração" do produto.</li>
+<li><b>Copie e melhore</b>: estude empresas que já gastaram milhões validando o mercado.</li>
+</ol>
+<p>No exemplo do vídeo, uma assinatura de R$ 4 mil/mês iguala em cerca de um ano uma venda única de R$ 50 mil, e continua rendendo. O vocabulário que um investidor vai usar:</p>
+<table>
+<tr><th>Métrica</th><th>Definição</th><th>Regra de bolso</th></tr>
+<tr><td>MRR / ARR</td><td>Receita recorrente mensal / anual</td><td>A base de qualquer valuation de SaaS</td></tr>
+<tr><td>Churn</td><td>% de clientes (ou receita) perdida por mês</td><td>Churn mensal de 5% significa perder ~46% da base em um ano (1 − 0,95¹²)</td></tr>
+<tr><td>LTV</td><td>Margem mensal por cliente ÷ churn mensal</td><td>R$ 400 de margem e 3% de churn → LTV ≈ R$ 13.300</td></tr>
+<tr><td>CAC</td><td>Custo de aquisição por cliente (anúncios, vendas)</td><td>LTV/CAC ≥ 3 e payback do CAC &lt; 12 meses</td></tr>
+<tr><td>Margem bruta</td><td>(Receita − custo de servir) ÷ receita</td><td>SaaS clássico: 75–85%. <b>SaaS com IA: o custo de inferência pode derrubar isso</b></td></tr>
+</table>
+<div class="box warn"><b>Atenção</b> No SaaS clássico, um usuário a mais custa quase zero. Num produto em que cada ação chama um LLM, o custo cresce com o uso, e o usuário mais engajado pode ser o menos lucrativo. Preço por uso, limites por plano, caching e roteamento para modelos menores são decisões de <i>modelo de negócio</i>.</div>
+
+<h3>Construir ficou barato; a defensabilidade mudou</h3>
+<p>Agentes de IA facilitam reimplementar software a partir de documentação, especificações públicas e observação de comportamento, como a indústria sempre fez para interoperabilidade (pense nos formatos de arquivo de suítes de escritório). A consequência para negócios: <b>onde fica a lógica determina o que pode ser copiado</b>. Lógica hospedada, dados proprietários, integrações e efeitos de rede são mais difíceis de replicar. Akita contesta a versão viral da tese (<a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/">"a Adobe morreu?"</a>): reescritas grandes continuam caras. Ainda assim, o fosso competitivo se desloca do código para dados, distribuição, confiança e suporte (Livro 4, Capítulo 4 (Eng. Reversa e Segurança)).</p>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=7_gRjg7DIUw">Tech Talk: From Open Source Project to Product</a> mostra o caminho complementar: Kubernetes é projeto, OpenShift é produto, com endurecimento, ciclo de vida e certificação. Quando escrever código fica barato, o que se vende cada vez mais é <b>responsabilidade</b>: suporte, SLA, conformidade e alguém que responde quando algo dá errado.</p>
+<p>Comunidade e efeito de rede estão entre os poucos fossos que um agente não copia num fim de semana. A Lei de Metcalfe (valor ∝ n²), citada em <a href="https://www.youtube.com/watch?v=h6psyZidv-A">The Value of Technical Communities: Learn, Share, &amp; Grow Together</a>, é um limite otimista; estimativas empíricas sugerem algo mais próximo de n·log n.</p>
+
+<h3>Fábricas de conteúdo com IA</h3>
+<div class="box intro"><b>Para começar</b> Um canal <i>faceless</i> (ou <i>dark</i>) é um canal de vídeos em que ninguém aparece: uma voz narra enquanto imagens, mapas e animações ilustram. Antes, cada vídeo exigia roteirista, ilustrador, locutor e editor; a IA dá a cada função uma ferramenta de primeiro rascunho, e uma pessoa passa a operar a "linha de montagem".</div>
+
+<p><b>O pipeline.</b> Uma fábrica bem feita tem fases (planejar, produzir, publicar e medir) e portões de aprovação humana entre elas.</p>
+<figure><img src="img/12_fabrica_pipeline.png"><figcaption>Pipeline de uma fábrica de conteúdo com IA, com três portões de aprovação humana e o ciclo de aprendizado pelas métricas. Fonte: elaboração própria.</figcaption></figure>
+<ol>
+<li><b>Pesquisa de nicho</b>: temas com demanda e pouca oferta de qualidade, que você entenda o bastante para revisar.</li>
+<li><b>Referências, sem copiar</b>: extraia padrões (duração, estrutura, ritmo, tom) de vídeos de sucesso, nunca o texto.</li>
+<li><b>Roteiro com tamanho-alvo</b>: narração em português gira em 130–160 palavras por minuto. Divida em cenas e <b>revise os fatos</b>, que LLMs inventam com confiança.</li>
+<li><b>Narração e imagens</b>: voz fixa gerada cena a cena; guia de estilo visual repetido em todos os prompts; nada de rostos reais, marcas ou vozes clonadas sem autorização.</li>
+<li><b>Montagem</b>: um script com FFmpeg ou Remotion monta o vídeo a partir de uma lista de cenas, o que torna a etapa repetível.</li>
+<li><b>Métricas</b>: CTR, retenção e comentários alimentam a próxima rodada de ideias.</li>
+</ol>
+
+<p><b>Como workflow de agente.</b> Pedir tudo num prompt ("faça um vídeo sobre X") não funciona. O padrão é o de Livro 2, Capítulo 4 (Agentes e MCP): <b>estados explícitos</b> num arquivo de instruções, um estado por vez, cada um salvando seu artefato em arquivo (o que permite refazer só uma etapa e versionar com Git), portões de aprovação depois da ideia, do roteiro e antes de publicar, e ferramentas reais (TTS, gerador de imagens, FFmpeg) chamadas por MCP ou scripts.</p>
+<p><b>Ferramentas.</b> Quase todas as etapas têm opções locais ao lado das comerciais:</p>
+<table>
+<tr><th>Etapa</th><th>Local / open source</th><th>Comerciais</th></tr>
+<tr><td>Pesquisa e roteiro (LLM)</td><td>Qwen, Gemma, gpt-oss via Ollama, LM Studio ou llama.cpp</td><td>Claude, ChatGPT, Gemini</td></tr>
+<tr><td>Transcrição de referências e legendas</td><td>Whisper (faster-whisper, whisper.cpp)</td><td>APIs de transcrição dos grandes provedores</td></tr>
+<tr><td>Narração (TTS)</td><td>Piper (leve, roda em CPU), Kokoro (boa qualidade, pequeno), XTTS-v2 (clonagem de voz, licença não comercial)</td><td>ElevenLabs, vozes de OpenAI/Google/Azure, Higgsfield e similares</td></tr>
+<tr><td>Imagens</td><td>ComfyUI ou Automatic1111 com Stable Diffusion (SDXL) ou Flux; LoRA e IP-Adapter para estilo</td><td>Midjourney, Ideogram, geradores do ChatGPT/Gemini, Flow</td></tr>
+<tr><td>Motion graphics</td><td>Remotion (vídeo com React), Manim, Blender; Kdenlive/Natron</td><td>After Effects, Canva</td></tr>
+<tr><td>Montagem</td><td>FFmpeg (scriptável), Kdenlive, Shotcut, DaVinci Resolve (gratuito)</td><td>Premiere, CapCut</td></tr>
+</table>
+
+<h3>IA e criatividade: a matriz escrever × revisar × executar</h3>
+<p>O vídeo da IBM <a href="https://www.youtube.com/watch?v=83HMZrhL_Uw">AI &amp; Music: How AI Is Changing Music Creation &amp; Creativity</a> lembra que a música sempre foi recombinação e sempre foi moldada pela tecnologia (composição algorítmica nos anos 1950, MIDI, DAWs, autotune). A IA muda <b>velocidade, escala e opacidade</b>: pela escuta, já não se sabe se uma faixa foi cocriada com IA.</p>
+<p>A matriz divide o trabalho em escrever, revisar e executar, e pergunta, para cada etapa, quem faz: o humano ou a IA. A IA dá escala (variações, paciência infinita); o humano dá conexão (expressão, experiência, performance). Trocando "compor" por "programar", a matriz descreve o espectro do vibe coding à engenharia agêntica.</p>
+
+<div class="box fact"><b>Você sabia?</b> Grace Hopper, pioneira do compilador e contra-almirante da Marinha dos EUA, popularizou a frase “é mais fácil pedir perdão do que permissão”. Ela também carregava pedaços de fio de cerca de 30 cm para mostrar quanto a luz percorre em um nanossegundo. Para governança de IA, a primeira frase costuma ser o conselho errado.</div>
+<h2>Governança e regulação de IA</h2>
+<p>Um carro precisa de freio, cinto e inspeção não porque o motor seja ruim, mas porque alguém precisa responder quando algo dá errado. Governança de IA é esse conjunto de "freios e documentos": quem é responsável, como os riscos são avaliados e como se prova isso.</p>
+
+<h3>O problema: quem responde pelo modelo?</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=SVAwzodyFUo">How to Manage Your AI Before It Makes the Wrong Decision</a>, da IBM, começa com um cenário: um sistema nega crédito a um cliente e ninguém consegue explicar por quê. Quem validou o modelo? Quem o monitora? Quem responde? Governança é a resposta organizacional: <b>não é arquitetura de modelo</b> nem checklist preenchido uma vez, e sim um sistema de gestão com papéis, processos, evidências e melhoria contínua.</p>
+<p>É a camada que transforma riscos técnicos (raciocínio nem sempre fiel, prompt injection, skills maliciosas) em responsabilidades atribuídas e auditáveis.</p>
+
+<h3>ISO/IEC 42001: um sistema de gestão de IA</h3>
+<p>A ISO/IEC 42001:2023 faz para a IA o que a 27001 faz para a segurança da informação: especifica um <b>AIMS</b> (<i>AI Management System</i>) auditável e certificável. Segue a estrutura harmonizada das normas ISO (cláusulas 4 a 10), integrável a um SGSI 27001 ou a um sistema 9001, e traz no Anexo A controles de referência.</p>
+<figure><img src="img/12_iso42001_pdca.png"><figcaption>O ciclo PDCA da ISO/IEC 42001 aplicado à IA, com as quatro camadas de risco. Fonte: elaboração própria com base em "How to Manage Your AI Before It Makes the Wrong Decision" (IBM Technology).</figcaption></figure>
+<table>
+<tr><th>Cláusula</th><th>Conteúdo</th><th>Exemplo concreto num produto com LLM</th></tr>
+<tr><td>4 Contexto</td><td>Escopo, partes interessadas, obrigações regulatórias</td><td>Inventário de sistemas de IA (incluindo copilotos e agentes internos) e de que dados eles tocam</td></tr>
+<tr><td>5 Liderança</td><td>Responsável pela IA, política de IA, papéis</td><td>Dono nomeado para cada sistema; política de uso aceitável de IA</td></tr>
+<tr><td>6 Planejamento</td><td>Avaliação de risco e de impacto, apetite e tolerância, plano de tratamento, objetivos mensuráveis</td><td>Matriz de risco por caso de uso; limite de taxa de alucinação aceitável num eval</td></tr>
+<tr><td>7 Suporte</td><td>Recursos, competência, documentação, comunicação</td><td>Model cards, registro de prompts e versões; treinamento em fluência em IA</td></tr>
+<tr><td>8 Operação</td><td>Ciclo de vida, gestão de mudanças, fornecedores</td><td>Troca de modelo do fornecedor tratada como mudança: rodar a suíte de evals antes</td></tr>
+<tr><td>9 Avaliação</td><td>Monitoramento, auditoria interna, revisão pela direção</td><td>Dashboards de drift, viés e custo; amostragem de saídas para revisão humana</td></tr>
+<tr><td>10 Melhoria</td><td>Incidentes, não conformidades, ação corretiva</td><td>Post-mortem de incidente de prompt injection com correção no harness</td></tr>
+</table>
+<p>A abordagem é baseada em risco, em quatro camadas: <b>dados</b> (viés, qualidade, procedência), <b>modelo</b> (acurácia, explicabilidade, robustez), <b>sistema</b> (integrações, segurança, permissões) e <b>uso</b> (mau uso, consequências não intencionais).</p>
+
+<h3>NIST AI RMF e EU AI Act</h3>
+<p>O <b>NIST AI RMF</b> (1.0, jan/2023) é voluntário e não certificável. Tem quatro funções: <i>Govern</i> (cultura e papéis, atravessando as demais), <i>Map</i> (contexto e riscos), <i>Measure</i> (métricas e testes) e <i>Manage</i> (tratamento). Em 2024 ganhou um perfil para IA generativa (NIST AI 600-1), que trata de confabulação e conteúdo sintético.</p>
+<p>O <b>EU AI Act</b> (Regulamento (UE) 2024/1689) é lei, com penalidades, e classifica os sistemas por risco:</p>
+<ul>
+<li><b>Inaceitável</b> (proibido): pontuação social, manipulação de vulnerabilidades, inferência de emoções no trabalho e na escola.</li>
+<li><b>Alto risco</b>: emprego, crédito, educação, infraestrutura crítica, aplicação da lei. Exige gestão de risco, governança de dados, documentação, logs, supervisão humana e avaliação de conformidade.</li>
+<li><b>Risco limitado</b>: transparência (avisar que é um chatbot, rotular deepfakes).</li>
+<li><b>Risco mínimo</b>: sem obrigações específicas (filtros de spam, IA em jogos).</li>
+</ul>
+<p>Modelos de propósito geral (GPAI) têm regime próprio, com obrigações extras acima de 10²⁵ FLOPs de treino. A aplicação é escalonada desde ago/2024 (proibições em fev/2025, GPAI em ago/2025), com prazos de alto risco em revisão na UE. As multas chegam a 35 milhões de euros ou 7% do faturamento global.</p>
+
+<h3>Comparação: três camadas complementares</h3>
+<table>
+<tr><th>Dimensão</th><th>NIST AI RMF</th><th>ISO/IEC 42001</th><th>EU AI Act</th></tr>
+<tr><td>Natureza</td><td>Framework de boas práticas</td><td>Norma de sistema de gestão</td><td>Regulamento (lei)</td></tr>
+<tr><td>Obrigatoriedade</td><td>Voluntário</td><td>Voluntária (pode ser exigida por contrato)</td><td>Obrigatório para quem coloca IA no mercado da UE ou cujo resultado é usado na UE</td></tr>
+<tr><td>Certificação</td><td>Não</td><td>Sim, por auditoria de terceira parte</td><td>Avaliação de conformidade e marcação CE para alto risco</td></tr>
+<tr><td>Estrutura</td><td>Govern, Map, Measure, Manage</td><td>Cláusulas 4–10 (PDCA) + controles do Anexo A</td><td>Níveis de risco + regime para GPAI</td></tr>
+<tr><td>Foco</td><td>Identificar e medir riscos; características de confiabilidade</td><td>Governança organizacional, papéis, evidências, melhoria contínua</td><td>Proteger saúde, segurança e direitos fundamentais</td></tr>
+<tr><td>Penalidades</td><td>Nenhuma</td><td>Perda do certificado</td><td>Até 35 M€ ou 7% do faturamento global</td></tr>
+<tr><td>Melhor para</td><td>Começar: vocabulário e método de risco</td><td>Provar a clientes e auditores que a IA é gerida</td><td>Requisito legal no mercado europeu</td></tr>
+</table>
+<p>Os três <b>não competem</b>: o NIST dá o método de risco, a ISO dá a gestão e a certificação, e o AI Act dá a restrição legal. As evidências de um AIMS (avaliações de risco, logs, supervisão humana) servem para cumprir o AI Act nos sistemas de alto risco.</p>
+<div class="box tip"><b>Dica</b> Para quem está no Brasil: a LGPD já se aplica a dados pessoais tratados por sistemas de IA, incluindo o direito de revisão de decisões automatizadas (art. 20). Um marco legal específico de IA (PL 2338/2023, inspirado na abordagem por risco europeia) tramita no Congresso. Quem vende para a UE está sujeito ao AI Act independentemente de onde está sediado.</div>
+<div class="box key"><b>Em resumo</b> Para um time de engenharia, governança se traduz em artefatos que um bom harness já produz: inventário de sistemas, evals versionados, logs de decisões de agentes, gestão de mudança ao trocar de modelo, revisão humana nos pontos de alto risco e post-mortems.</div>
+
+<h3>Governança no dia a dia de um time de produto</h3>
+<p>Um checklist mínimo:</p>
+<ol>
+<li><b>Inventário</b>: liste cada uso de IA (produto, ferramentas internas, agentes de código) com dono, fornecedor, modelo, dados tocados e classificação de risco.</li>
+<li><b>Avaliação de impacto</b> antes de lançar: quem é afetado, o que acontece se o modelo errar e qual é o fallback.</li>
+<li><b>Evals como portão de mudança</b>: troca de modelo, de prompt ou de skill passa pela suíte de avaliação (qualidade, segurança, viés, custo), como um teste de regressão.</li>
+<li><b>Supervisão humana proporcional ao risco</b>: HITL em decisões de alto impacto (crédito, contratação), HOTL com amostragem nas demais.</li>
+<li><b>Rastreabilidade</b>: logs de entradas, saídas, ferramentas chamadas e versões, com retenção compatível com a LGPD/GDPR.</li>
+<li><b>Segurança agêntica</b>: menor privilégio, sandbox, auditoria de skills de terceiros e defesa contra prompt injection (Livro 4, Capítulo 4 (Eng. Reversa e Segurança)).</li>
+<li><b>Transparência</b>: avisar quando o usuário interage com IA e rotular conteúdo sintético.</li>
+<li><b>Gestão de incidentes</b>: canal de reporte, post-mortem, ação corretiva e revisão periódica pela liderança.</li>
+</ol>
+
+<h2>O lado humano: comunidade e fôlego para a carreira</h2>
+<p>Ninguém aprende a nadar lendo sozinho no quarto. Comunidades técnicas, segundo <a href="https://www.youtube.com/watch?v=h6psyZidv-A">The Value of Technical Communities: Learn, Share, &amp; Grow Together</a>, dão três ganhos: aprender com problemas reais, rede de contatos (muitas vagas circulam antes de virar anúncio) e mentoria nos dois sentidos. "Quem resolveu algo há cinco minutos é o especialista para quem está cinco minutos atrás": uma resposta num fórum ou uma correção de documentação já contam.</p>
+<p>A carreira também é maratona. Ajudam: entregar em incrementos ("feito é melhor que perfeito"), registrar as próprias realizações, tratar o code review como crítica ao código e não à pessoa, e proteger sono e pausas. Agentes trabalham 24 horas; o humano não precisa acompanhar esse ritmo. Entre o pânico ("a IA vai me substituir") e a euforia ("não preciso aprender"), vale o provérbio: "se quer ir rápido, vá sozinho; se quer ir longe, vá acompanhado".</p>
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=SVAwzodyFUo">How to Manage Your AI Before It Makes the Wrong Decision</a></td><td>https://www.youtube.com/watch?v=SVAwzodyFUo</td><td>IBM Technology</td><td>AIMS certificável; três frameworks complementares</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Oa7uIYfl1pM">O que VAGAS de MOBILE estão pedindo? - Avaliando vagas</a></td><td>https://www.youtube.com/watch?v=Oa7uIYfl1pM</td><td>Fernanda Kipper</td><td>Requisitos de vagas revelam o projeto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=IR7wXWeGcA0">Qual Linguagem de Programação escolher p/ 2027</a></td><td>https://www.youtube.com/watch?v=IR7wXWeGcA0</td><td>Área Tech Brasil</td><td>Escolher linguagem pela área, não pelo hype</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=FfigYiI2fKc">Como Se Tornar Um ARQUITETO DE SOLUÇÕES | 4 Passos Que Vão Mudar Sua Carreira de PROGRAMADOR</a></td><td>https://www.youtube.com/watch?v=FfigYiI2fKc</td><td>Renato Augusto</td><td>Arquiteto de soluções cuida de requisitos não funcionais</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=wC9rQSNhAX8">WordPress com IA: como criar o PROMPT perfeito para criar um site</a></td><td>https://www.youtube.com/watch?v=wC9rQSNhAX8</td><td>Attekita Dev</td><td>Prompt em quatro blocos para portfólio</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9JwCjBjOR2I">O Guia OBRIGATÓRIO Para Iniciar um SaaS em 2026 (E não FALIR em 3 MESES)</a></td><td>https://www.youtube.com/watch?v=9JwCjBjOR2I</td><td>O Novo Programador</td><td>Funil de validação de ideias de SaaS</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=WAQJZ6jrUw4">LeetCode ainda faz sentido em 2026?</a></td><td>https://www.youtube.com/watch?v=WAQJZ6jrUw4</td><td>Augusto Galego</td><td>Dominar problemas fáceis; retorno decrescente depois</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=dXD0VkP1fWc">Por que a IA está nos forçando a voltar para o Java?</a></td><td>https://www.youtube.com/watch?v=dXD0VkP1fWc</td><td>Área Tech Brasil</td><td>Java como infraestrutura invisível</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Vf4dXYvpPzg">Clone Any YouTube Channel With Claude Code (No Coding Needed)</a></td><td>https://www.youtube.com/watch?v=Vf4dXYvpPzg</td><td>aiTrends</td><td>Workflow em estados para produzir vídeos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=VhAH_r5mqYk">Afinal, O Que um AI Engineer Faz?</a></td><td>https://www.youtube.com/watch?v=VhAH_r5mqYk</td><td>Augusto Galego</td><td>Integrar modelos prontos; fine-tuning é minoria</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=MhWkBgfKJX0">A Feature Mais Esperada do Notebook LM Finalmente Chegou (E É Melhor do Que Eu Esperava)</a></td><td>https://www.youtube.com/watch?v=MhWkBgfKJX0</td><td>Attekita Dev</td><td>Ferramenta ancorada nas fontes do usuário</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=SI0le2zHTd8">COMO FICAR PERIGOSAMENTE BOM EM PROGRAMAÇÃO</a></td><td>https://www.youtube.com/watch?v=SI0le2zHTd8</td><td>Área Tech Brasil</td><td>Orquestrador × codificador de prompt</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=83HMZrhL_Uw">AI & Music: How AI Is Changing Music Creation & Creativity</a></td><td>https://www.youtube.com/watch?v=83HMZrhL_Uw</td><td>IBM Technology</td><td>Matriz escrever × revisar × executar</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=lSHPYwyzFxk">COMO APRENDER JAVA E CONSEGUIR UM EMPREGO EM 6 MESES</a></td><td>https://www.youtube.com/watch?v=lSHPYwyzFxk</td><td>Área Tech Brasil</td><td>Roteiro de seis meses até o portfólio</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=kwDFNI8OXik">O básico que todo PROGRAMADOR iniciante precisa fazer</a></td><td>https://www.youtube.com/watch?v=kwDFNI8OXik</td><td>Área Tech Brasil</td><td>Prática deliberada contra estudo passivo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=mKIltWid_L0">Como Virar Um ARQUITETO DE SOFTWARE  | 5 PASSOS Que Vão Mudar Sua Carreira de PROGRAMADOR</a></td><td>https://www.youtube.com/watch?v=mKIltWid_L0</td><td>Renato Augusto</td><td>Cinco passos para virar arquiteto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=R-q5KRHDp5M">O plano realista para sair do zero na programação</a></td><td>https://www.youtube.com/watch?v=R-q5KRHDp5M</td><td>Área Tech Brasil</td><td>Fases de aprendizado e portfólio real</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Bsxl-kKZ30I">Clonei um Canal Dark MILIONÁRIO com o CLAUDE: Tutorial Completo Edição Estilo VOX!</a></td><td>https://www.youtube.com/watch?v=Bsxl-kKZ30I</td><td>Azev • Renda Online com IA</td><td>Pipeline de vídeo explicativo com aprovação humana</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=XN3xNJvWXsc">Essential Skills for Becoming an AI Engineer: RAG, AI Agents, & More</a></td><td>https://www.youtube.com/watch?v=XN3xNJvWXsc</td><td>IBM Technology</td><td>Pilha de habilidades do engenheiro de IA</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=h6psyZidv-A">The Value of Technical Communities: Learn, Share, & Grow Together</a></td><td>https://www.youtube.com/watch?v=h6psyZidv-A</td><td>IBM Technology</td><td>Aprendizado, networking e mentoria em comunidades</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9LfJq4xXifg">6 Ways to Enhance Developer Productivity with AI</a></td><td>https://www.youtube.com/watch?v=9LfJq4xXifg</td><td>IBM Technology</td><td>Seis práticas; métricas DORA, SPACE, DX Core 4</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=FheRqx7DjbU">Goodbye Tokenmaxxing: From AI Usage to Agentic AI Outcomes</a></td><td>https://www.youtube.com/watch?v=FheRqx7DjbU</td><td>IBM Technology</td><td>Medir resultado, não consumo de tokens</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=7_gRjg7DIUw">Tech Talk: From Open Source Project to Product</a></td><td>https://www.youtube.com/watch?v=7_gRjg7DIUw</td><td>IBM Technology</td><td>De projeto open source a produto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=IMWG7yx4UDk">4 Tips to Learn New Technologies Faster & Smarter</a></td><td>https://www.youtube.com/watch?v=IMWG7yx4UDk</td><td>IBM Technology</td><td>Metas SMART e prática contínua</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Y0KidGr9Z2Y">Lesson 8: A closer look at Discernment | AI Fluency: Framework & Foundations Course</a></td><td>https://www.youtube.com/watch?v=Y0KidGr9Z2Y</td><td>Anthropic</td><td>Avaliar produto, processo e desempenho</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=EljzyfdYkrc">Lesson 4: A closer look at Delegation | AI Fluency: Framework & Foundations Course</a></td><td>https://www.youtube.com/watch?v=EljzyfdYkrc</td><td>Anthropic</td><td>Delegação: problema, plataforma e divisão de tarefas</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=W4Ua6XFfX9w">Lesson 2B: The 4D Framework | AI Fluency: Framework & Foundations Course</a></td><td>https://www.youtube.com/watch?v=W4Ua6XFfX9w</td><td>Anthropic</td><td>Os quatro Ds da fluência em IA</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Y6wiWlcH5jM">Generating real-time credit intelligence with Claude</a></td><td>https://www.youtube.com/watch?v=Y6wiWlcH5jM</td><td>Anthropic</td><td>Análise de crédito com fontes rastreáveis</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente (12/10/2026)</a></td><td>https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/</td><td>Fabio Akita (AkitaOnRails)</td><td>Modelos convergiram; harness e engenharia diferenciam</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4: o veredito de open source até out/2026 (22/10/2026)</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/</td><td>Fabio Akita (AkitaOnRails)</td><td>Open-weight no tier A; serving pesa mais</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs? (11/10/2026)</a></td><td>https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/</td><td>Fabio Akita (AkitaOnRails)</td><td>Disciplina vence compilador e linguagem</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/16/estamos-no-futuro-carros-voam-e-nao-temos-mais-que-fazer-html-css/">Estamos no futuro… HTML/CSS (16/10/2026)</a>; <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-can-my-team-fit-in-a-4x-b300-h200/">4× B300/H200 (22/10/2026)</a>; <a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/">Engenharia reversa com IA: a Adobe morreu? (13/10/2026)</a>; <a href="https://akitaonrails.com/2026/10/27/llm-benchmark-melhores-llms-open-source-hardware-caseiro/">LLMs open source para hardware caseiro (27/10/2026)</a></td><td>https://akitaonrails.com/2026/10/16/estamos-no-futuro-carros-voam-e-nao-temos-mais-que-fazer-html-css/<br>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-can-my-team-fit-in-a-4x-b300-h200/<br>https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/<br>https://akitaonrails.com/2026/10/27/llm-benchmark-melhores-llms-open-source-hardware-caseiro/</td><td>Fabio Akita (AkitaOnRails)</td><td>Agentes, custo de pod e limites da reimplementação</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/10/qual-modelo-de-decisao-classificador-de-ia-tipo-jev-e-melhor/">Qual modelo de decisão/classificador de IA tipo Jev é melhor? (10/10/2026)</a></td><td>https://akitaonrails.com/2026/10/10/qual-modelo-de-decisao-classificador-de-ia-tipo-jev-e-melhor/</td><td>Fabio Akita (AkitaOnRails)</td><td>Classificador pequeno empata com líder hospedado</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-open-source-nivel-consumidor-rtx5090-strix-halo-strata/">LLM Benchmark v4: open source nível consumidor na RTX5090 ou Strix Halo (22/10/2026)</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-open-source-nivel-consumidor-rtx5090-strix-halo-strata/</td><td>Fabio Akita (AkitaOnRails)</td><td>MoE grande em placa de consumo</td></tr>
+<tr><td><a href="https://bestllmfor.com/prix-gpu-ia/">Prix GPU IA (price tracking, 29/10/2026)</a></td><td>https://bestllmfor.com/prix-gpu-ia/</td><td>BestLLMfor</td><td>Arc B580 tem menor custo por GB</td></tr>
+</table>
+</section>

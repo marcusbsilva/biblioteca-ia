@@ -1,0 +1,222 @@
+<section class="chapter" id="ch10"><h1><span class="num">Capítulo 10</span>Dados, Estatística e Sistemas de Recomendação</h1>
+<p class="lead">Todo modelo de IA é uma função dos dados que o alimentam. Este capítulo percorre a cadeia completa: guardar e consultar dados (SQL, NoSQL), movê-los com segurança (pipelines, batch, streaming), resumi-los (estatística, PCA, anomalias), transformar probabilidades em decisões (classificadores calibrados, cascatas) e, por fim, o artefato de dados mais lucrativo da internet: o sistema de recomendação.</p>
+<div class="box intro"><b>Para começar</b> Numa cozinha de restaurante, alguém compra, guarda, lava e descarta ingredientes antes de qualquer prato sair. A receita (o modelo) importa, mas nada salva um prato feito com ingrediente ruim. Este capítulo é sobre essa cozinha dos dados.</div>
+
+<h2>Por que dados vêm antes de modelos</h2>
+<p>A maior parte do ciclo de vida de um projeto de IA não é treinar modelos, e sim coletar, limpar, documentar e mover dados. O vídeo <a href="https://www.youtube.com/watch?v=AtXqpveCWQU">Big Data Rules For AI: Essential Data Management Principles</a>, da IBM Technology, transforma essa constatação em objetivo de engenharia: reduzir esse tempo com padronização e automação. Em <a href="https://www.youtube.com/watch?v=DOhvtcjl1ac">LLM + Data: Building AI with Real &amp; Synthetic Data</a>, o mesmo canal lembra que cada decisão de curadoria (quais categorias, quais exemplos, como rotular) define <em>quem</em> é representado. Escala não garante diversidade nem qualidade.</p>
+<p>A frase "<i>data is the new oil</i>", atribuída a Clive Humby (2006), é útil num ponto pouco lembrado: petróleo bruto não serve sem refino, e dados crus também não.</p>
+
+<h2>Bancos de dados relacionais e SQL</h2>
+<div class="box intro"><b>Para começar</b> Uma planilha já é quase um banco de dados: linhas são registros, colunas são atributos. Um <b>banco relacional</b> é uma coleção de tabelas que se referenciam, com regras que impedem bagunça, e o <b>SQL</b> é a linguagem em que você descreve o que quer e o banco descobre como buscar.</div>
+<h3>Do arquivo plano ao SQL</h3>
+<p>A aula <a href="https://www.youtube.com/watch?v=Samqz7iHwPM">CS50x em Português - Aula 7 - SQL</a> parte de um CSV com respostas de um formulário. Um CSV é um <b>banco de arquivo plano</b>: universal e legível, mas cada pergunta exige um programa. Contar votos em Python leva várias linhas; em SQL, uma consulta:</p>
+<pre><code>SELECT language, COUNT(*) AS n
+FROM favorites
+GROUP BY language
+ORDER BY n DESC;</code></pre>
+<p>Python é <b>imperativo</b> (você diz <em>como</em> calcular); SQL é <b>declarativo</b> (você diz <em>o que</em> quer, e o otimizador escolhe índices, ordem de junção e algoritmos). Por isso a mesma consulta funciona sobre 300 linhas ou 300 milhões. As operações básicas formam o acrônimo <b>CRUD</b>: <code>INSERT</code>, <code>SELECT</code>, <code>UPDATE</code>, <code>DELETE</code>. O CS50 usa o SQLite, um banco embutido num único arquivo, presente em todo celular e navegador.</p>
+<table>
+<tr><th>Construção</th><th>Para que serve</th></tr>
+<tr><td><code>WHERE</code>, <code>LIKE</code></td><td>Filtrar linhas, casar padrões</td></tr>
+<tr><td><code>COUNT</code>, <code>AVG</code>, <code>MAX</code>, <code>DISTINCT</code></td><td>Agregar</td></tr>
+<tr><td><code>GROUP BY</code> / <code>HAVING</code></td><td>Agregar por grupo / filtrar grupos</td></tr>
+<tr><td><code>ORDER BY</code>, <code>LIMIT</code></td><td>Ordenar e cortar</td></tr>
+<tr><td><code>IS NULL</code></td><td>Testar ausência de valor</td></tr>
+</table>
+<p><code>NULL</code> não é igual a nada, nem a si mesmo; por isso existe <code>IS NULL</code>. E <code>DELETE</code> ou <code>UPDATE</code> sem <code>WHERE</code> afeta a tabela inteira.</p>
+
+<h3>Modelagem: chaves e normalização</h3>
+<p>A aula modela um subconjunto do IMDb com cerca de 250 mil séries. Uma planilha com colunas "ator1, ator2, ator3…" é o anti-padrão clássico. A solução é <b>normalizar</b>: cada entidade numa tabela, com <b>chave primária</b>, e as relações expressas por <b>chaves estrangeiras</b>. As formas normais de Codd formalizam a ideia de "cada fato em um único lugar", o que evita anomalias de atualização.</p>
+<figure><img src="img/10_er.png"><figcaption>Esquema relacional do exemplo IMDb do CS50: <code>stars</code> e <code>writers</code> são tabelas de junção (muitos-para-muitos), <code>ratings</code> é um-para-um e <code>genres</code> é um-para-muitos. Fonte: elaboração própria com dados de "CS50x em Português - Aula 7 - SQL".</figcaption></figure>
+<p>Para cruzar tabelas, o <b>JOIN</b> é a forma idiomática:</p>
+<pre><code>SELECT shows.title
+FROM shows
+JOIN stars  ON stars.show_id  = shows.id
+JOIN people ON people.id      = stars.person_id
+WHERE people.name = 'Steve Carell';</code></pre>
+<p>Sem índice, buscar um título exige varrer a tabela, em O(n). Com <code>CREATE INDEX</code>, o banco mantém uma <b>B-tree</b> (árvore larga e rasa, feita para ler blocos de disco) e a busca cai para O(log n); na aula, a consulta ficou cerca de 42 vezes mais rápida. Índices ocupam espaço e deixam escritas mais lentas, então indexe as colunas usadas com frequência em <code>WHERE</code>, <code>JOIN</code> e <code>ORDER BY</code>, e confira o plano com <code>EXPLAIN</code>.</p>
+
+<h3>Injeção de SQL e concorrência</h3>
+<p>Regra de ouro: <b>nunca</b> monte SQL com concatenação de strings; use <i>placeholders</i> (<code>?</code>). Num login como <code>malan@harvard.edu'--</code>, o apóstrofo fecha a string e o <code>--</code> comenta o resto da consulta, inclusive a verificação de senha. A defesa é estrutural: consultas parametrizadas e menor privilégio.</p>
+<p>O outro problema clássico é a <b>condição de corrida</b>: dois servidores leem "100 curtidas", somam 1 e gravam 101, e uma curtida se perde. As soluções são operações atômicas (<code>UPDATE posts SET likes = likes + 1</code>), locks e <b>transações</b>, que garantem as propriedades ACID (Atomicidade, Consistência, Isolamento e Durabilidade).</p>
+
+<div class="box fact"><b>Você sabia?</b> O modelo relacional foi proposto por Edgar F. Codd, da IBM, em 1970, mas a própria IBM demorou a adotá-lo. O primeiro banco SQL comercial veio da Relational Software, futura Oracle, em 1979.</div>
+
+<h2>NoSQL: "not only SQL"</h2>
+<div class="box intro"><b>Para começar</b> Uma loja que vende TVs, camisetas e livros tem produtos com características bem diferentes. Em vez de uma tabela cheia de colunas vazias, bancos <b>de documentos</b> guardam cada registro como um "cartão" flexível em JSON.</div>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=pYK4No7ACRE">Master NoSQL: Scalable Databases for Modern Applications</a>, da IBM, desfaz um mito: NoSQL significa "<i>not only SQL</i>", e bancos de documentos também têm índices e junções. O princípio é <b>modelar para o padrão de acesso</b>: gastar mais lógica na escrita para tornar a leitura barata.</p>
+<table>
+<tr><th>Cenário</th><th>Padrão em documentos</th></tr>
+<tr><td>Catálogo heterogêneo</td><td>Campos comuns + subobjeto variável, sem migração</td></tr>
+<tr><td>Sensores/IoT</td><td>Agrupar leituras em <i>buckets</i> por janela de tempo</td></tr>
+<tr><td>Post com comentários</td><td>Aninhar os primeiros; excedente em documento de <i>overflow</i></td></tr>
+<tr><td>Contagens</td><td>Pré-calcular e incrementar a cada escrita</td></tr>
+</table>
+<p>É o oposto da normalização relacional, que otimiza integridade e flexibilidade de consulta. Se você ainda não sabe quais consultas fará, comece relacional (o Postgres tem colunas <code>JSONB</code> indexáveis) e migre quando a junção for o gargalo medido.</p>
+
+<h2>Movendo dados: pipelines, batch e streaming</h2>
+<div class="box intro"><b>Para começar</b> Dados raramente nascem onde serão usados. O caminho automatizado que os leva de um lugar a outro, limpando no trajeto, é o <b>pipeline</b>. O estilo <b>batch</b> é como o caminhão de lixo que passa uma vez por dia; o <b>streaming</b> é a água correndo no cano o tempo todo.</div>
+<h3>ETL resiliente</h3>
+<p>Um pipeline ETL (<i>extract, transform, load</i>) move dados de A para B. Em <a href="https://www.youtube.com/watch?v=A6x5y8yQRHY">Scaling Data Pipelines: Memory Optimization &amp; Failure Control</a>, a IBM parte de um caso realista: o tráfego triplica e o pipeline estoura a memória. As práticas para memória são ler e escrever em blocos (<i>chunking</i>), converter strings repetitivas para o tipo <code>category</code> e trocar laços por operações vetorizadas. Para falhas, a mentalidade é "o pipeline <em>vai</em> falhar": validar o schema na entrada, repetir cada fase algumas vezes antes de desistir e gravar um <b>checkpoint</b> fora do pipeline para retomar do ponto onde parou.</p>
+<pre><code>import pandas as pd
+ckpt = load_checkpoint()            # ex.: último id gravado externamente
+for chunk in pd.read_csv("vendas.csv", chunksize=200_000,
+                         dtype={"regiao": "category"}):
+    chunk = chunk[chunk.id &gt; ckpt]
+    chunk = validate_schema(chunk)   # descarta linhas inválidas cedo
+    agg = chunk.groupby("produto", observed=True)["valor"].sum()
+    with_retry(lambda: write(agg), tries=3)
+    save_checkpoint(chunk.id.max())</code></pre>
+<div class="box key"><b>Em resumo</b> Pipelines robustos são <b>idempotentes</b> (rodar duas vezes dá o mesmo resultado), <b>retomáveis</b> e <b>defensivos</b>. Polars, DuckDB ou Spark resolvem problemas de memória, mas não substituem esses princípios.</div>
+
+<h3>Big data, fast data e streaming</h3>
+<p>Em <a href="https://www.youtube.com/watch?v=vWVOMV_vxxs">Big Data vs Fast Data: Optimize Your AI Strategy</a>, a pergunta-chave é se você otimiza para profundidade ou para velocidade. Big data extrai valor da <b>agregação ao longo do tempo</b> (treinar modelos, histórico); fast data extrai valor <b>no momento</b> (fraude, personalização). Os dois coexistem: <b>modelos são treinados com big data e aplicados a fast data</b>.</p>
+<table>
+<tr><th></th><th>Big data</th><th>Fast data</th></tr>
+<tr><td>Ingestão</td><td>Batch</td><td>Streaming (Kafka, MQTT)</td></tr>
+<tr><td>Processamento</td><td>Spark, warehouse</td><td>Flink, processadores leves</td></tr>
+<tr><td>Consumo</td><td>BI, treino de IA</td><td>Alertas, decisões automáticas</td></tr>
+</table>
+<p>Em <a href="https://www.youtube.com/watch?v=aBIxpJ1_EyY">What Is Real-Time Data Streaming? AI &amp; Machine Learning Applications</a>, a tese central é que <b>o valor do dado decai com o tempo</b>. O processador filtra, <b>enriquece</b> (junta ao registro qual máquina, onde, em que operação) e analisa; e não convém ser um "acumulador de dados": persista anomalias e pontos de interesse, não cada leitura bruta. Conceitos essenciais de streaming incluem tempo de evento versus tempo de processamento, janelas e semântica de entrega (<i>at-least-once</i>, <i>exactly-once</i>).</p>
+<p>O Apache Hadoop, tema de <a href="https://www.youtube.com/watch?v=JWX5Inb--ig">What is Apache Hadoop?</a>, popularizou o processamento distribuído em hardware comum, com HDFS (blocos replicados), YARN (recursos) e MapReduce (processamento). O MapReduce grava resultados intermediários em disco; o Spark os mantém em memória e é bem mais rápido em ML iterativo. Hoje o HDFS muitas vezes deu lugar a object storage com Spark ou motores SQL, mas a ideia de processar onde o dado está e tolerar falhas de nós permanece.</p>
+
+<h3>Governança e produtos de dados</h3>
+<p>O vídeo sobre regras de big data para IA propõe quatro salvaguardas: <b>documentação padronizada</b> (tipo do dado, dono, retenção), <b>ingestões automatizadas</b> e implantadas como código, <b>rastreamento de mudanças</b> com alertas e <b>marcação</b> de qual dado foi combinado com qual modelo. Em RAG, marque os dados <em>antes</em> de vetorizar. Em <a href="https://www.youtube.com/watch?v=7w7_QWPS9L8">Data Products Explained: Key Characteristics &amp; Benefits</a>, a IBM usa a analogia do supermercado para o <b>produto de dados</b>: reutilizável, pertencente a um domínio, bem "embalado", com controle de acesso, SLA de qualidade e vários canais de entrega. É a ideia central do <i>data mesh</i>.</p>
+
+<h2>Estatística descritiva: resumir antes de modelar</h2>
+<div class="box intro"><b>Para começar</b> Ninguém lê uma planilha de 100 mil linhas. Resumos como "a idade média é 34" ou "metade das compras fica abaixo de R$ 80" são o primeiro passo diante de qualquer dado novo, como o médico que mede a pressão antes de pedir exames.</div>
+<p>O "Data Desk" mostrado em <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a> ilustra o fluxo exploratório: carrega-se uma planilha e a ferramenta calcula estatísticas descritivas, frequências, correlações, PCA, agrupamentos e anomalias. É o roteiro que vale para qualquer dataset novo.</p>
+<table>
+<tr><th>Medida</th><th>Quando usar / armadilha</th></tr>
+<tr><td>Média</td><td>Sensível a outliers: um bilionário na sala distorce a média salarial</td></tr>
+<tr><td>Mediana</td><td>Robusta; prefira para renda, latência, preços</td></tr>
+<tr><td>Moda</td><td>Única medida de centro para dados categóricos</td></tr>
+<tr><td>Desvio padrão</td><td>s² = Σ(x<sub>i</sub> − x̄)² / (n − 1); o n − 1 corrige o viés amostral</td></tr>
+<tr><td>Quartis, IQR</td><td>Base do boxplot e da regra de outlier de Tukey</td></tr>
+<tr><td>Percentis (p95, p99)</td><td>Padrão para latência: a média esconde a cauda</td></tr>
+</table>
+<p>A correlação de Pearson mede associação <em>linear</em> entre −1 e 1; a de Spearman, aplicada aos postos, capta relações monotônicas. Correlação não é causalidade, r ≈ 0 não significa independência (uma parábola tem r ≈ 0), e duas séries temporais com tendência quase sempre parecem correlacionadas: correlacione as <em>variações</em>, não os níveis.</p>
+<div class="box warn"><b>Atenção</b> O quarteto de Anscombe (1973) tem quatro conjuntos com médias, variâncias e correlação idênticas e gráficos completamente diferentes. Sempre plote os dados.</div>
+
+<h2>PCA: enxergando a estrutura</h2>
+<div class="box intro"><b>Para começar</b> A sombra de uma mão na parede transforma 3D em 2D e, com a lanterna no lugar certo, ainda revela a forma. A <b>PCA</b> procura esse "ângulo de lanterna" para reduzir dezenas de colunas a duas ou três que dá para desenhar.</div>
+<p>A Análise de Componentes Principais encontra direções (combinações lineares das variáveis) ordenadas pela variância que capturam: o CP1 é a de maior variância, o CP2 a maior ortogonal ao CP1, e assim por diante. O algoritmo: <b>padronizar</b> cada coluna (senão a de maior escala domina), calcular a decomposição em valores singulares, medir a <b>variância explicada</b> de cada componente e projetar nos k primeiros.</p>
+<pre><code>import numpy as np
+Xs = (X - X.mean(0)) / X.std(0)
+U, S, Vt = np.linalg.svd(Xs, full_matrices=False)
+explicada = S**2 / (S**2).sum()
+Z = Xs @ Vt[:2].T                  # coordenadas em CP1, CP2
+recon = Z @ Vt[:2]                 # volta ao espaço original
+erro = ((Xs - recon)**2).sum(1)    # erro de reconstrução por linha</code></pre>
+<figure><img src="img/10_pca.png"><figcaption>Esquerda: variância explicada por componente num conjunto sintético de 4 variáveis correlacionadas. Direita: projeção em CP1×CP2, com os pontos de maior erro de reconstrução marcados como anomalias. Fonte: elaboração própria, ilustrando o fluxo do "Data Desk" do VectorFall Ep. 3.</figcaption></figure>
+<p>A PCA é linear e sensível a outliers. Para estruturas não lineares, t-SNE e UMAP visualizam melhor, mas distorcem distâncias globais. Para agrupar, k-means após PCA é um combo clássico. E a fatoração de matrizes dos recomendadores é, essencialmente, uma SVD truncada.</p>
+
+<h2>Detecção de anomalias</h2>
+<div class="box intro"><b>Para começar</b> Uma <b>anomalia</b> é um dado que destoa do resto, como uma compra de R$ 30 mil num cartão que gasta R$ 200. Detectá-las é como o porteiro que conhece os moradores e repara no rosto estranho.</div>
+<table>
+<tr><th>Família</th><th>Método</th><th>Ideia</th></tr>
+<tr><td>Estatística</td><td>Z-score robusto, regra de Tukey</td><td>Ponto longe do centro em unidades de dispersão</td></tr>
+<tr><td>Distância/densidade</td><td>Mahalanobis, LOF</td><td>Ponto em região pouco densa, considerando correlações</td></tr>
+<tr><td>Reconstrução</td><td>PCA, autoencoder</td><td>Ponto mal reconstruído pela estrutura principal</td></tr>
+<tr><td>Isolamento</td><td>Isolation Forest</td><td>Anomalias se isolam com poucos cortes aleatórios</td></tr>
+<tr><td>Séries temporais</td><td>Resíduo de previsão, EWMA</td><td>Desvio em relação à previsão ou à sazonalidade</td></tr>
+</table>
+<p>O z-score clássico tem um defeito: o próprio outlier infla a média e o desvio, mascarando-se. A versão robusta usa mediana e MAD. A distância de Mahalanobis considera correlações: um carro potente e pesado é normal; potente e levíssimo, não. Lembre que "anomalia" é estatística e "problema" é de negócio: a Black Friday é anômala e legítima.</p>
+
+<h3>Da probabilidade à decisão: classificadores calibrados</h3>
+<p>Detectores produzem <em>pontuações</em>; o negócio precisa de <em>decisões</em>. Os vídeos da IBM sobre o Jev, da startup TypeSafe (<a href="https://www.youtube.com/watch?v=YGgNBcIgI4s">What Is Jev? The AI Model That Doesn't Generate Text</a> e <a href="https://www.youtube.com/watch?v=O4n1jtWzt30">New frontier AI models, TypeSafe’s Jev AI, &amp; NASA’s IBM collab</a>), tornam essa ponte explícita. Um <b>classificador</b> escolhe entre respostas pré-definidas em vez de gerar texto. Para um e-mail "fui cobrado duas vezes", o Jev devolve de uma vez: reembolso? 0,9; equipe? billing 0,85; urgência? alta.</p>
+<p>O argumento técnico é a <b>calibração</b>: um modelo é calibrado se, entre os casos em que diz "80%", acerta cerca de 80%. Segundo a TypeSafe, LLMs de chat tendem a ser sobreconfiantes; recompensar o modelo com uma <b>regra de pontuação própria</b> (log-loss ou Brier) é o que incentiva calibração.</p>
+<figure><img src="img/10_calib.png"><figcaption>Diagrama de confiabilidade: a diagonal é o ideal e, abaixo dela, o modelo é sobreconfiante. As linhas verticais marcam a política de limiares: abaixo de 0,1 ignora, acima de 0,9 automatiza, no meio envia a um humano. Curvas ilustrativas. Fonte: elaboração própria a partir de "What Is Jev? The AI Model That Doesn't Generate Text".</figcaption></figure>
+<p>Com probabilidades calibradas, a política é simples: <b>acima de 0,9 automatiza, entre 0,1 e 0,9 vai para humano, abaixo de 0,1 descarta</b>. Formalmente, age-se quando p &gt; custo/(ganho + custo). Calibração se mede com o ECE e se corrige com <i>Platt scaling</i> ou <i>temperature scaling</i>. Fabio Akita, em <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a>, mostra que modelos pequenos e locais empatam ou chegam perto dos líderes hospedados em tarefas de classificação: um modelo especializado e calibrado costuma vencer um gerador grande em custo e latência.</p>
+<div class="box warn"><b>Atenção</b> Em <a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a>, a IBM lembra que <b>confiança não é prova</b>. Modelos de decisão sobre texto continuam vulneráveis a <i>prompt injection</i> nos dados. Trate-os como componentes não confiáveis, registre entradas e saídas e mantenha controles determinísticos em volta.</div>
+
+<h3>Cascatas: barato primeiro, caro só quando necessário</h3>
+<p>Em <a href="https://www.youtube.com/watch?v=Mo7JMC_oDlI">Fraud Detection with AI: Ensemble of AI Models Improve Precision &amp; Speed</a>, a decisão "fraude sim/não" precisa sair em menos de ~200 ms. O primeiro estágio é <b>ML tabular</b> (regressão logística, gradient boosting) sobre valor, horário, local e histórico: barato, escalável e auditável. Só os casos de baixa confiança sobem para um <b>LLM encoder</b> (BERT, RoBERTa), que lê também o texto, como um memo "investimento urgente, ROI garantido de 200%".</p>
+<div class="box key"><b>Em resumo</b> A maioria dos casos é fácil: use o modelo mais barato que decide com confiança e escale só a fração incerta. Isso exige que o primeiro estágio seja <b>calibrado</b>. Como fraude é rara, acurácia é inútil: um modelo que nunca acusa fraude acerta 99,9%. Use precisão, recall e PR-AUC.</div>
+
+<h2>Sistemas de recomendação: fundamentos</h2>
+<div class="box intro"><b>Para começar</b> O livreiro do bairro que diz "se gostou daquele, vai adorar este" conhece seu gosto e os livros. Um <b>sistema de recomendação</b> faz isso para milhões de pessoas usando duas pistas: como os itens são e o que pessoas parecidas com você consumiram.</div>
+<p>Um recomendador estima, para cada par (usuário, item), uma utilidade (probabilidade de clique, de compra, de não pular a música) e ordena os itens por ela. A entrada costuma ser uma matriz usuário × item enorme e esparsa, com feedback <b>explícito</b> (notas) ou, muito mais comum, <b>implícito</b> (cliques, tempo, pulos).</p>
+<ul>
+<li><b>Baseada em conteúdo</b>: descreve itens por atributos ou embeddings e recomenda os parecidos com o que o usuário consumiu, pela similaridade de cosseno. Funciona para itens novos e é explicável, mas tende à bolha.</li>
+<li><b>Filtragem colaborativa</b>: usa só o comportamento coletivo. Na variante por vizinhança, "quem comprou isto também comprou aquilo" (a Amazon popularizou a versão por item). Na <b>fatoração de matrizes</b>, R ≈ PQᵀ, cada usuário e item vira um vetor latente, e a predição é o produto escalar. Ficou famosa no Netflix Prize.</li>
+<li><b>Híbridos e two-tower</b>: a colaborativa sofre de <b>cold start</b> (usuários e itens novos sem histórico) e ignora o contexto da sessão. O modelo <b>two-tower</b>, padrão atual, codifica usuário e item no mesmo espaço vetorial, e uma busca vetorial aproximada (ANN) acha os vizinhos.</li>
+</ul>
+
+<div class="box fact"><b>Você sabia?</b> O Netflix Prize (2006–2009) pagou US$ 1 milhão a quem melhorasse em 10% o recomendador da empresa. A solução vencedora combinava centenas de modelos, e a Netflix nunca a pôs inteira em produção: o ganho não compensava a complexidade.</div>
+
+<h2>Arquitetura de um recomendador online</h2>
+<div class="box intro"><b>Para começar</b> Escolher 20 vídeos entre bilhões em menos de um segundo funciona como um processo seletivo: triagem rápida de currículos, entrevistas caras com poucos candidatos e escolha final pensando no time. O recomendador é esse <b>funil</b>.</div>
+<p>O guia prático da Databricks, de Jake Noble (que liderou recomendações da home do YouTube), descreve seis etapas num funil que vai de bilhões de itens a dezenas, usando o contexto do momento: catálogo atual, comportamento recente, sessão.</p>
+<figure><img src="img/10_pipeline.png"><figcaption>Os seis componentes de um sistema de recomendação online, em funil. Fonte: adaptado de Noble, "A Practical Guide to Building an Online Recommendation System", Databricks Blog, 2025.</figcaption></figure>
+<ul>
+<li><b>Geração de candidatos</b>: reduz bilhões a centenas, rápido e barato (candidatos pré-computados em batch, busca vetorial, filtragem colaborativa). Boa prática: unir várias fontes, inclusive "populares recentes" contra o cold start; nenhum ranking cria variedade que não entrou no funil.</li>
+<li><b>Recuperação de features</b>: de item, de usuário e cruzadas (ex.: "já comprou este produto"). O ponto sutil é a <b>paridade online-offline</b>: se o treino usou gasto antes de impostos e a produção serve gasto depois de impostos, as predições quebram em silêncio. Feature stores existem para resolver isso.</li>
+<li><b>Filtragem</b>: remove o inelegível (fora de estoque, já visto, impróprio), com limites para não remover todos os candidatos.</li>
+<li><b>Inferência e calibração</b>: modelos preveem CTR, compra, tempo de exibição. Dois modelos com o mesmo AUC podem ter saídas em escalas diferentes; calibrar <b>desacopla</b> a troca de modelo do resto do sistema.</li>
+<li><b>Ranking pointwise</b>: combina as predições em uma pontuação por item.</li>
+<li><b>Ranking listwise</b>: considera a lista inteira, penalizando itens parecidos com os já escolhidos para garantir diversidade.</li>
+</ul>
+<p>A fórmula pointwise citada do YouTube mostra uma decisão de produto codificada como número:</p>
+<pre><code>ranking_score = pCTR^X × pWatchTime^Y × (isSmallChannel ? Z : 1.0)</code></pre>
+<p>Os expoentes ponderam clique contra tempo assistido (evitando o <i>clickbait</i>), e Z dá impulso a canais pequenos. Sistemas reais são <b>híbridos</b>: modelos e embeddings treinados em batch sobre o histórico; features de sessão, filtros e ranking calculados online.</p>
+
+<h2>Recomendação como decisão sequencial: RL no Spotify</h2>
+<div class="box intro"><b>Para começar</b> Um bom DJ observa a pista, toca algo, vê a reação e ajusta a próxima música. Isso é <b>aprendizado por reforço</b> (RL): aprender por tentativa e erro com recompensas. Como treinar errando com milhões de ouvintes seria um desastre, o Spotify criou um público simulado.</div>
+<p>Uma playlist não é uma lista de itens independentes: cada faixa muda o estado do ouvinte. A equipe do Spotify, num post de 2023 no blog do TensorFlow baseado num artigo do KDD 2023, trata o problema como <b>decisão sequencial</b>. A saída para não treinar com usuários reais foi <b>RL baseado em modelo</b>: um <b>modelo de usuário</b> prevê reações a listas de faixas e serve de recompensa num <b>simulador offline</b>.</p>
+<figure><img src="img/10_rl.png"><figcaption>Loop de RL com o modelo de usuário no lugar do usuário real e os quatro módulos do simulador do Spotify. Fonte: adaptado de Spotify/TensorFlow Blog, "Simulated Spotify Listening Experiences for Reinforcement Learning with TensorFlow and TF-Agents", 2023.</figcaption></figure>
+<p>O simulador tem quatro módulos: um amostrador de sessões, um tradutor da ação do agente em faixas reais (escolher diretamente uma lista ordenada tornaria o espaço de ação combinatório), o modelo de usuário (ouvir ou pular) e um registro de episódios. O episódio termina por uma regra empírica, como vários pulos consecutivos. O agente <b>Action-Head DQN</b> recebe estado e <em>uma</em> faixa candidata e produz um valor Q; repete para cada candidata, escolhe a melhor, acrescenta à lista e continua. Assim lida com um catálogo que muda o tempo todo.</p>
+<p>O resultado mais importante: as estimativas offline tiveram <b>alinhamento direcional</b> com os testes online. Se o simulador diz que a política A é melhor que a B, isso tende a se confirmar no teste A/B.</p>
+<div class="box warn"><b>Atenção</b> O agente otimiza o modelo de usuário, não o usuário. Qualquer viés do simulador vira brecha a explorar (<i>reward hacking</i>). Por isso é preciso validar contra resultados online. O mesmo vale para o pós-treino de LLMs: o desenho da recompensa define o comportamento.</div>
+
+<h2>Métricas: como saber se está funcionando</h2>
+<div class="box intro"><b>Para começar</b> Um termômetro só serve se medir a coisa certa. Um detector de fraude que nunca acusa ninguém acerta 99,9% das vezes e não serve para nada.</div>
+<table>
+<tr><th>Métrica</th><th>O que mede / quando usar</th></tr>
+<tr><td>Precisão</td><td>VP / (VP + FP); alarme falso caro</td></tr>
+<tr><td>Recall</td><td>VP / (VP + FN); deixar passar caro</td></tr>
+<tr><td>PR-AUC</td><td>Preferível a ROC-AUC com classes raras</td></tr>
+<tr><td>Log-loss, Brier, ECE</td><td>Qualidade da probabilidade e calibração</td></tr>
+<tr><td>Precision@k, Recall@k</td><td>Relevantes entre os k primeiros recomendados</td></tr>
+<tr><td>NDCG@k</td><td>Pune relevantes em posições baixas</td></tr>
+<tr><td>Cobertura, diversidade, novidade</td><td>Saúde do catálogo e da experiência</td></tr>
+</table>
+<p>No fim, o juiz são métricas online em testes A/B: CTR, conversão, retenção, receita por sessão. Defina o tamanho de amostra antes, não interrompa o teste ao primeiro p &lt; 0,05 (<i>peeking</i> infla falsos positivos) e acompanhe métricas de proteção, como latência e reclamações.</p>
+<div class="box warn"><b>Atenção</b> Recomendadores avaliados em logs sofrem <b>viés de exposição</b>: o usuário só pôde clicar no que o sistema antigo mostrou. Separe treino e teste <em>no tempo</em>, nunca aleatoriamente, e reserve tráfego de exploração.</div>
+
+<div class="box fact"><b>Você sabia?</b> Claude Shannon definiu o bit como unidade de informação em "A Mathematical Theory of Communication" (1948). A entropia que ele formalizou reaparece hoje na entropia cruzada, a função de perda mais usada para treinar classificadores e LLMs.</div>
+
+<h2>Juntando tudo: um checklist</h2>
+<div class="box key"><b>Em resumo</b>
+<ul>
+<li><b>Armazenamento</b>: relacional normalizado por padrão, índices, consultas parametrizadas, transações; documentos quando o padrão de acesso pede.</li>
+<li><b>Movimento</b>: pipelines idempotentes com validação, retry e checkpoint; batch para profundidade, streaming para velocidade.</li>
+<li><b>Governança</b>: documente, automatize ingestões, rastreie mudanças, marque qual dado foi para qual modelo.</li>
+<li><b>Exploração</b>: estatística robusta, gráficos sempre, PCA para estrutura, várias famílias de detecção de anomalias.</li>
+<li><b>Decisão</b>: probabilidades calibradas, limiares conforme custo, cascatas do barato ao caro.</li>
+<li><b>Recomendação</b>: funil de candidatos, paridade de features, filtros, modelos calibrados, ranking com diversidade; RL com simulador validado quando a sequência importa.</li>
+<li><b>Métricas</b>: PR-AUC e calibração para eventos raros, NDCG offline, A/B bem desenhado como juiz final.</li>
+</ul></div>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Fonte</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Samqz7iHwPM">CS50x em Português - Aula 7 - SQL</a></td><td>https://www.youtube.com/watch?v=Samqz7iHwPM</td><td>CS50</td><td>SQL, modelagem, índices, injeção e transações</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=A6x5y8yQRHY">Scaling Data Pipelines: Memory Optimization &amp; Failure Control</a></td><td>https://www.youtube.com/watch?v=A6x5y8yQRHY</td><td>IBM Technology</td><td>Chunking, validação, retry e checkpoint externo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=vWVOMV_vxxs">Big Data vs Fast Data: Optimize Your AI Strategy</a></td><td>https://www.youtube.com/watch?v=vWVOMV_vxxs</td><td>IBM Technology</td><td>Treinar em big data, aplicar em fast data</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pYK4No7ACRE">Master NoSQL: Scalable Databases for Modern Applications</a></td><td>https://www.youtube.com/watch?v=pYK4No7ACRE</td><td>IBM Technology</td><td>Modelar documentos para o padrão de acesso</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=aBIxpJ1_EyY">What Is Real-Time Data Streaming? AI &amp; Machine Learning Applications</a></td><td>https://www.youtube.com/watch?v=aBIxpJ1_EyY</td><td>IBM Technology</td><td>Filtrar, enriquecer, analisar; valor decai com tempo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=7w7_QWPS9L8">Data Products Explained: Key Characteristics &amp; Benefits</a></td><td>https://www.youtube.com/watch?v=7w7_QWPS9L8</td><td>IBM Technology</td><td>Características de um produto de dados</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=JWX5Inb--ig">What is Apache Hadoop?</a></td><td>https://www.youtube.com/watch?v=JWX5Inb--ig</td><td>IBM Technology</td><td>HDFS, YARN, MapReduce; Hadoop versus Spark</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=AtXqpveCWQU">Big Data Rules For AI: Essential Data Management Principles</a></td><td>https://www.youtube.com/watch?v=AtXqpveCWQU</td><td>IBM Technology</td><td>Documentar, automatizar, rastrear, marcar dado e modelo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Mo7JMC_oDlI">Fraud Detection with AI: Ensemble of AI Models Improve Precision &amp; Speed</a></td><td>https://www.youtube.com/watch?v=Mo7JMC_oDlI</td><td>IBM Technology</td><td>Cascata: modelo tabular, depois encoder</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=DOhvtcjl1ac">LLM + Data: Building AI with Real &amp; Synthetic Data</a></td><td>https://www.youtube.com/watch?v=DOhvtcjl1ac</td><td>IBM Technology</td><td>Curadoria define representatividade dos dados</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a></td><td>https://www.youtube.com/watch?v=2ILc4WY86us</td><td>Deep Tech with Amir Husain</td><td>Fluxo exploratório: estatística, PCA, anomalias</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=YGgNBcIgI4s">What Is Jev? The AI Model That Doesn't Generate Text</a></td><td>https://www.youtube.com/watch?v=YGgNBcIgI4s</td><td>IBM Technology</td><td>Decisões tipadas calibradas e limiares</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a></td><td>https://www.youtube.com/watch?v=_yO_Q7qo0HQ</td><td>IBM Technology</td><td>Probabilidade não é evidência</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=O4n1jtWzt30">New frontier AI models, TypeSafe’s Jev AI, &amp; NASA’s IBM collab</a></td><td>https://www.youtube.com/watch?v=O4n1jtWzt30</td><td>IBM Technology</td><td>Contexto do Jev: decisões em paralelo</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a> (e posts de 03/10 e 10/10/2026 sobre o Jev e classificadores)</td><td>https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/</td><td>AkitaOnRails (Fabio Akita)</td><td>Classificadores pequenos competem com hospedados</td></tr>
+<tr><td>Simulated Spotify Listening Experiences for Reinforcement Learning with TensorFlow and TF-Agents</td><td>—</td><td>TensorFlow Blog (equipe do Spotify), 19/10/2023</td><td>Simulador de usuário e alinhamento offline–online</td></tr>
+<tr><td>How to Build an Online Recommendation System (A Practical Guide to Building an Online Recommendation System)</td><td>—</td><td>Databricks Blog (Jake Noble), 2025</td><td>Seis etapas, paridade de features, calibração</td></tr>
+</table>
+</section>

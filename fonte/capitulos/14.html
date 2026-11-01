@@ -1,0 +1,203 @@
+<section class="chapter" id="ch14"><h1><span class="num">Capítulo 14</span>AI-Driven Engineer</h1>
+<p class="lead">Este capítulo apresenta um conceito proposto por <b>Marcus B. Silva</b> (GitHub: <a href="https://github.com/marcusbsilva">marcusbsilva</a>): o <b>AI-Driven Engineer</b>, o engenheiro que projeta, especifica, orquestra e verifica sistemas usando agentes de IA como força de trabalho. Veremos a definição, os doze princípios do conceito, os dados de adoção e produtividade, as dez competências centrais, o que se espera de cada nível de carreira e o que está mudando nas vagas e entrevistas. Números externos verificados em 30 e 31/10/2026.</p>
+<div class="box key"><b>Um conceito proposto por Marcus B. Silva</b> "AI-Driven Engineer" não é um cargo padronizado nem um rótulo de fornecedor: é um <b>conceito proposto por Marcus B. Silva</b>, formulado a partir da prática de construir vários projetos em paralelo com agentes de IA. O que o diferencia de termos vizinhos, como "AI engineer" (quem constrói produtos <em>de</em> IA) ou "vibe coder" (quem aceita o que a IA gera), são os princípios apresentados adiante.</div>
+<div class="box key"><b>Definição</b> <b>AI-Driven Engineer</b> é quem constrói software soberano e verificável usando agentes de IA como equipe: decide o que construir e em qual linguagem cada parte vive, especifica, orquestra os agentes, exige que eles discordem, verifica cada entrega e entrega o resultado pronto para usar. O código pode ser escrito por máquinas; a responsabilidade continua humana.</div>
+<div class="box intro"><b>Para começar</b> Pense numa obra com pedreiros incansáveis e baratos (os agentes), que às vezes erguem a parede no lugar errado e garantem que está tudo pronto. Nesse canteiro, vale mais quem sabe <em>o que</em> construir, desenha a planta, inspeciona cada parede e assina o laudo. Esse é o AI-Driven Engineer.</div>
+
+<h2>O que é um AI-Driven Engineer</h2>
+<p>Ele <b>projeta</b> (arquitetura e limites), <b>especifica</b> (transforma intenção em requisitos verificáveis), <b>orquestra</b> (distribui tarefas e monta o contexto e as ferramentas dos agentes) e <b>verifica</b> (prova com testes, revisão e medição que o resultado está correto, seguro e barato o bastante). <b>Agente</b> é um programa baseado num LLM que executa ações em ciclo: lê arquivos, roda comandos, observa o resultado e decide o próximo passo (Livro 2, Capítulo 4 (Agentes e MCP)). Sem um "oráculo" (testes, especificação, métricas) que diga se o resultado está certo, o agente gira no vazio.</p>
+<p>Fabio Akita defende a mesma tese em <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a>: os modelos de ponta convergiram em qualidade, e o salto recente veio do <i>harness</i> agêntico (ferramentas, buscas e loops de teste em volta do modelo). Por isso, <b>engenharia tradicional (testes, processo, invariantes) é o diferencial</b>.</p>
+
+<h3>Três perfis</h3>
+<p><b>Vibe coding</b> é descrever o que se quer, aceitar o código sem ler, colar o erro de volta e repetir até "funcionar". Serve para protótipos descartáveis; o problema surge quando o protótipo vira produto.</p>
+<table>
+<tr><th>Dimensão</th><th>Programador tradicional</th><th>Vibe coder</th><th>AI-Driven Engineer</th></tr>
+<tr><td>Quem escreve o código</td><td>Ele mesmo</td><td>A IA, sem revisão</td><td>Agentes, sob especificação e revisão</td></tr>
+<tr><td>Como sabe que está pronto</td><td>Testa e revisa</td><td>"A IA disse que está pronto"</td><td>Testes automatizados, métricas, revisão humana</td></tr>
+<tr><td>Gargalo</td><td>Velocidade de digitação</td><td>Entender o que foi gerado</td><td>Clareza da spec e capacidade de verificação</td></tr>
+<tr><td>Risco típico</td><td>Lentidão</td><td>Falhas de segurança, dívida invisível</td><td>Excesso de confiança no harness; custo de tokens</td></tr>
+</table>
+<p>O canal Área Tech Brasil resume em <a href="https://www.youtube.com/watch?v=SI0le2zHTd8">COMO FICAR PERIGOSAMENTE BOM EM PROGRAMAÇÃO</a>: o "codificador de prompt" terceiriza o pensamento; o "orquestrador" chega com hipótese e critério de aceite e terceiriza só a digitação. Em <a href="https://www.youtube.com/watch?v=UOKCuEzeOAo">O jeito CERTO de usar IA para programar (ninguém te explica isso)</a>, o Sujeito programador reserva o vibe coding para POCs, usa fluxo agêntico (pesquisar, planejar, implementar) em tarefas médias e o GitHub Spec Kit em features complexas: "a IA é proporcional ao conhecimento do desenvolvedor".</p>
+<p>O que acontece sem guia aparece em <a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a>, de Augusto Galego: um app de tarefas gerado pelo Cursor sem isolamento entre usuários, <code>SELECT *</code> sem paginação, roteador reinventado sem cabeçalhos de segurança, sem migrations e com JWT sem restrição de algoritmo. Tudo "roda"; nada vai para produção.</p>
+<figure><img src="img/14_aide_ciclo.png"><figcaption>O ciclo do AI-Driven Engineer: entender, especificar, montar o contexto, orquestrar, verificar (voltando aos agentes quando algo falha), integrar e medir. Fonte: elaboração própria.</figcaption></figure>
+
+<h3>Adoção: uso alto, confiança baixa</h3>
+<ul>
+<li><b>Stack Overflow 2025</b>: 84% usam ou planejam usar IA; 47% usam diariamente; só cerca de 33% confiam na precisão. Apenas cerca de 15% dizem praticar vibe coding.</li>
+<li><b>Stack Overflow 2026</b> (segundo o IT Brief, dados preliminares): 66% usam assistentes ou agentes; só 24% têm diretrizes formais do empregador.</li>
+<li><b>Google DORA 2025</b>: 90% de adoção, mas só 24% confiam muito; a IA é um "espelho e multiplicador" da organização.</li>
+<li><b>GitHub Octoverse 2025</b>: mais de 180 milhões de desenvolvedores; o TypeScript virou a linguagem mais usada; o Brasil é o 4.º país.</li>
+</ul>
+<figure><img src="img/14_aide_adocao.png"><figcaption>Adoção de IA por desenvolvedores comparada à confiança nas respostas. As perguntas diferem entre pesquisas; as barras indicam ordem de grandeza. Fonte: elaboração própria com dados de Stack Overflow, JetBrains, Google DORA e GitHub Octoverse.</figcaption></figure>
+<p>Se todos usam uma ferramenta em que poucos confiam, vale muito quem consegue <em>tornar o resultado confiável</em>.</p>
+
+<h3>O que dizem os estudos de produtividade</h3>
+<table>
+<tr><th>Estudo</th><th>Resultado</th><th>Leitura</th></tr>
+<tr><td>Cui, Demirer et al. (3 experimentos, 4.867 devs, Copilot)</td><td>+26% de PRs por semana; ganho maior entre menos experientes</td><td>Autocompletar ajuda em tarefas rotineiras</td></tr>
+<tr><td>METR (2025, 16 devs experientes em open source)</td><td>Achavam ter ganhado 20%; levaram 19% <em>mais</em> tempo</td><td>A percepção de ganho engana</td></tr>
+<tr><td>Anthropic (2026, 52 engenheiros aprendendo uma biblioteca)</td><td>Compreensão de 50% com IA contra 67% sem</td><td>Delegar tudo prejudica o aprendizado</td></tr>
+</table>
+<p>A IA acelera tarefas bem delimitadas, mas pode atrapalhar o aprendizado de quem só delega. No estudo da Anthropic, os melhores padrões foram "gerar e depois perguntar até entender" e "pedir código com explicação". Desconfie de números de fornecedor ("10x"); meça no seu contexto: tempo até o merge, defeitos, retrabalho.</p>
+<div class="box fact"><b>Você sabia?</b> No estudo do METR, os desenvolvedores previram antes que a IA os deixaria 24% mais rápidos e, ao final, ainda acreditavam ter ganhado 20%. A medição mostrou o contrário: 19% mais lentos.</div>
+
+<h2>Os princípios do AI-Driven Engineer</h2>
+<div class="box intro"><b>Para começar</b> Os princípios respondem a três perguntas: <b>onde</b> o software roda, <b>como</b> é construído e <b>como</b> o engenheiro pensa. Cada um traz uma prática comum na indústria e o anti-padrão que evita.</div>
+<figure><img src="img/14v3_principios.png"><figcaption>Os doze princípios do AI-Driven Engineer. Fonte: elaboração própria a partir do conceito de Marcus B. Silva.</figcaption></figure>
+<h3>Soberania Local (local-first)</h3>
+<p>Sempre que possível, o sistema e a IA que o constrói rodam na máquina de quem os usa. Modelos abertos servidos por llama.cpp ou Ollama eliminam a dependência de uma API, o custo por token e o envio de código a terceiros. Isso exige conhecer os limites do hardware: memória da GPU, quantização adequada (Capítulo 2 (Hardware e IA local)). <b>Na prática:</b> usar um modelo de código quantizado em 4 bits para autocompletar e tarefas rotineiras e reservar a nuvem para o que o modelo local comprovadamente não resolve. <b>Anti-padrão:</b> um produto cujo recurso central para quando a chave de API expira ou o provedor muda o preço.</p>
+<h3>Port Completo</h3>
+<p>Ferramentas de referência são estudadas e reescritas como versões próprias e abertas, com as funções que importam. O original serve de especificação viva. <b>Na prática:</b> como o LibreOffice diante do Microsoft Office ou o Inkscape diante do Illustrator, escrever uma alternativa aberta com a mesma experiência, sem copiar código. <b>Anti-padrão:</b> um "clone" que copia a tela e chama a mesma API fechada por baixo, ou código copiado sem licença compatível (Livro 5, Capítulo 3 (Propriedade intelectual)).</p>
+<h3>Fusão de Repositórios</h3>
+<p>Quando vários projetos resolvem pedaços do mesmo problema, eles são fundidos num sistema coeso, com uma configuração, um ponto de entrada e responsabilidades sem sobreposição. Agentes tornam viável ler e integrar bases que antes levariam meses. <b>Na prática:</b> consolidar scripts e ferramentas internas dispersas numa única CLI, preservando licenças e créditos. <b>Anti-padrão:</b> cinco repositórios clonados lado a lado e um script que reza para que todos subam na ordem certa.</p>
+<h3>Poliglota por Papel</h3>
+<p>A linguagem é escolhida pelo papel da peça: Rust ou Go no núcleo que exige desempenho, Python em dados e ML, TypeScript na interface web, Lua para scripting embutido. Pontes como PyO3 ligam Rust a Python. <b>Na prática:</b> como fizeram ferramentas Python populares (Ruff, Pydantic v2), mover o núcleo lento para Rust mantendo a mesma interface. Akita mostra em <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a> que bons testes pesam mais que a linguagem. <b>Anti-padrão:</b> tudo na única linguagem que se conhece, ou trocar de linguagem a cada modismo.</p>
+<h3>Experiência de Um Clique</h3>
+<p>O usuário vem antes: instaladores que resolvem as dependências sozinhos, um <b>launcher único</b> e uma raiz de projeto limpa, com scripts auxiliares numa pasta própria. Toda release traz um pacote pronto. <b>Na prática:</b> um comando ou instalador (como os de VS Code e Docker Desktop) que verifica e baixa o que falta e abre a aplicação. <b>Anti-padrão:</b> um README de 40 passos ou uma raiz com <code>start.bat</code>, <code>start2.bat</code> e <code>run_final_v3.bat</code>.</p>
+<h3>Conhecimento Destilado</h3>
+<p>Documentação, vídeos e decisões viram um corpus organizado e com fontes, que alimenta um RAG consultado pelos agentes (Livro 2, Capítulo 3 (RAG)). <b>Na prática:</b> indexar a documentação interna e os registros de decisão de arquitetura para o assistente de código do time. <b>Anti-padrão:</b> centenas de links "salvos para depois" ou um RAG de texto bruto, sem curadoria.</p>
+<h3>IA como Equipe Paralela</h3>
+<p>Agentes permitem várias frentes ao mesmo tempo, cada uma com contexto e especificação próprios; o engenheiro age como líder técnico. <b>Na prática:</b> um agente implementa um endpoint, outro escreve testes e um terceiro atualiza a documentação, em branches isoladas, revisadas em janelas fixas do dia. <b>Anti-padrão:</b> abrir dez frentes e não revisar nenhuma, ou misturar projetos no mesmo contexto.</p>
+<h3>Releases Incrementais com Marcos Explicados</h3>
+<p>O software evolui por versões pequenas e nomeadas, cada uma com um marco claro. Antes de cada passo, a IA explica o plano; depois, o changelog registra o que mudou. <b>Na prática:</b> "v0.5: login com SSO; critério: usuário entra com conta corporativa e sai sem sessão residual". O agente propõe, o engenheiro aprova, os testes provam. <b>Anti-padrão:</b> um commit gigante "versão nova" sem changelog.</p>
+<h3>Crítica Antibajulação</h3>
+<p>Modelos tendem a concordar com quem pergunta (<i>sycophancy</i>). O prompt de sistema <b>exige</b> discordância fundamentada: falhas, riscos, alternativas (Livro 2, Capítulo 2 (Engenharia de Contexto)). <b>Na prática:</b> regra no arquivo de instruções: "Antes de implementar, liste até três objeções técnicas. Se não houver, diga por quê." <b>Anti-padrão:</b> aceitar o "Excelente ideia!" como validação.</p>
+<h3>Engenharia Reversa como Escola</h3>
+<p>Estudar como sistemas existentes funcionam (protocolos, formatos, arquiteturas) é uma forma de aprender a projetar, como a indústria faz em interoperabilidade, auditoria e preservação (Livro 4, Capítulo 4 (Eng. Reversa e Segurança)). <b>Na prática:</b> documentar um formato de arquivo para que outro programa o leia, como fizeram projetos como o Samba. <b>Anti-padrão:</b> redistribuir código ou assets de terceiros ou contornar proteções sem base legal.</p>
+<h3>Execução acima da Ideia</h3>
+<p>Ideias valem pouco até virarem software usado. Com protótipos baratos, a pergunta passa a ser "o que a primeira versão real nos ensinou?". <b>Na prática:</b> publicar uma v0.1 útil em semanas, ouvir testadores e reorientar o escopo. <b>Anti-padrão:</b> meses polindo um plano, ou insistir nele quando o mercado já mudou.</p>
+<h3>Open-source por Padrão (em projetos pessoais)</h3>
+<p>Nos <b>projetos pessoais</b>, o código nasce público, com licença clara, releases e convite a testadores. Abrir obriga a manter documentação útil e build reproduzível, e retribui ao ecossistema (Livro 6, Capítulo 1 (Comunidades e Linux)). <b>Código de empresa privado nunca é publicado</b>: pertence ao empregador ou cliente e só é aberto por decisão formal da empresa. <b>Na prática:</b> cada projeto pessoal tem licença, CHANGELOG e uma release. <b>Anti-padrão:</b> repositório público sem licença (que na prática não autoriza o uso), ou subir código do trabalho para um repositório pessoal.</p>
+<div class="box key"><b>Manifesto do AI-Driven Engineer</b> Rodo local antes de depender da nuvem de alguém. Reescrevo para entender. Uno o que está espalhado. Escolho a linguagem pelo papel. Entrego com um clique. Transformo o que estudo em memória para os agentes. Lidero a IA como equipe e exijo que ela discorde. Avanço por marcos explicados. Desmonto para aprender, nunca para copiar. Executo em vez de guardar ideias. Publico aberto o que é meu e protejo o código da empresa. E assino, como humano, tudo o que meus agentes escrevem.</div>
+<div class="box fact"><b>Você sabia?</b> O llama.cpp foi criado por Georgi Gerganov em março de 2023 para rodar o LLaMA em CPU comum. Em agosto de 2023 o projeto introduziu o formato GGUF, hoje padrão de fato para distribuir modelos abertos para uso local.</div>
+
+<h2>As dez competências centrais</h2>
+<div class="box intro"><b>Para começar</b> Se a IA digita, ao humano sobra o que vem antes e depois: entender, decompor, especificar, conferir, proteger e explicar. Nenhuma competência é nova; mudou o peso de cada uma.</div>
+<p><b>1. Decomposição.</b> Quebrar um objetivo vago em partes pequenas e testáveis: um endpoint, um componente, uma migração. Regra prática: se o teste de aceitação não cabe em poucas linhas, a tarefa ainda está grande demais.</p>
+<p><b>2. Especificação (SDD).</b> No desenvolvimento orientado a especificação, a spec fica versionada e é o contrato do qual derivam código e testes. Em <a href="https://www.youtube.com/watch?v=ZM8WW8_HEeE">SPEC Driven: A MELHOR FORMA De Usar IA em 2026!</a>, O Novo Programador propõe seis fases (especificar, projetar, quebrar, executar com teste antes, auditar, aprender), critérios <b>Dado / Quando / Então</b> e nenhuma implementação com suposição em aberto.</p>
+<pre><code>História: Como tutor, quero remarcar um banho para outro horário livre.
+Critério 1
+  Dado um agendamento futuro e um horário livre no mesmo dia
+  Quando o tutor escolhe o novo horário
+  Então o agendamento muda e o horário antigo fica livre
+Critério 2
+  Dado um agendamento a menos de 2 horas do início
+  Quando o tutor tenta remarcar
+  Então o sistema recusa com "Remarcação só até 2h antes"
+Pergunta em aberto: remarcar para outro dia é permitido? (bloqueia a tarefa)</code></pre>
+<p><b>3. Engenharia de contexto.</b> Decidir o que entra na janela do agente: arquivos de regras (CLAUDE.md, AGENTS.md), skills, ferramentas via MCP, um chat limpo por tarefa e subagentes para pesquisas (Livro 2, Capítulo 2 (Engenharia de Contexto)). Contexto demais também degrada a qualidade.</p>
+<p><b>4. Verificação e testes.</b> A competência que mais cresce: testes viram o sensor que diz ao agente se ele acertou. No experimento de Akita com 7 linguagens e 4 modelos, a linguagem não decidiu; com 27 testes públicos, os modelos fracos entregaram 24 artefatos corretos, contra 16 sem eles. Verificar também é separar quem implementa de quem valida, exigir o código de saída dos testes e revisar o diff.</p>
+<p><b>5. Arquitetura.</b> As decisões caras de mudar: divisão do sistema, dados, comunicação, falhas. A IA perde o fio em sistemas grandes e reinventa o que o framework já resolve; o engenheiro fixa padrões e limites. Renato Augusto, em <a href="https://www.youtube.com/watch?v=mKIltWid_L0">Como Virar Um ARQUITETO DE SOFTWARE | 5 PASSOS Que Vão Mudar Sua Carreira de PROGRAMADOR</a>, põe a comunicação como passo mais importante.</p>
+<p><b>6. Segurança.</b> Falhas comuns em código gerado: controle de acesso ausente, validação fraca, segredos no código, pacotes inventados registrados por atacantes e <b>prompt injection</b> (texto lido pelo agente com instruções que ele obedece). Ver Capítulo 4 (Desenvolvimento seguro e Pull Request).</p>
+<p><b>7. Leitura de código.</b> Com a máquina escrevendo dez vezes mais, ler vira a habilidade principal, inclusive perceber o que <em>falta</em>. Código gerado quase sempre <em>parece</em> correto.</p>
+<p><b>8. Avaliação de modelos.</b> O <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4</a> de Akita mostra que tamanho não garante qualidade, que a forma de servir pesa mais que a quantização e que há cerca de 10 pontos de ruído entre rodadas. Avaliar é rodar um pequeno <i>eval</i> com tarefas reais antes de trocar de modelo.</p>
+<p><b>9. Custos.</b> Uma tarefa de agente pode consumir mais de 100 mil tokens. Use cache de prompt, modelos menores para tarefas simples e caros para planejamento e revisão (Capítulo 2 (Hardware e IA local); Livro 5, Capítulo 1 (Negócios, carreira e governança)).</p>
+<p><b>10. Comunicação.</b> Specs, documentos de decisão, code review e escopo são comunicação escrita com humanos e máquinas ao mesmo tempo.</p>
+<div class="box key"><b>Em resumo</b> As competências formam três blocos: <b>pensar</b> (decomposição, especificação, arquitetura), <b>conduzir</b> (contexto, modelos, custos, comunicação) e <b>garantir</b> (verificação, segurança, leitura). Quem domina só "conduzir" é um vibe coder sofisticado.</div>
+
+<h2>Os níveis: de júnior a staff</h2>
+<div class="box intro"><b>Para começar</b> Níveis medem <b>autonomia e alcance</b>, não anos de casa: o júnior resolve tarefas definidas por outros, o pleno resolve problemas inteiros, o sênior resolve problemas ainda não definidos e o staff faz isso entre times. A IA mudou o que se espera em cada degrau.</div>
+<figure><img src="img/14_aide_escada.png"><figcaption>A escada de níveis do AI-Driven Engineer: do júnior que explica cada linha ao sênior/staff que define arquitetura, guardrails e o harness do time. Fonte: elaboração própria.</figcaption></figure>
+
+<h3>Júnior</h3>
+<p><b>Princípios em foco:</b> Crítica Antibajulação, Releases Incrementais, Experiência de Um Clique e, <b>nos projetos pessoais e de portfólio</b>, Open-source por Padrão (repositório público com licença). O código do empregador nunca vai para o portfólio. Um pequeno Port Completo, como reescrever do zero uma ferramenta de linha de comando conhecida, é ótimo exercício.</p>
+<p><b>O que precisa fazer sozinho, mesmo com IA:</b></p>
+<ol>
+<li>Explicar cada linha que submete; se não sabe explicar, não submete.</li>
+<li>Depurar: reproduzir, isolar e confirmar uma hipótese antes de colar o erro na IA.</li>
+<li>Escrever testes e reconhecer um teste fraco.</li>
+<li>Dominar HTTP, SQL (joins, índices, paginação), Git e terminal Linux.</li>
+<li>Implementar estruturas e algoritmos básicos e estimar complexidade (Livro 4, Capítulo 2 (Algoritmos)).</li>
+<li>Reconhecer falhas comuns de segurança num diff gerado.</li>
+<li>Escrever um bom pedido ao agente e uma boa descrição de PR.</li>
+</ol>
+<p><b>O que estudar:</b> fundamentos que não envelhecem (lógica, uma linguagem robusta, testes, design, OWASP Top 10) antes das ferramentas da moda. <a href="https://www.youtube.com/watch?v=lSHPYwyzFxk">COMO APRENDER JAVA E CONSEGUIR UM EMPREGO EM 6 MESES</a> sugere usar a IA para gerar exercícios, não para resolvê-los. Em <a href="https://www.youtube.com/watch?v=3ICKCyda8sE">5 Erros que Todo Júnior comete NO CÓDIGO que o Impedem de virar PLENO (E Como Resolvê-los)</a>, O Novo Programador lista condicionais desnecessárias, falta de tratamento de erro, nomes ruins, desconhecer funções nativas e repetição; a IA comete os mesmos erros, e reconhecê-los já é revisar como pleno.</p>
+<p><b>Armadilhas:</b> não conseguir começar nada sem IA; ilusão de competência; e habilidades que nunca se formam (no estudo da Anthropic, a maior perda foi em depuração).</p>
+<div class="box tip"><b>Dica</b> Use "gerar e depois entender": peça o código e depois peça à IA que <em>te faça perguntas</em> sobre ele ("onde isto pode falhar?").</div>
+<p><b>Portfólio (projetos pessoais):</b> uma API com autenticação, autorização, paginação, migrations, testes e CI; uma pasta <code>specs/</code> com as especificações que guiaram os agentes; um relatório de auditoria de um app gerado por IA; uma contribuição real a um projeto open source. Na entrevista, responda "como você sabe que está certo?" com testes, não com "a IA disse".</p>
+
+<h3>Pleno</h3>
+<p><b>Princípios em foco:</b> Poliglota por Papel (justificar por escrito cada linguagem), Soberania Local (avaliar um modelo local para tarefas do time), Conhecimento Destilado e IA como Equipe Paralela.</p>
+<p><b>O que se espera:</b> entregar features de ponta a ponta: spec com Dado/Quando/Então, tarefas, orquestração, revisão, deploy e acompanhamento. Configurar o harness do repositório (regras, comandos de teste, skills, hooks); conduzir refatorações em passos reversíveis; diagnosticar produção com logs e métricas; controlar custo de tokens; integrar LLMs no produto com avaliação básica. Para IA aplicada, <a href="https://www.youtube.com/watch?v=XN3xNJvWXsc">Essential Skills for Becoming an AI Engineer: RAG, AI Agents, &amp; More</a>, da IBM Technology, é um bom mapa.</p>
+<p><b>Armadilhas:</b> virar "gerente de agentes" e parar de programar; aprovar PRs enormes porque "os testes passam"; terceirizar o design ao modelo.</p>
+
+<h3>Sênior e Staff</h3>
+<p><b>Princípios em foco:</b> Fusão de Repositórios (consolidar ferramentas internas num harness coeso), Soberania Local como decisão de custo e privacidade, Engenharia Reversa como Escola para avaliar legados dentro da lei e Crítica Antibajulação institucionalizada nas regras e revisões.</p>
+<p><b>O que se espera:</b> arquiteturas com fronteiras claras e sandbox para agentes; política de IA do time (ferramentas aprovadas, dados que podem ir a cada provedor, revisão obrigatória); evals com tarefas reais; modelagem de ameaças de agentes; medir impacto com métricas DORA, não com linhas de código; orçamento local × nuvem; e formar juniores num mundo em que as tarefas de aprendizado foram automatizadas.</p>
+<p><b>Armadilhas:</b> ceticismo paralisante ou entusiasmo acrítico; esquecer de formar a próxima geração; confiar na própria percepção de ganho.</p>
+
+<h3>Matriz de competências</h3>
+<p><b>E</b> = esperado; <b>D</b> = desejável; <b>—</b> = ainda não.</p>
+<table>
+<tr><th>Competência</th><th>Júnior</th><th>Pleno</th><th>Sênior/Staff</th></tr>
+<tr><td>Decomposição</td><td>E: a própria tarefa</td><td>E: feature em tarefas para agentes</td><td>E: projeto entre times</td></tr>
+<tr><td>Especificação</td><td>D: critérios de aceite</td><td>E: spec completa</td><td>E: padrão de spec do projeto</td></tr>
+<tr><td>Contexto</td><td>E: bons pedidos</td><td>E: regras, skills, MCP</td><td>E: harness e políticas</td></tr>
+<tr><td>Verificação</td><td>E: testes próprios</td><td>E: estratégia de testes, CI</td><td>E: pipeline de qualidade</td></tr>
+<tr><td>Arquitetura</td><td>—/D: entender a existente</td><td>E: da feature</td><td>E: do sistema</td></tr>
+<tr><td>Segurança</td><td>E: reconhecer falhas</td><td>E: revisar e corrigir</td><td>E: modelagem de ameaças</td></tr>
+<tr><td>Avaliação de modelos</td><td>—/D</td><td>D/E: eval simples</td><td>E: evals contínuas</td></tr>
+<tr><td>Custos</td><td>D: noção de tokens</td><td>E: custo por tarefa</td><td>E: orçamento</td></tr>
+<tr><td>Comunicação</td><td>E: PRs, perguntas</td><td>E: specs, mentoria</td><td>E: influência entre times</td></tr>
+</table>
+<div class="box tip"><b>Dica</b> Rotina semanal enxuta: um problema resolvido sem IA, uma spec antes de pedir código, um diff gerado revisado à mão, um experimento comparando dois modelos e um "diário de decisões" anotando em uma linha por que aceitou ou rejeitou cada sugestão da IA.</div>
+
+<h2>O mercado: vagas e processos seletivos</h2>
+<div class="box intro"><b>Para começar</b> Mudanças tecnológicas mexem primeiro na porta de entrada. Com a IA, os primeiros sinais aparecem nas vagas de iniciante em software.</div>
+<ul>
+<li><b>Emprego de jovens</b>: estudo de Brynjolfsson, Chandar e Chen (Stanford) encontrou queda de 13% no emprego de 22 a 25 anos nas ocupações mais expostas à IA nos EUA, até julho de 2025.</li>
+<li><b>Recém-formados</b>: segundo a SignalFire, são só 7% das contratações das grandes empresas de tecnologia, mais de 50% abaixo de 2019.</li>
+<li><b>Vagas</b>: no Indeed (EUA, julho de 2026), as vagas de software estão cerca de 27,5% abaixo de fevereiro de 2020, mas subiram quase 15% desde o início de 2025; 71% do aumento veio de vagas sêniores.</li>
+</ul>
+<figure><img src="img/14_aide_mercado.png"><figcaption>Indicadores do mercado de entrada em software nos EUA, de fontes diferentes, lado a lado só para dar a ordem de grandeza. Fonte: elaboração própria com dados de Indeed (via OfficeChai), Stanford (via LeadDev) e SignalFire.</figcaption></figure>
+<p>Os dados combinam com a tese de que a IA automatiza tarefas de iniciante, mas há ressalvas: a queda começou em 2022, junto com juros altos e o fim das contratações da pandemia; as vagas voltaram a crescer; e quase tudo é dos EUA. No Brasil não há série pública confiável sobre vagas júnior. A conclusão honesta: <b>a porta ficou mais estreita e mais exigente</b>. O júnior que só produz código com IA compete com a IA; o que entende e verifica compete com os que não fazem isso.</p>
+<p>As vagas pedem IA como requisito básico, Git, testes, CI/CD e APIs REST até no nível júnior, como mostram Fernanda Kipper e Rodrigo em <a href="https://www.youtube.com/watch?v=Oa7uIYfl1pM">O que VAGAS de MOBILE estão pedindo? - Avaliando vagas</a>, além de RAG e agentes nas vagas de IA aplicada.</p>
+<p>Nas entrevistas, a Meta passou em outubro de 2025 a usar uma rodada de cerca de 60 minutos <b>com IA permitida</b>, numa base de código com vários arquivos: corrigir um bug, implementar o algoritmo e otimizar. Avalia-se, entre outras coisas, a <b>verificação</b> do que a IA produziu. A tendência é trocar o algoritmo no quadro branco por trabalho em código existente, mostrar o processo e defender cada decisão.</p>
+<div class="box fact"><b>Você sabia?</b> O Git foi escrito por Linus Torvalds em abril de 2005, em poucas semanas, depois que o kernel Linux perdeu o acesso gratuito ao BitKeeper. Meses depois, a manutenção passou a Junio Hamano, que a mantém até hoje.</div>
+<div class="box key"><b>Em resumo</b> O AI-Driven Engineer é definido mais pelo que garante do que pelo que digita. A adoção é quase universal, a confiança é baixa e os ganhos são reais, mas condicionais. Em todos os níveis cresce o valor de decompor, especificar, verificar, ler código, cuidar da segurança e comunicar.</div>
+
+<h2>Fontes deste capítulo</h2>
+<h3>Vídeos</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=SI0le2zHTd8">COMO FICAR PERIGOSAMENTE BOM EM PROGRAMAÇÃO</a></td><td>https://www.youtube.com/watch?v=SI0le2zHTd8</td><td>Área Tech Brasil</td><td>Codificador de prompt × orquestrador</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=lSHPYwyzFxk">COMO APRENDER JAVA E CONSEGUIR UM EMPREGO EM 6 MESES</a></td><td>https://www.youtube.com/watch?v=lSHPYwyzFxk</td><td>Área Tech Brasil</td><td>Roteiro até a primeira vaga</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=3ICKCyda8sE">5 Erros que Todo Júnior comete NO CÓDIGO que o Impedem de virar PLENO (E Como Resolvê-los)</a></td><td>https://www.youtube.com/watch?v=3ICKCyda8sE</td><td>O Novo Programador</td><td>Hábitos que minam a confiança dos revisores</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ZM8WW8_HEeE">SPEC Driven: A MELHOR FORMA De Usar IA em 2026!</a></td><td>https://www.youtube.com/watch?v=ZM8WW8_HEeE</td><td>O Novo Programador</td><td>SDD em seis fases</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=UOKCuEzeOAo">O jeito CERTO de usar IA para programar (ninguém te explica isso)</a></td><td>https://www.youtube.com/watch?v=UOKCuEzeOAo</td><td>Sujeito programador</td><td>Vibe coding, fluxo agêntico e Spec Kit</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a></td><td>https://www.youtube.com/watch?v=u1nhcio8_iQ</td><td>Augusto Galego</td><td>Defeitos em app gerado sem guia</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=mKIltWid_L0">Como Virar Um ARQUITETO DE SOFTWARE | 5 PASSOS Que Vão Mudar Sua Carreira de PROGRAMADOR</a></td><td>https://www.youtube.com/watch?v=mKIltWid_L0</td><td>Renato Augusto</td><td>Cinco passos até arquiteto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Oa7uIYfl1pM">O que VAGAS de MOBILE estão pedindo? - Avaliando vagas</a></td><td>https://www.youtube.com/watch?v=Oa7uIYfl1pM</td><td>Fernanda Kipper</td><td>Requisitos que viraram padrão nas vagas</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=XN3xNJvWXsc">Essential Skills for Becoming an AI Engineer: RAG, AI Agents, &amp; More</a></td><td>https://www.youtube.com/watch?v=XN3xNJvWXsc</td><td>IBM Technology</td><td>Pilha de habilidades do engenheiro de IA</td></tr>
+</table>
+<h3>Blog AkitaOnRails</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a></td><td>https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/</td><td>Fabio Akita</td><td>Ganho veio do harness; engenharia é diferencial</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a></td><td>https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/</td><td>Fabio Akita</td><td>Testes pesam mais que a linguagem</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4 — o veredito de open source até out/2026</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/</td><td>Fabio Akita</td><td>Tamanho não garante qualidade; ruído alto</td></tr>
+</table>
+<h3>Autor do conceito e referências</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://github.com/marcusbsilva">Perfil marcusbsilva no GitHub</a></td><td>https://github.com/marcusbsilva</td><td>Marcus B. Silva</td><td>Autor do conceito AI-Driven Engineer</td></tr>
+<tr><td><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a></td><td>https://github.com/ggml-org/llama.cpp</td><td>Georgi Gerganov e colaboradores</td><td>Inferência local de LLMs; formato GGUF</td></tr>
+<tr><td><a href="https://git-scm.com/book/en/v2/Getting-Started-A-Short-History-of-Git">A Short History of Git</a></td><td>https://git-scm.com/book/en/v2/Getting-Started-A-Short-History-of-Git</td><td>Pro Git (Chacon e Straub)</td><td>Origem do Git após o fim do BitKeeper</td></tr>
+</table>
+<h3>Pesquisas, estudos e reportagens (verificados em 30/10/2026)</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Publicação</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://survey.stackoverflow.co/2025/ai">Stack Overflow Developer Survey 2025 — AI</a></td><td>https://survey.stackoverflow.co/2025/ai</td><td>Stack Overflow</td><td>84% usam IA; ~33% confiam</td></tr>
+<tr><td><a href="https://itbrief.co.uk/story/stack-overflow-survey-shows-developers-trust-ai-with-caveats">Stack Overflow survey shows developers trust AI with caveats</a></td><td>https://itbrief.co.uk/story/stack-overflow-survey-shows-developers-trust-ai-with-caveats</td><td>IT Brief UK</td><td>Pesquisa 2026: 66% usam assistentes ou agentes</td></tr>
+<tr><td><a href="https://blog.google/innovation-and-ai/technology/developers-tools/dora-report-2025/">How are developers using AI? Inside our 2025 DORA report</a></td><td>https://blog.google/innovation-and-ai/technology/developers-tools/dora-report-2025/</td><td>Google</td><td>90% de adoção; IA como multiplicador</td></tr>
+<tr><td><a href="https://blog.jetbrains.com/research/2025/10/state-of-developer-ecosystem-2025/">The State of Developer Ecosystem 2025</a></td><td>https://blog.jetbrains.com/research/2025/10/state-of-developer-ecosystem-2025/</td><td>JetBrains</td><td>85% usam IA regularmente</td></tr>
+<tr><td><a href="https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/">Octoverse: A new developer joins GitHub every second as AI leads TypeScript to #1</a></td><td>https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/</td><td>GitHub</td><td>180 mi de devs; Brasil em 4.º</td></tr>
+<tr><td><a href="https://simonwillison.net/2025/Jul/12/ai-open-source-productivity/">Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity (comentário)</a></td><td>https://simonwillison.net/2025/Jul/12/ai-open-source-productivity/</td><td>Simon Willison</td><td>METR: 19% mais lentos com IA</td></tr>
+<tr><td><a href="https://infoq.com/news/2024/09/copilot-developer-productivity/">Copilot developer productivity</a></td><td>https://infoq.com/news/2024/09/copilot-developer-productivity/</td><td>InfoQ</td><td>+26% de PRs por semana</td></tr>
+<tr><td><a href="https://www.anthropic.com/research/AI-assistance-coding-skills">How AI assistance impacts the formation of coding skills</a></td><td>https://www.anthropic.com/research/AI-assistance-coding-skills</td><td>Anthropic</td><td>Delegar tudo reduz a compreensão</td></tr>
+<tr><td><a href="https://leaddev.com/hiring/young-devs-steepest-losses-exposed-roles-stanford-study-finds">Young devs see steepest losses in exposed roles, Stanford study finds</a></td><td>https://leaddev.com/hiring/young-devs-steepest-losses-exposed-roles-stanford-study-finds</td><td>LeadDev</td><td>−13% no emprego de 22–25 anos</td></tr>
+<tr><td><a href="https://www.signalfire.com/blog/signalfire-state-of-talent-report-2025">The SignalFire State of Tech Talent Report 2025</a></td><td>https://www.signalfire.com/blog/signalfire-state-of-talent-report-2025</td><td>SignalFire</td><td>Recém-formados: 7% das contratações</td></tr>
+<tr><td><a href="https://officechai.com/ai/us-software-job-postings-are-up-15-since-launch-of-claude-code-while-overall-job-postings-are-down-7-indeed-data/">US Software Job Postings Are Up 15% Since Launch Of Claude Code</a></td><td>https://officechai.com/ai/us-software-job-postings-are-up-15-since-launch-of-claude-code-while-overall-job-postings-are-down-7-indeed-data/</td><td>OfficeChai (dados Indeed)</td><td>Vagas em alta, concentradas em sêniores</td></tr>
+<tr><td><a href="https://hellointerview.com/blog/meta-ai-enabled-coding">Meta's AI-Enabled Coding Interview</a></td><td>https://hellointerview.com/blog/meta-ai-enabled-coding</td><td>Hello Interview</td><td>Entrevista com IA permitida avalia verificação</td></tr>
+</table>
+</section>

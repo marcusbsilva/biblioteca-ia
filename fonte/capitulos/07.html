@@ -1,0 +1,182 @@
+<section class="chapter" id="ch07"><h1><span class="num">Capítulo 07</span>Hardware, GPUs e IA Local</h1>
+<p class="lead">Quem roda IA na própria máquina descobre logo que o gargalo quase nunca é “poder de computação” abstrato. O que limita é memória: quanta cabe na placa e com que velocidade ela entrega bytes ao processador. Este capítulo parte dessa ideia: a conta que diz se um modelo cabe, a física que diz quão rápido ele gera tokens, a quantização que encolhe modelos, os runtimes que os servem e o ecossistema além da NVIDIA. No fim, lembramos que uma GPU é um processador paralelo genérico, útil muito além dos LLMs.</p>
+<div class="box intro"><b>Para começar</b> Pense num modelo de IA como um livro enorme que o computador relê inteiro a cada palavra que escreve. A <b>GPU</b> é o leitor; a <b>VRAM</b> (memória da placa) é a mesa onde o livro fica aberto. Se o livro não cabe na mesa, nada funciona; se cabe, a velocidade depende de quão rápido o leitor vira as páginas. A decisão “assinatura ou hardware em casa?” está no Livro 5, Capítulo 1 (Negócios, Carreira e Governança); aqui fica a parte técnica.</div>
+
+<h2>Por que GPU? Um pouco de arquitetura</h2>
+<div class="box intro"><b>Para começar</b> Uma CPU é um pequeno grupo de engenheiros espertos que resolvem qualquer problema, um de cada vez. Uma GPU é um estádio cheio de pessoas com calculadora, todas fazendo a mesma conta sobre números diferentes. Para IA, que é basicamente multiplicar <b>matrizes</b> gigantes, o estádio vence.</div>
+<p>A CPU tem poucos núcleos otimizados para latência, com previsão de desvios e caches grandes. A GPU tem milhares de unidades simples, organizadas em grupos (SMs na NVIDIA, CUs na AMD, Xe-cores na Intel) que executam a mesma instrução sobre muitos dados (modelo SIMT). Ela esconde latência com paralelismo em massa, não com cache. Desde 2017 as GPUs NVIDIA trazem <b>Tensor Cores</b>, unidades de produto de matrizes em precisões reduzidas (FP16, BF16, FP8, INT8 e, na Blackwell, FP4); AMD e Intel têm equivalentes. O vídeo <a href="https://www.youtube.com/watch?v=KX0qBM-ByAg">AI Accelerators: Transforming Scalability &amp; Model Efficiency</a>, da IBM, acrescenta um padrão de sistemas: um modelo pequeno num acelerador próximo do processador decide a maioria dos casos em microssegundos, e só os duvidosos sobem para um modelo grande (cascata de modelos).</p>
+
+<h3>A parede de memória</h3>
+<p>Em cerca de vinte anos, a capacidade de cálculo por chip subiu milhares de vezes, enquanto a banda de memória cresceu bem menos. Esse descompasso é a <b>memory wall</b>, tema de <a href="https://www.youtube.com/watch?v=4b6KpFN7Rio">The AI Memory Wall: Why LLMs &amp; AI Accelerators Hit a Bottleneck</a>. A ferramenta para raciocinar sobre isso é o <b>modelo roofline</b>, baseado na <b>intensidade aritmética</b> (FLOPs por byte lido):</p>
+<pre><code>desempenho = min( pico_de_computação , banda_de_memória × intensidade )
+ponto de cume (ridge) = pico_de_computação / banda_de_memória</code></pre>
+<p>Num B200, ~2,25 PFLOP/s ÷ 8 TB/s ≈ 281 FLOP/byte. Abaixo disso o trabalho é limitado por memória; acima, por computação.</p>
+<figure><img src="img/07_roofline.png"><figcaption>Roofline de um B200. O decode com batch 1 fica à esquerda, limitado pela banda; o batching empurra o ponto para a direita, e o prefill já é limitado por computação. Fonte: elaboração própria com dados de “The AI Memory Wall: Why LLMs &amp; AI Accelerators Hit a Bottleneck”.</figcaption></figure>
+<p>Um LLM (ver Livro 1, Capítulo 2 (LLMs e Transformers)) trabalha em duas fases:</p>
+<ul>
+<li><b>Prefill</b> (processar o prompt): todos os tokens de entrada juntos, em multiplicações matriz×matriz. Limitado por computação; determina o <b>TTFT</b> (<i>time to first token</i>).</li>
+<li><b>Decode</b> (um token por vez): cada token novo exige ler <i>todos</i> os pesos e o KV cache, com intensidade perto de 1 FLOP/byte. Limitado por banda; determina a latência entre tokens.</li>
+</ul>
+<div class="box key"><b>Em resumo</b> Num modelo denso com batch 1, o teto de geração é <b>tok/s ≈ banda de memória (GB/s) ÷ bytes lidos por token (GB)</b>, e os bytes por token são, grosso modo, o tamanho do arquivo do modelo. Uma placa com ~1,8 TB/s e um modelo de 16 GB tem teto de ~110 tok/s; na prática se obtém 60–80% disso.</div>
+<p>Por isso o <b>batching</b> é crucial em servidores: pesos lidos uma vez servem dezenas de requisições. E por isso modelos <b>MoE</b> (Mixture of Experts) são atraentes localmente: um modelo com 30B parâmetros totais e 3B ativos precisa de memória para 30B, mas gera na velocidade de um de 3B.</p>
+
+<div class="box fact"><b>Você sabia?</b> A NVIDIA lançou a GeForce 256 em 1999 chamando-a de “a primeira GPU do mundo” e, em 2006, apresentou o CUDA, que abriu a placa de vídeo para computação genérica. Foi essa aposta em software, mais que o silício, que pôs a empresa no centro da IA.</div>
+
+<h2>VRAM e tamanho de modelo: a conta de guardanapo</h2>
+<div class="box intro"><b>Para começar</b> Antes de comprar uma mala, você confere se ela cabe no bagageiro. Cada <b>parâmetro</b> de um modelo ocupa alguns bytes, e há bilhões deles; multiplicando, sabemos se o modelo cabe na VRAM.</div>
+<pre><code>memória dos pesos (GB) ≈ parâmetros (bilhões) × bytes por parâmetro
+FP32 = 4 B   BF16/FP16 = 2 B   FP8/INT8 = 1 B   INT4/FP4 ≈ 0,5 B
+memória total ≈ pesos + KV cache + buffers + overhead do runtime (≈ 0,5–1,5 GB)</code></pre>
+<p>Um modelo de 70B ocupa ~140 GB em BF16, ~70 GB em 8 bits e ~35 GB em 4 bits (<a href="https://www.youtube.com/watch?v=mmns33BsBcY">What Is Quantization? How AI Models Get Smaller &amp; Faster</a>); um de 1 trilhão, ~2 TB em BF16. Na prática, some de 10% a 20% à conta ingênua: formatos reais guardam escalas por bloco (o Q4_K_M do llama.cpp usa ~4,8 bits por peso) e mantêm algumas camadas em precisão maior.</p>
+<figure><img src="img/07_vram_precisao.png"><figcaption>Memória ocupada só pelos pesos, por tamanho de modelo e formato. As linhas tracejadas marcam capacidades típicas de VRAM. Fonte: elaboração própria com a fórmula params × bytes.</figcaption></figure>
+
+<h3>O KV cache: a parte que todo mundo esquece</h3>
+<p>Para não recalcular a atenção sobre todo o histórico a cada token, o modelo guarda as chaves (K) e valores (V) de cada camada para cada token já processado — troca computação por memória:</p>
+<pre><code>KV (bytes) = 2 × camadas × cabeças_KV × dim_cabeça × tokens × bytes_por_elemento × usuários</code></pre>
+<p>Um modelo de ~8B com 32 camadas, 8 cabeças KV e dimensão 128, em FP16, gasta 128 KB por token: 4 GB com 32 mil tokens de contexto e 16 GB com 128 mil — mais que os próprios pesos quantizados. Localmente, reduza o contexto ao que você usa (<code>--ctx-size</code>, <code>num_ctx</code>) ou quantize o cache. Num servidor, a VRAM se divide entre pesos e cache: um modelo de 13B ocupa ~26 GB de uma placa de 40 GB, e só o resto sobra para os usuários e seus contextos. Os comandos são simples (<code>--cache-type-k q8_0</code> no llama.cpp; <code>--kv-cache-dtype fp8</code> no vLLM). Arquiteturas novas (MLA, janelas deslizantes, camadas híbridas) reduzem o cache por construção.</p>
+<div class="box tip"><b>Dica</b> Regra de bolso: <b>pesos quantizados + 20–30% de folga</b> para KV cache e buffers. Placas de 12 GB rodam com conforto modelos densos de até ~14B em Q4 com 8–16k de contexto; 16 GB chegam a ~20–24B; 24 GB, a ~32B em Q4; 32 GB permitem ~32B em Q6/Q8 ou MoEs maiores com descarregamento.</div>
+
+<h3>Descarregamento e memória unificada</h3>
+<p>Quando o modelo não cabe, há duas saídas. O <b>descarregamento</b> (<i>offload</i>) deixa parte das camadas na RAM e as roda na CPU (<code>-ngl</code> no llama.cpp), mas a velocidade cai ao ritmo da RAM (60–100 GB/s em DDR5). Para MoE, uma variante esperta mantém atenção e experts compartilhados na GPU e manda os experts roteados para a RAM; motores mais novos usam a VRAM como <i>cache</i> dos experts mais acessados.</p>
+<p>A outra saída são as máquinas de <b>memória unificada</b> (Apple Silicon, AMD Strix Halo com até 128 GB, NVIDIA DGX Spark). Elas resolvem o “cabe?”, mas não o “quão rápido?”: a banda é de 4 a 8 vezes menor que a de uma GPU topo de linha. O <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-open-source-nivel-consumidor-rtx5090-strix-halo-strata/">benchmark do Akita</a> mostra isso: o mesmo modelo denso de 27B gera 195 tok/s numa GPU de datacenter e <b>7,7 tok/s</b> no Strix Halo, com qualidade praticamente igual. Pela fórmula, ~29 GB por token ÷ ~256 GB/s ≈ 9 tok/s de teto: a física bate com a medição.</p>
+
+<h2>Quantização</h2>
+<div class="box intro"><b>Para começar</b> Quantizar é trocar uma régua milimetrada por uma em centímetros: menos exata, mas menor e mais rápida de ler. Guardar cada número com 4 bits em vez de 16 encolhe o modelo para cerca de um quarto e, feito com cuidado, quase não piora as respostas.</div>
+<p>Não basta truncar bits: é preciso <b>mapear</b> a faixa de valores de cada grupo de pesos para a faixa do formato menor com um fator de escala e arredondar. Se os valores vão de 0 a 100 e o destino comporta 0 a 10, 53 vira 5,3, que vira 5; na reconstrução, 5 × 10 = 50, com erro de 3.</p>
+<pre><code>q = round(w / s) + z        # quantizar (s = escala, z = zero point)
+ŵ = s · (q − z)             # dequantizar na hora da conta</code></pre>
+<p>Quanto menor o bloco que compartilha uma escala, menor o erro e maior o overhead — daí os bits “fracionários” dos formatos reais. Nomes como <b>W4A16</b> ou <b>W8A8</b> dizem os bits dos pesos (W) e das ativações (A). Segundo <a href="https://www.youtube.com/watch?v=wIXr22QTEHg">LLM Compression Explained: Build Faster, Efficient AI Models</a>, em cargas <b>online</b> (chat, agentes) quantizar só os pesos acelera o decode, limitado por memória; em <b>lote</b>, vale quantizar também as ativações para usar Tensor Cores de 8 bits. A maioria usa <b>PTQ</b> (pós-treino), com algoritmos como GPTQ, AWQ e as <i>importance matrices</i> do mundo GGUF; <b>QAT</b> (durante o treino) é mais cara, mas resiste melhor a níveis agressivos.</p>
+<table>
+<tr><th>Formato</th><th>Bits efetivos</th><th>Onde aparece</th><th>Comentário</th></tr>
+<tr><td>BF16/FP16</td><td>16</td><td>checkpoints originais</td><td>referência de qualidade</td></tr>
+<tr><td>FP8</td><td>8</td><td>vLLM, TensorRT; GPUs recentes</td><td>praticamente sem perda</td></tr>
+<tr><td>GGUF Q8_0</td><td>8,5</td><td>llama.cpp/Ollama</td><td>indistinguível do BF16 na prática</td></tr>
+<tr><td>GGUF Q4_K_M</td><td>~4,8</td><td>padrão do Ollama</td><td>ponto ótimo custo/qualidade</td></tr>
+<tr><td>GGUF IQ3 / IQ2</td><td>3,4 / 2,x</td><td>llama.cpp com imatrix</td><td>viáveis em modelos grandes</td></tr>
+<tr><td>GPTQ / AWQ</td><td>~4,1–4,25</td><td>vLLM</td><td>W4A16 para servidores</td></tr>
+<tr><td>NVFP4 / MXFP4</td><td>~4,25–4,5</td><td>Blackwell; padrão OCP</td><td>calcula nativamente em 4 bits</td></tr>
+<tr><td>Ternário / 1 bit</td><td>~1,6 / ~1,1</td><td>BitNet, Bonsai</td><td>exige treino ou destilação dedicada</td></tr>
+</table>
+<p>O <b>NVFP4</b> é a novidade importante de 2025–26: diferente do INT4 só de pesos, permite <i>calcular</i> em 4 bits nos Tensor Cores da Blackwell, com escalas finas (bloco de 16 valores) que preservam a qualidade. No benchmark do Akita, modelos em NVFP4 numa única B300 empataram no topo dos open source com outro que precisou de quatro.</p>
+<p><b>Quanto se perde?</b> Em 8 bits, praticamente nada; em 4 bits bem feitos, de décimos de ponto a ~1%. No LLM Benchmark v4 do Akita, Q8 empatou com BF16 e 3 bits custaram ~1,5 ponto. Mas a perda não é uniforme: no teste de <a href="https://www.youtube.com/watch?v=mCWUtEbmssM">Bonsai: IA local de 27 bilhões em menos de 4GB</a>, a versão de 1 bit (3,9 GB, contra 16,8 GB em Q4) manteve o acerto num bug de concorrência, mas errou todas as vezes uma pergunta factual de literatura. A compressão apaga primeiro o <b>conhecimento factual raro</b> e preserva o raciocínio sobre código, muito mais redundante nos dados de treino.</p>
+<div class="box warn"><b>Atenção</b> Quantização pesa <i>menos</i> que configuração. No <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">benchmark v4 do Akita</a>, o <b>mesmo checkpoint</b> tirou 94 num provedor e 27 num servidor mal configurado. Template de chat errado, parser de tool calls ausente ou contexto truncado derrubam um modelo muito mais do que ir de Q8 para Q4.</div>
+
+<div class="box fact"><b>Você sabia?</b> O llama.cpp foi escrito por Georgi Gerganov em março de 2023, poucos dias após o vazamento dos pesos do LLaMA, e fez um LLM rodar num MacBook sem GPU dedicada. O formato GGUF nasceu no mesmo ecossistema — o “GG” vem das iniciais dele.</div>
+
+<h2>Runtimes: llama.cpp, Ollama, vLLM e companhia</h2>
+<div class="box intro"><b>Para começar</b> O arquivo do modelo sozinho não faz nada, assim como uma música precisa de um player. O <b>runtime</b> é esse player: carrega o modelo, recebe perguntas e devolve respostas. Há players para uso pessoal (Ollama, LM Studio) e para atender centenas de pessoas (vLLM).</div>
+<figure><img src="img/07_runtimes.png"><figcaption>Pilha de inferência local: aplicações falam uma API compatível com OpenAI; runtimes traduzem para backends de hardware. Fonte: elaboração própria.</figcaption></figure>
+<p>Um motor de inferência recebe requisições, normalmente num endpoint compatível com a API da OpenAI (o que permite trocar de modelo sem reescrever código), tokeniza, agrupa o trabalho e executa prefill e decode, como detalha <a href="https://www.youtube.com/watch?v=615-yWyS1n0">What Is LLM Inference? How AI Models Generate Responses</a>.</p>
+<p>O <b>llama.cpp</b> (<a href="https://www.youtube.com/watch?v=P8m5eHAyrFM">What Is Llama.cpp? The LLM Inference Engine for Local AI</a>) é C/C++ sem dependências. Usa o <b>GGUF</b>, um único arquivo com pesos, tokenizer e template de chat; oferece quantização ampla, execução em CPU e backends para Metal, CUDA, ROCm, Vulkan e SYCL. Ollama, LM Studio e Jan o usam por baixo; o <b>Ollama</b> acrescenta registro de modelos e um daemon, com padrões conservadores — o contexto padrão pequeno (<code>num_ctx</code>) é a causa número um de agentes “burros”.</p>
+<pre><code># Servidor OpenAI-compatível com llama.cpp
+llama-server -m model.gguf --port 8080 -ngl 99 -c 16384 --jinja</code></pre>
+<div class="box warn"><b>Atenção</b> Servidores locais de inferência devem escutar só em <code>127.0.0.1</code>. Expor a porta na internet sem autenticação deixa qualquer um usar sua GPU e apagar modelos; varreduras já encontraram milhares de instâncias abertas assim. Para acesso remoto, use VPN ou proxy reverso com autenticação, como recomenda <a href="https://www.youtube.com/watch?v=BvCOZrqGyNU">DIY AI Infrastructure: Build Your Own Privacy-Preserving AI at Home</a>.</div>
+<p>O <b>vLLM</b>, da UC Berkeley, é a referência para <b>servir muitos usuários</b> (<a href="https://www.youtube.com/watch?v=McLdlg5Gc9s">What is vLLM? Efficient AI Inference for Large Language Models</a>):</p>
+<ul>
+<li><b>PagedAttention</b>: em vez de reservar KV cache contíguo pelo tamanho máximo (desperdiçando 60–80% da memória), divide-o em páginas pequenas alocadas sob demanda, como a memória virtual de um sistema operacional.</li>
+<li><b>Continuous batching</b>: assim que uma sequência termina, outra entra no lote, como numa chapa de panquecas.</li>
+<li><b>Prefix caching</b>: prefixos comuns (system prompts, documentos de RAG) são compartilhados entre requisições.</li>
+<li><b>Decodificação especulativa</b>: um modelo rascunho propõe tokens e o grande verifica todos numa passada, com qualidade idêntica.</li>
+</ul>
+<table>
+<tr><th>Critério</th><th>llama.cpp / Ollama</th><th>vLLM / SGLang</th><th>MLX</th><th>OpenVINO</th></tr>
+<tr><td>Alvo</td><td>1 usuário, hardware de consumo</td><td>muitos usuários, datacenter</td><td>Mac</td><td>CPU/iGPU/GPU Intel</td></tr>
+<tr><td>Formato</td><td>GGUF</td><td>safetensors (BF16, FP8, AWQ…)</td><td>MLX</td><td>IR do OpenVINO</td></tr>
+<tr><td>Concorrência</td><td>básica</td><td>excelente</td><td>básica</td><td>moderada</td></tr>
+</table>
+<p>Quando nem uma GPU comporta o modelo, divide-se o trabalho (<a href="https://www.youtube.com/watch?v=qZBibWYcKH4">How AI Models Scale Beyond a Single GPU Across LLM Workloads</a>): réplicas inteiras (dados), blocos de camadas em GPUs diferentes (pipeline), cada camada fatiada entre GPUs com interconexão rápida (tensor), experts espalhados (MoE) e pools separados para prefill e decode (desagregação). O paralelismo de tensor exige uma operação coletiva por camada e, portanto, interconexão rápida (NVLink ou similar), normalmente dentro do mesmo servidor; o de pipeline precisa de fluxo contínuo de requisições para não deixar estágios ociosos. Em produção combina-se tudo: tensor dentro do servidor, pipeline entre servidores, dados entre réplicas.</p>
+
+<h2>CUDA e as alternativas</h2>
+<div class="box intro"><b>Para começar</b> Ter uma GPU não basta: é preciso um “idioma” para conversar com ela. A NVIDIA criou o <b>CUDA</b>, e quase todo software de IA foi escrito nele. AMD, Intel e Apple têm idiomas próprios, por isso usar placas delas exige escolher ferramentas que os falem.</div>
+<p>O domínio da NVIDIA vem mais do software que do silício: quinze anos de bibliotecas (cuBLAS, cuDNN, NCCL, TensorRT) sobre as quais PyTorch e vLLM foram escritos. O outro lado é a <b>obsolescência</b>: cada GPU tem uma <i>compute capability</i>, e versões novas do CUDA e do PyTorch abandonam as antigas.</p>
+<table>
+<tr><th>Ecossistema</th><th>Pilha</th><th>Situação para LLMs (out/2026)</th></tr>
+<tr><td>NVIDIA CUDA</td><td>CUDA, cuBLAS, TensorRT-LLM</td><td>suporte universal; referência de desempenho</td></tr>
+<tr><td>AMD ROCm/HIP</td><td>ROCm, HIP (similar ao CUDA)</td><td>PyTorch e vLLM oficiais; suporte a placas de consumo irregular</td></tr>
+<tr><td>Intel oneAPI</td><td>SYCL, PyTorch XPU, OpenVINO</td><td>llama.cpp (SYCL e Vulkan), vLLM XPU, OpenVINO GenAI; bom custo por GB de VRAM</td></tr>
+<tr><td>Apple Metal</td><td>Metal, MLX</td><td>ótimo para modelos grandes via memória unificada; banda limita velocidade</td></tr>
+<tr><td>Vulkan</td><td>compute shaders</td><td>backend “universal” do llama.cpp; às vezes vence os nativos</td></tr>
+</table>
+<div class="box tip"><b>Dica</b> Fora da NVIDIA, prefira formatos e runtimes “neutros”: GGUF no llama.cpp (Vulkan, SYCL ou ROCm) ou OpenVINO, e teste mais de um backend, porque o mais rápido varia por modelo e versão. Projetos que dependem de kernels CUDA específicos costumam não ter porte, ou ter porte atrasado. Antes de comprar, confira se os runtimes que você pretende usar suportam oficialmente a placa.</div>
+<p>Mesmo com o hardware certo, dá para deixar o acelerador ocioso. O vídeo <a href="https://www.youtube.com/watch?v=UgEA5ictENM">The One-Line Slowdown: Why AI Models Get Slower</a> mostra o caso clássico: ler um escalar com <code>.item()</code> dentro de um <code>if</code> ou log num modelo compilado causa um <b>graph break</b> (o <code>torch.compile</code> interrompe a otimização) e uma <b>sincronização</b> (a CPU espera o resultado e a fila do chip esvazia). Mantenha valores no dispositivo e registre a cada N passos.</p>
+
+<h2>Medindo: tok/s, TTFT e o benchmark do Akita</h2>
+<div class="box intro"><b>Para começar</b> O velocímetro de um modelo mostra <b>tokens por segundo</b>. Também importa quanto ele demora para começar a responder, como o tempo até o carro arrancar. Definimos essas medidas e vemos números de um benchmark independente.</div>
+<ul>
+<li><b>TTFT</b>: tempo até o primeiro token; cresce com o prompt e domina em RAG e agentes.</li>
+<li><b>Tok/s de prefill e de geração</b>: o <code>llama-bench</code> mostra ambos; não compare um com o outro.</li>
+<li><b>Vazão agregada</b>: soma de todos os usuários; é a métrica de servidor.</li>
+</ul>
+<p>Para leitura interativa, ~20 tok/s já é confortável. Para agentes de código, que leem e escrevem dezenas de milhares de tokens por tarefa, pense em mais de 80–100 tok/s de geração.</p>
+<p>No <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4</a>, o modelo constrói um app de chat em 7 sprints e um revisor injeta 14 defeitos; tier A é ≥ 83, com ruído de ~10 pontos.</p>
+<figure><img src="img/07_akita_bench.png"><figcaption>Nota no benchmark × velocidade de geração dos modelos open source testados. A melhor configuração em GPU de consumo fica a 1,5 ponto do topo; a memória unificada tem boa qualidade, mas velocidade impraticável para agentes. Fonte: Akita, LLM Benchmark v4 (22/10/2026).</figcaption></figure>
+<ol>
+<li><b>Tamanho não garante qualidade</b>: um modelo de 1 trilhão de parâmetros tirou 46.</li>
+<li><b>Configuração pesa mais que quantização</b>: o mesmo checkpoint foi de 94 a 27.</li>
+<li><b>Uma GPU de consumo de topo chega a 1,5 ponto dos melhores abertos</b>, com um MoE em 3 bits.</li>
+<li>Os fechados de ponta fazem 100; os melhores abertos, 92,5.</li>
+</ol>
+<p>Na decisão entre alugar, comprar ou pagar por uso, a ocupação manda: Akita estima (<a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-can-my-team-fit-in-a-4x-b300-h200/">LLM Benchmark v4: meu time cabe em 4x B300/H200?</a>) que 4× B300 a ~US$ 36/h atendem ~32 sessões de agente, pouco mais de US$ 1 por usuário-hora — mas um pod ocioso custa o mesmo que um cheio, enquanto uma API escala a zero.</p>
+<table>
+<tr><th>Opção</th><th>Custo fixo</th><th>Custo marginal</th><th>Quando faz sentido</th></tr>
+<tr><td>API de fronteira</td><td>zero</td><td>por token</td><td>uso irregular; máxima qualidade</td></tr>
+<tr><td>Pod GPU alugado</td><td>US$/hora ligado</td><td>~zero até saturar</td><td>equipe com uso contínuo; dados sensíveis</td></tr>
+<tr><td>GPU própria</td><td>compra</td><td>energia</td><td>uso diário individual, privacidade, estudo</td></tr>
+<tr><td>Memória unificada</td><td>compra</td><td>energia baixa</td><td>modelos grandes onde velocidade não é crítica</td></tr>
+</table>
+<p>Para aprender sem gastar, o Google Colab (<a href="https://www.youtube.com/watch?v=JsCU1V7Hjpc">Build Anything with Google Colab, Here’s How</a>) oferece notebooks com GPU gratuita, com sessões que expiram. A armadilha clássica: o valor de uma variável é o da última célula <i>executada</i>, não o da ordem no arquivo.</p>
+
+<h2>GPGPU além da IA: a série VectorFall</h2>
+<div class="box intro"><b>Para começar</b> Uma GPU não serve só para IA. <b>GPGPU</b> é usar a placa para qualquer tarefa divisível em muitos pedaços independentes: filtrar imagens, analisar planilhas, testar rotas.</div>
+<p>A série VectorFall, do canal Deep Tech with Amir Husain (<a href="https://www.youtube.com/watch?v=S6_5Wfn2BkM">Forget the $7,000 RTX 5090: Real AI and Text Analysis on a $19 GPU</a>; <a href="https://www.youtube.com/watch?v=uH6ekrpWIrg">A $15 GPU That Does Your AI Agent's Heavy Lifting | VectorFall Ep. 2</a>; <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a>), monta uma plataforma de computação sobre placas antigas de US$ 15–20. Como elas não têm suporte nas bibliotecas atuais, o código CUDA é escrito com ajuda de LLMs sobre versões antigas do toolkit — a IA tira o trabalho chato, não a necessidade de entender a arquitetura. A plataforma oferece análise de texto (busca, cadeias de Markov, embeddings), filtros de imagem e áudio, estatística sobre planilhas e solvers de escalas e de caixeiro-viajante.</p>
+<p>A ideia mais interessante é a GPU como “músculo” de agentes: em vez de pedir a um LLM caro que processe uma imagem ou resolva uma escala (gastando tokens e alucinando soluções que violam restrições), o agente chama uma ferramenta MCP que executa o trabalho determinístico na GPU barata e devolve um resultado verificável. A GPU não torna o caixeiro-viajante “fácil” — ele continua NP-difícil (ver Livro 4, Capítulo 2 (Algoritmos)) —, mas acelera heurísticas paralelas.</p>
+<figure><img src="img/07_vectorfall.png"><figcaption>Arquitetura do VectorFall: agentes chamam ferramentas MCP; um agendador reparte tempo e núcleos da GPU entre os módulos. Fonte: elaboração própria com dados de “A $15 GPU That Does Your AI Agent's Heavy Lifting | VectorFall Ep. 2”.</figcaption></figure>
+<pre><code>// kernel de Mandelbrot em CUDA: um thread por pixel
+__global__ void mandel(unsigned char* img, int w, int h, int maxIt) {
+  int x = blockIdx.x*blockDim.x + threadIdx.x, y = blockIdx.y*blockDim.y + threadIdx.y;
+  if (x &gt;= w || y &gt;= h) return;
+  float cr = -2.0f + 3.0f*x/w, ci = -1.5f + 3.0f*y/h, zr = 0, zi = 0; int i = 0;
+  while (zr*zr + zi*zi &lt; 4.0f &amp;&amp; i &lt; maxIt) {
+    float t = zr*zr - zi*zi + cr; zi = 2*zr*zi + ci; zr = t; ++i; }
+  img[y*w + x] = (unsigned char)(255 * i / maxIt);
+}</code></pre>
+<p>O mesmo raciocínio chega ao SQL (<a href="https://www.youtube.com/watch?v=zqowMgMgSjA">How GPUs Accelerate Data &amp; Analytics with AI</a>): filtros, joins e agregações repetem a mesma operação sobre milhões de linhas. Motores heterogêneos decidem por operador onde executar: em volumes pequenos a CPU vence, porque copiar dados pelo PCIe não se paga; em volumes grandes, a GPU.</p>
+<div class="box fact"><b>Você sabia?</b> O conjunto de Mandelbrot é o exemplo clássico de problema “embaraçosamente paralelo”: cada pixel é calculado de forma totalmente independente dos outros. Por isso é usado há décadas para demonstrar e medir o desempenho de GPUs.</div>
+
+<h2>Checklist prático</h2>
+<div class="box intro"><b>Para começar</b> Como a lista de um piloto antes de decolar, siga os passos na ordem: cada um usa a resposta do anterior.</div>
+<ol>
+<li><b>Defina o uso</b>: chat, agente de código, servidor para equipe ou lote offline.</li>
+<li><b>Calcule a memória</b>: params × bytes (+15%) + KV cache para o contexto real.</li>
+<li><b>Estime a velocidade</b>: banda ÷ bytes por token (em MoE, parâmetros ativos). Abaixo de 15 tok/s, repense.</li>
+<li><b>Escolha o runtime</b>: Ollama/LM Studio para começar; llama.cpp para controle fino e hardware não-NVIDIA; vLLM para servir várias pessoas; OpenVINO para Intel; MLX para Mac.</li>
+<li><b>Escolha a quantização</b>: Q4_K_M como padrão; Q6/Q8 se sobrar memória; abaixo de 4 bits só em modelos grandes.</li>
+<li><b>Configure direito</b>: template de chat, contexto, parser de tool calls, sampling recomendado.</li>
+<li><b>Meça</b> velocidade e qualidade com tarefas suas.</li>
+<li><b>Proteja</b>: nada de portas de inferência expostas sem autenticação.</li>
+</ol>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=S6_5Wfn2BkM">Forget the $7,000 RTX 5090: Real AI and Text Analysis on a $19 GPU</a></td><td>https://www.youtube.com/watch?v=S6_5Wfn2BkM</td><td>Deep Tech with Amir Husain</td><td>Análise de texto em GPU antiga</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=uH6ekrpWIrg">A $15 GPU That Does Your AI Agent's Heavy Lifting | VectorFall Ep. 2</a></td><td>https://www.youtube.com/watch?v=uH6ekrpWIrg</td><td>Deep Tech with Amir Husain</td><td>GPU barata como ferramenta MCP</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a></td><td>https://www.youtube.com/watch?v=2ILc4WY86us</td><td>Deep Tech with Amir Husain</td><td>Estatística, escalas e TSP na GPU</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=4b6KpFN7Rio">The AI Memory Wall: Why LLMs &amp; AI Accelerators Hit a Bottleneck</a></td><td>https://www.youtube.com/watch?v=4b6KpFN7Rio</td><td>IBM Technology</td><td>Decode limitado por banda; roofline</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=KX0qBM-ByAg">AI Accelerators: Transforming Scalability &amp; Model Efficiency</a></td><td>https://www.youtube.com/watch?v=KX0qBM-ByAg</td><td>IBM Technology</td><td>Aceleradores e cascata de modelos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=615-yWyS1n0">What Is LLM Inference? How AI Models Generate Responses</a></td><td>https://www.youtube.com/watch?v=615-yWyS1n0</td><td>IBM Technology</td><td>Prefill, decode, TTFT e ITL</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=qZBibWYcKH4">How AI Models Scale Beyond a Single GPU Across LLM Workloads</a></td><td>https://www.youtube.com/watch?v=qZBibWYcKH4</td><td>IBM Technology</td><td>Formas de paralelismo na inferência</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=McLdlg5Gc9s">What is vLLM? Efficient AI Inference for Large Language Models</a></td><td>https://www.youtube.com/watch?v=McLdlg5Gc9s</td><td>IBM Technology</td><td>PagedAttention e continuous batching</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=P8m5eHAyrFM">What Is Llama.cpp? The LLM Inference Engine for Local AI</a></td><td>https://www.youtube.com/watch?v=P8m5eHAyrFM</td><td>IBM Technology</td><td>GGUF, quantização e backends</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=mmns33BsBcY">What Is Quantization? How AI Models Get Smaller &amp; Faster</a></td><td>https://www.youtube.com/watch?v=mmns33BsBcY</td><td>IBM Technology</td><td>Mapeamento por escala; PTQ vs QAT</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=wIXr22QTEHg">LLM Compression Explained: Build Faster, Efficient AI Models</a></td><td>https://www.youtube.com/watch?v=wIXr22QTEHg</td><td>IBM Technology</td><td>Quantização online vs lote; pouca perda</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=mCWUtEbmssM">Bonsai: IA local de 27 bilhões em menos de 4GB</a></td><td>https://www.youtube.com/watch?v=mCWUtEbmssM</td><td>ViktorKav</td><td>1 bit apaga fatos, preserva código</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=BvCOZrqGyNU">DIY AI Infrastructure: Build Your Own Privacy-Preserving AI at Home</a></td><td>https://www.youtube.com/watch?v=BvCOZrqGyNU</td><td>IBM Technology</td><td>IA doméstica com VPN e MFA</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=UgEA5ictENM">The One-Line Slowdown: Why AI Models Get Slower</a></td><td>https://www.youtube.com/watch?v=UgEA5ictENM</td><td>IBM Technology</td><td>Graph break e sincronização ociosa</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=zqowMgMgSjA">How GPUs Accelerate Data &amp; Analytics with AI</a></td><td>https://www.youtube.com/watch?v=zqowMgMgSjA</td><td>IBM Technology</td><td>SQL heterogêneo CPU/GPU por operador</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=JsCU1V7Hjpc">Build Anything with Google Colab, Here’s How</a></td><td>https://www.youtube.com/watch?v=JsCU1V7Hjpc</td><td>David Ondrej</td><td>Notebooks com GPU grátis</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4 — o veredito de open source (22/10/2026)</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/</td><td>Fabio Akita (AkitaOnRails)</td><td>Serving pesa mais que quantização</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-open-source-nivel-consumidor-rtx5090-strix-halo-strata/">LLM Benchmark v4: open source nível consumidor na RTX5090 ou Strix Halo (22/10/2026)</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-open-source-nivel-consumidor-rtx5090-strix-halo-strata/</td><td>Fabio Akita (AkitaOnRails)</td><td>Memória unificada: cabe, mas é lenta</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-can-my-team-fit-in-a-4x-b300-h200/">LLM Benchmark v4: meu time cabe em 4x B300/H200? (22/10/2026)</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-can-my-team-fit-in-a-4x-b300-h200/</td><td>Fabio Akita (AkitaOnRails)</td><td>4× B300 ≈ US$ 36/h, ~32 sessões</td></tr>
+</table>
+</section>

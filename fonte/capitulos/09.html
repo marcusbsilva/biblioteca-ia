@@ -1,0 +1,340 @@
+<section class="chapter" id="ch09"><h1><span class="num">Capítulo 09</span>Algoritmos e Ciência da Computação</h1>
+<div class="box intro"><b>Para começar</b> Pense numa cozinha: a receita é o <b>algoritmo</b>, a despensa é a <b>memória</b> e o jeito de organizar a despensa são as <b>estruturas de dados</b>. Ciência da computação, no dia a dia, é escolher boas receitas e boas despensas para que o jantar saia a tempo mesmo com mil convidados em vez de dez.</div>
+<p class="lead">Modelos de linguagem escrevem código cada vez melhor, mas quem decide se o código serve ainda precisa saber por que um laço aninhado não escala, por que <code>0.1 + 0.2</code> não dá <code>0.3</code> e por que um caixeiro-viajante com 20 cidades esgota qualquer força bruta. Este capítulo se apoia nas aulas do CS50 de Harvard, em vídeos de canais brasileiros e em um post de Fabio Akita sobre provas formais, e segue a ordem natural do assunto: algoritmo, custo, busca e ordenação, recursão, memória, estruturas de dados, problemas difíceis, programação dinâmica e entrevistas técnicas.</p>
+
+<h2>O que é um algoritmo e o que a máquina faz</h2>
+<div class="box intro"><b>Para começar</b> Um algoritmo é uma receita tão precisa que até quem não tem bom senso, como um computador, consegue segui-la. "Tempere a gosto" não serve; "coloque 5 g de sal" serve.</div>
+<p>Na definição usada por Doug Lloyd em <a href="https://www.youtube.com/watch?v=fFzWME39Mag">CS50 for Business - Lecture 1 - Analyzing Algorithms</a>, um <b>algoritmo</b> é uma sequência de passos claros, ordenados e sem ambiguidade, com entradas e saídas definidas. A definição clássica de Knuth também exige que ele <i>termine</i>.</p>
+<p>A base teórica vem de 1936, quando Alan Turing descreveu uma máquina abstrata com uma fita infinita, uma cabeça de leitura e escrita e uma tabela finita de transições. A <b>tese de Church-Turing</b> afirma que tudo o que é "efetivamente computável" pode ser computado por essa máquina, e o lambda-cálculo de Church tem o mesmo poder. Consequência prática: em qualquer linguagem Turing-completa, recursão e iteração são intercambiáveis.</p>
+<p>Na <b>máquina determinística</b>, cada situação tem no máximo uma ação; na <b>não determinística</b>, pode haver várias, e a máquina aceita se <i>algum</i> caminho aceitar. A classe P reúne os problemas resolvíveis em tempo polinomial pela primeira; NP, aqueles cuja solução proposta pode ser <i>verificada</i> em tempo polinomial.</p>
+
+<h3>Compilação e limites físicos</h3>
+<p>Um <b>compilador</b> traduz o texto que humanos escrevem nas instruções numéricas que o processador executa. A aula <a href="https://www.youtube.com/watch?v=eepzDoovmAw">CS50x em Português - Aula 1 - C</a> mostra o ciclo <code>code hello.c</code>, <code>make hello</code>, <code>./hello</code> e insiste em três critérios de qualidade: <b>correção</b>, <b>design</b> (sem trabalho redundante) e <b>estilo</b> (legibilidade).</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    printf("hello, world\n");
+}</code></pre>
+<p>Números no computador têm tamanho fixo. Um <code>int</code> de 32 bits tem cerca de 4 bilhões de valores; somar 1 ao maior causa <i>integer overflow</i>, e em C o comportamento com tipos com sinal é indefinido. Casos reais:</p>
+<table>
+<tr><th>Caso</th><th>Causa</th><th>Consequência</th></tr>
+<tr><td>Boeing 787 (2015)</td><td>Contador de centésimos de segundo em inteiro de 32 bits com sinal</td><td>Estouro após 248 dias ligado; a FAA exigiu reinícios periódicos</td></tr>
+<tr><td>Pac-Man (1980)</td><td>Número da fase em 1 byte</td><td>Nível 256 corrompe metade da tela</td></tr>
+<tr><td>Ano 2038</td><td><code>time_t</code> de 32 bits com sinal</td><td>Em 19/01/2038 03:14:07 UTC volta para 1901</td></tr>
+</table>
+
+<h2>Medindo custo: notação assintótica</h2>
+<div class="box intro"><b>Para começar</b> Procurar um nome entre 10 convidados é fácil com qualquer método; entre 10 milhões, o método decide se leva um segundo ou um dia. O "Big-O" diz quanto o trabalho cresce quando a entrada cresce, sem depender do computador.</div>
+<p>Conta-se o número de <b>passos</b> em função do tamanho da entrada <i>n</i>. Na abertura de <a href="https://www.youtube.com/watch?v=1dV61IMUwIc">CS50x em Português - Aula 3 - Algoritmos</a>, contar a plateia de um em um leva <i>n</i> passos; com pares que somam suas contagens enquanto metade se senta, leva log<sub>2</sub> <i>n</i>, e dobrar a plateia custa só um passo a mais.</p>
+<ul>
+<li><b>O(f(n))</b>: limite superior; o custo cresce <i>no máximo</i> como f(n), a menos de constantes.</li>
+<li><b>Ω(f(n))</b>: limite inferior; cresce <i>pelo menos</i> como f(n).</li>
+<li><b>Θ(f(n))</b>: os dois limites coincidem.</li>
+</ul>
+<p>Formalmente, T(n) ∈ O(f(n)) se existem c &gt; 0 e n<sub>0</sub> tais que T(n) ≤ c·f(n) para todo n ≥ n<sub>0</sub>. Constantes e termos de menor ordem somem: o termo dominante decide. Cuidado com a simplificação "O = pior caso, Ω = melhor caso": pior, melhor e médio são <i>cenários</i>; O, Ω e Θ são <i>tipos de limite</i> que valem para qualquer cenário. Em entrevistas, diga de qual caso está falando.</p>
+<figure><img src="img/09_crescimento.png"><figcaption>Crescimento das classes de complexidade em escala logarítmica. Com n = 40, um algoritmo O(n log n) faz cerca de 200 passos, um O(2ⁿ) cerca de 10¹² e um O(n!) passa de 10⁴⁷. Fonte: elaboração própria com dados de "CS50 for Business - Lecture 1 - Analyzing Algorithms", "Big O Notation fácil de entender!" e "Entenda FUNDAMENTOS do CURSO de CIÊNCIA da COMPUTAÇÃO".</figcaption></figure>
+<table>
+<tr><th>Classe</th><th>Nome</th><th>Exemplo típico</th><th>n = 1.000</th></tr>
+<tr><td>O(1)</td><td>constante</td><td>acesso a <code>a[i]</code>, lookup médio em hash</td><td>1</td></tr>
+<tr><td>O(log n)</td><td>logarítmica</td><td>busca binária</td><td>~10</td></tr>
+<tr><td>O(n)</td><td>linear</td><td>busca linear</td><td>1.000</td></tr>
+<tr><td>O(n log n)</td><td>log-linear</td><td>merge sort, heapsort</td><td>~10.000</td></tr>
+<tr><td>O(n²)</td><td>quadrática</td><td>laços aninhados</td><td>1.000.000</td></tr>
+<tr><td>O(2ⁿ)</td><td>exponencial</td><td>todos os subconjuntos</td><td>~10³⁰¹</td></tr>
+<tr><td>O(n!)</td><td>fatorial</td><td>todas as permutações</td><td>~4×10²⁵⁶⁷</td></tr>
+</table>
+<p>Algoritmos exponenciais não ficam viáveis com hardware melhor: um computador mil vezes mais rápido acrescenta só uns 10 elementos ao maior n tratável por um O(2ⁿ). Pelo mesmo motivo a criptografia funciona: cada bit a mais na chave dobra o trabalho da força bruta.</p>
+
+<h3>Espaço e desempenho real</h3>
+<p>Memória se analisa do mesmo jeito. No vídeo <a href="https://www.youtube.com/watch?v=FR44uWofQ7o">Big O Notation fácil de entender! (Complexidade de Tempo e Espaço na Programação)</a>, achar duplicados comparando todos os pares custa O(n²) de tempo e O(1) de espaço; com um conjunto de itens já vistos, o tempo cai para O(n) ao preço de O(n) de memória.</p>
+<pre><code>def duplicados(itens):
+    vistos, dup = set(), set()
+    for x in itens:          # O(n) tempo
+        if x in vistos:      # O(1) em média
+            dup.add(x)
+        vistos.add(x)        # O(n) espaço
+    return dup</code></pre>
+<p>Em <a href="https://www.youtube.com/watch?v=2ObVc2QvZG0">Quando um algoritmo ruim é melhor do que um bom...</a>, Augusto Galego lembra que Big-O mede <b>escalabilidade</b>, não velocidade absoluta. O hash map tem custos fixos (alocar, calcular hashes, tratar colisões); com poucos elementos, dois laços aninhados sobre um bloco contíguo em cache vencem.</p>
+<figure><img src="img/09_twosum.png"><figcaption>Two Sum em Go: força bruta O(n²) contra hash map O(n). Com 100 mil elementos, cerca de 2 s contra 5 ms; abaixo de 10 elementos, empate. Fonte: elaboração própria com dados de "Quando um algoritmo ruim é melhor do que um bom...".</figcaption></figure>
+<div class="box tip"><b>Dica</b> Para prever o efeito de uma mudança de escala, aplique a classe: num O(n²), dobrar n quadruplica o tempo. Se a medição não bate com a classe, o gargalo está em outro lugar (alocação, I/O, cache, GC).</div>
+
+<h2>Busca e ordenação</h2>
+<div class="box intro"><b>Para começar</b> Um dicionário de papel é rápido porque está em ordem: você abre no meio e sabe para que lado ir. Numa pilha bagunçada, só resta olhar folha por folha.</div>
+<p>A <b>busca linear</b> verifica os elementos um a um e funciona com qualquer arranjo: O(n) no pior caso, Ω(1) no melhor. A <b>busca binária</b> exige dados ordenados: olha o meio, descarta a metade que não contém o alvo e repete, em O(log n). Com um milhão de nomes bastam cerca de 20 comparações.</p>
+<pre><code>def busca_binaria(a, alvo):
+    lo, hi = 0, len(a) - 1
+    while lo &lt;= hi:
+        mid = lo + (hi - lo) // 2   # evita overflow em linguagens com int fixo
+        if a[mid] == alvo:
+            return mid
+        if a[mid] &lt; alvo:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1</code></pre>
+<p>O cálculo <code>(lo + hi) / 2</code> estourou inteiros na biblioteca do Java por quase uma década (bug relatado por Joshua Bloch em 2006), e errar entre <code>&lt;</code> e <code>&lt;=</code> gera laços infinitos. Ordenar para depois buscar só compensa se a busca se repete: ordenar custa O(n log n), e esse custo se dilui (é <i>amortizado</i>) em muitas buscas de O(log n).</p>
+
+<h3>Algoritmos de ordenação</h3>
+<ul>
+<li><b>Selection sort</b>: acha o menor restante e o põe na posição <i>i</i>; sempre n(n−1)/2 comparações.</li>
+<li><b>Bubble sort</b>: troca vizinhos fora de ordem; com parada antecipada, é Ω(n) em entrada ordenada.</li>
+<li><b>Insertion sort</b>: insere cada elemento no prefixo ordenado; ótimo em dados quase ordenados e usado em híbridos para pedaços pequenos.</li>
+<li><b>Merge sort</b>: ordena as metades e mescla; log<sub>2</sub> n níveis com n trabalho cada, Θ(n log n) sempre, com O(n) de memória extra.</li>
+<li><b>Quicksort</b>: particiona em torno de um pivô; O(n log n) em média, O(n²) com pivô ruim, muito rápido na prática por usar bem a cache.</li>
+<li><b>Counting/Radix sort</b>: não comparam elementos e chegam perto de O(n), mas exigem chaves inteiras de faixa limitada.</li>
+</ul>
+<table>
+<tr><th>Algoritmo</th><th>Melhor</th><th>Médio</th><th>Pior</th><th>Espaço extra</th><th>Estável?</th></tr>
+<tr><td>Selection sort</td><td>Θ(n²)</td><td>Θ(n²)</td><td>Θ(n²)</td><td>O(1)</td><td>não</td></tr>
+<tr><td>Insertion sort</td><td>Θ(n)</td><td>Θ(n²)</td><td>Θ(n²)</td><td>O(1)</td><td>sim</td></tr>
+<tr><td>Merge sort</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>O(n)</td><td>sim</td></tr>
+<tr><td>Quicksort</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>Θ(n²)</td><td>O(log n)</td><td>não</td></tr>
+<tr><td>Heapsort</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>O(1)</td><td>não</td></tr>
+<tr><td>Timsort (Python)</td><td>Θ(n)</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>O(n)</td><td>sim</td></tr>
+</table>
+<div class="box key"><b>Em resumo</b> Nenhuma ordenação por comparações tem pior caso melhor que Ω(n log n): há n! ordens possíveis e cada comparação no máximo divide as possibilidades ao meio. Na prática, use o <code>sort</code> da biblioteca.</div>
+
+<div class="box fact"><b>Você sabia?</b> Edsger Dijkstra contou que criou seu algoritmo de caminho mínimo em 1956, em cerca de vinte minutos, num café em Amsterdã, sem lápis nem papel. Ele atribuía a elegância do algoritmo justamente à falta de papel.</div>
+
+<h2>Recursão</h2>
+<div class="box intro"><b>Para começar</b> Numa fila, você descobre sua posição perguntando a de quem está à frente e somando 1, até chegar à primeira pessoa, que sabe que é a número 1. Isso é <b>recursão</b>: resolver um problema por uma versão menor dele, até um caso trivial.</div>
+<p>Uma função <b>recursiva</b> chama a si mesma com um problema menor e tem um <b>caso base</b> que encerra a descida. O fatorial é n! = n × (n−1)!, com 1! = 1; merge sort e busca binária são recursivos por natureza. Sem caso base, a pilha estoura.</p>
+<figure><img src="img/09_callstack.png"><figcaption>Pilha de chamadas de fact(4): cada chamada empilha um frame até o caso base; na volta, os frames são desempilhados multiplicando 1, 2, 6, 24. Fonte: elaboração própria com dados de "Mentiram pra você sobre recursão..." e "CS50 for Business - Lecture 1 - Analyzing Algorithms".</figcaption></figure>
+<p>Em <a href="https://www.youtube.com/watch?v=5Zmc6f420rg">Mentiram pra você sobre recursão...</a>, Augusto Galego questiona o mito de que a iteração é sempre mais eficiente. Pela tese de Church-Turing, qualquer recursão vira laço com uma pilha explícita. No assembly, o laço vira um <code>jmp</code> e a recursão um <code>call</code>, que empilha o endereço de retorno. Quando a chamada recursiva é a <i>última</i> operação, a <b>tail call optimization (TCO)</b> reaproveita o frame:</p>
+<pre><code>// não é tail call: precisa voltar para multiplicar
+long fact(long n) { return n &lt;= 1 ? 1 : n * fact(n - 1); }
+
+// tail call: o resultado parcial viaja no acumulador
+long fact_acc(long n, long acc) { return n &lt;= 1 ? acc : fact_acc(n - 1, n * acc); }</code></pre>
+<p>TCO depende da linguagem: Scheme a garante, C e C++ a fazem na prática com otimização ligada, Python não a faz (e limita a profundidade a cerca de 1.000 chamadas), e a JVM também não. Mesmo assim, travessias de árvore, DFS e parsers ficam muito mais claros na forma recursiva.</p>
+
+<h2>Memória, ponteiros e representação</h2>
+<div class="box intro"><b>Para começar</b> A memória é uma rua enorme de casas numeradas, cada uma guardando um byte. O número da casa é o <b>endereço</b>, e um <b>ponteiro</b> é um papel com um endereço anotado.</div>
+<p>Na aula <a href="https://www.youtube.com/watch?v=DweS4KseeDE">CS50x em Português - Aula 4 - Memória</a>, endereços aparecem em <b>hexadecimal</b>, porque cada dígito hex representa exatamente 4 bits (<code>0xFF</code> = 255). Em C, <code>&amp;x</code> dá o endereço de <code>x</code> e <code>*p</code> segue o ponteiro. Uma <code>string</code> é só <code>char *</code>: o endereço do primeiro caractere, com o fim marcado por <code>\0</code>. Daí as regras:</p>
+<ul>
+<li><code>s == t</code> compara <i>endereços</i>; para comparar conteúdo, use <code>strcmp</code>.</li>
+<li><code>t = s</code> copia o endereço, não o texto; a cópia real exige <code>malloc</code> e <code>strcpy</code>.</li>
+<li><code>malloc</code> retorna <code>NULL</code> em caso de falha, e todo <code>malloc</code> precisa de um <code>free</code>. O Valgrind acusa vazamentos e escritas fora do array.</li>
+</ul>
+<figure><img src="img/09_memoria.png"><figcaption>Layout clássico da memória de um processo: heap (alocação dinâmica) e stack (frames de função) crescem um em direção ao outro. Fonte: elaboração própria com dados de "CS50x em Português - Aula 4 - Memória".</figcaption></figure>
+<p>A <b>stack</b> guarda variáveis locais e é liberada quando a função termina; o <b>heap</b> guarda o que foi pedido com <code>malloc</code>. Recursão profunda causa <i>stack overflow</i>, e escrever além do fim de um array causa <i>buffer overflow</i>, raiz de boa parte das vulnerabilidades históricas em C.</p>
+
+<h3>Valor, referência e mutabilidade</h3>
+<p>Um <code>swap(int a, int b)</code> troca cópias; para alterar as originais, a função recebe endereços (<code>swap(&amp;x, &amp;y)</code>). Em <a href="https://www.youtube.com/watch?v=8Pkvm8r3nUQ">Finalmente aprenda PONTEIROS (C/Rust/Python)</a>, Augusto Galego mostra que em Python tudo é referência e o que muda é a <b>mutabilidade</b>: depois de <code>y = x; y.append(5)</code>, a lista <code>x</code> também mudou. Rust torna isso explícito, e o <b>borrow checker</b> proíbe, em tempo de compilação, um empréstimo mutável junto com outro imutável.</p>
+<table>
+<tr><th>Linguagem</th><th>Modelo</th><th>Segurança de memória</th></tr>
+<tr><td>C</td><td>ponteiros crus, <code>malloc/free</code></td><td>nenhuma garantia</td></tr>
+<tr><td>Python / JS / Java</td><td>referências + coletor de lixo</td><td>sem uso após free; há aliasing de mutáveis</td></tr>
+<tr><td>Rust</td><td>ownership + borrow checker</td><td>garantida na compilação (fora de <code>unsafe</code>)</td></tr>
+</table>
+
+<h3>Ponto flutuante: por que não usar float para dinheiro</h3>
+<p>Em <a href="https://www.youtube.com/watch?v=vFBUWtrzz48">Por Que Você NUNCA Deve Usar FLOAT pra Representar Dinheiro no Código — Como Corrigir do Jeito Certo</a>, Renato Augusto explica por que <code>0.1 + 0.2</code> dá <code>0.30000000000000004</code> em qualquer linguagem que siga o IEEE 754. O float é notação científica em base 2, e 1/10 em binário é uma dízima periódica, tão impossível de representar exatamente quanto 1/3 em decimal.</p>
+<p>O caso do míssil Patriot em Dhahran (1991) é o exemplo clássico: segundo o relatório do GAO, o tempo era multiplicado por 1/10 em <b>ponto fixo de 24 bits</b>, e o erro de truncamento acumulou cerca de 0,34 s após 100 horas ligado. O míssil não interceptou o Scud, e 28 soldados morreram. O mecanismo não era IEEE 754, mas a lição é a mesma.</p>
+<table>
+<tr><th>Representação</th><th>Precisão em decimais</th><th>Use para</th></tr>
+<tr><td>float/double</td><td>aproximada (~7 e ~15 dígitos)</td><td>física, gráficos, ML, medições</td></tr>
+<tr><td>inteiro em centavos</td><td>exata na menor unidade</td><td>preços, saldos</td></tr>
+<tr><td>Decimal/BigDecimal</td><td>exata, com arredondamento controlado</td><td>juros, câmbio, impostos</td></tr>
+</table>
+<div class="box tip"><b>Dica</b> Nunca compare floats com <code>==</code>; use tolerância (<code>math.isclose</code>). Em finanças, defina por escrito o modo de arredondamento.</div>
+
+<h3>Cache e hierarquia de memória</h3>
+<p>A CPU lê linhas de cache de 64 bytes numa hierarquia L1 → L2 → L3 → RAM → SSD, em que cada nível é maior e mais lento. Em <a href="https://www.youtube.com/watch?v=r-tiD2MYnWE">Cache explicado - O que é e como funciona cache?</a>, Augusto Galego usa a analogia dos best-sellers duplicados na estante da frente e lembra o custo da duplicação: <i>invalidar</i> a cópia quando o original muda.</p>
+<table>
+<tr><th>Nível</th><th>Latência típica</th></tr>
+<tr><td>L1</td><td>~1 ns</td></tr>
+<tr><td>L3</td><td>~10–20 ns</td></tr>
+<tr><td>RAM</td><td>~80–100 ns</td></tr>
+<tr><td>SSD NVMe</td><td>~20–100 µs</td></tr>
+<tr><td>Rede intercontinental</td><td>~50–150 ms</td></tr>
+</table>
+<p>Por isso um array contíguo costuma vencer uma lista encadeada mesmo onde a teoria favorece a lista: cada nó pode custar uma ida à RAM. O mesmo raciocínio vale para CDNs e para Redis/Memcached.</p>
+
+<h2>Estruturas de dados</h2>
+<div class="box intro"><b>Para começar</b> Livros podem ficar numa pilha no chão, em estantes em ordem alfabética ou num fichário que diz onde está cada título. Todas as formas guardam os mesmos livros, mas encontrar, acrescentar e retirar custa diferente em cada uma.</div>
+<p>A aula <a href="https://www.youtube.com/watch?v=pttqNxchp9k">CS50x em Português - Aula 5 - Estruturas de Dados</a> separa o <b>tipo abstrato</b> (o comportamento) da <b>estrutura</b> que o implementa. Uma <i>fila</i> é FIFO, uma <i>pilha</i> é LIFO e um <i>dicionário</i> associa chaves a valores.</p>
+<p><b>Arrays dinâmicos</b> (<code>list</code> do Python, <code>std::vector</code>) <b>dobram</b> de tamanho quando enchem, em vez de crescer de 1 em 1; assim cada <code>append</code> custa O(1) amortizado, pois as cópias somam menos de 2n. <b>Listas encadeadas</b> guardam em cada nó o dado e um ponteiro para o próximo: inserir no início custa O(1), mas buscar custa O(n) e não há busca binária.</p>
+<p>Numa <b>árvore de busca binária</b> (BST), tudo à esquerda de um nó é menor e tudo à direita é maior. Balanceada, busca em O(log n); com inserção já ordenada, degenera numa lista e volta a O(n). Árvores autobalanceadas (AVL, rubro-negra) e B-trees, que sustentam os índices de bancos de dados, evitam isso.</p>
+<h3>Tabelas hash</h3>
+<p>Uma <b>função hash</b> mapeia um domínio enorme num intervalo de índices. A tabela é um array de "baldes", e as <b>colisões</b> são tratadas por <i>encadeamento</i> (uma lista por balde) ou <i>endereçamento aberto</i>.</p>
+<figure><img src="img/09_hash.png"><figcaption>Tabela hash com encadeamento: a primeira letra escolhe o balde e as colisões viram uma lista ligada. Fonte: elaboração própria com dados de "CS50x em Português - Aula 5 - Estruturas de Dados" e "Implementando um hashmap do ZERO em Python".</figcaption></figure>
+<p>Em <a href="https://www.youtube.com/watch?v=J4ELMYEGVS0">Implementando um hashmap do ZERO em Python</a>, Augusto Galego conta que implementar um hash map do zero já foi pedido em entrevista da Amazon. Versão didática:</p>
+<pre><code>class HashMap:
+    def __init__(self, size=8):
+        self.size, self.count = size, 0
+        self.buckets = [[] for _ in range(size)]
+
+    def _hash(self, key):
+        return hash(key) % self.size
+
+    def put(self, key, value):
+        b = self.buckets[self._hash(key)]
+        for i, (k, _) in enumerate(b):
+            if k == key:
+                b[i] = (key, value); return
+        b.append((key, value))
+        self.count += 1
+        if self.count / self.size &gt; 0.75:   # fator de carga
+            self._resize(self.size * 2)
+
+    def get(self, key):
+        for k, v in self.buckets[self._hash(key)]:
+            if k == key: return v
+        raise KeyError(key)
+
+    def _resize(self, new_size):
+        old = [kv for b in self.buckets for kv in b]
+        self.size, self.count = new_size, 0
+        self.buckets = [[] for _ in range(new_size)]
+        for k, v in old: self.put(k, v)</code></pre>
+<p>O ponto central é o <b>fator de carga</b> α = n/k. Mantendo α limitado com redimensionamento, inserção e busca ficam em O(1) <i>em média</i>; o pior caso continua O(n). Linguagens como Python e Rust usam hash com semente aleatória (SipHash) para impedir que um atacante force colisões (<i>hash flooding</i>).</p>
+<h3>Tries e grafos</h3>
+<p>Uma <b>trie</b> é uma árvore em que cada nível corresponde a um caractere; a busca custa O(L), sendo L o comprimento da palavra, independentemente de quantas palavras existem. Variantes compactas (radix tree) aparecem em roteamento IP e autocompletar.</p>
+<p>Um <b>grafo</b> generaliza árvores: vértices ligados por arestas com ou sem direção e peso. Os algoritmos essenciais são <b>BFS</b> (menor caminho em número de arestas), <b>DFS</b> (ciclos, ordenação topológica de dependências), <b>Dijkstra</b> (menor caminho com pesos não negativos, O((V+E) log V)) e <b>A*</b> (Dijkstra guiado por heurística, usado em jogos e GPS).</p>
+<table>
+<tr><th>Estrutura</th><th>Busca</th><th>Inserção</th><th>Observações</th></tr>
+<tr><td>Array ordenado</td><td>O(log n)</td><td>O(n)</td><td>contíguo, ótimo para cache</td></tr>
+<tr><td>Array dinâmico</td><td>O(n)</td><td>O(1) amortizado no fim</td><td>sobra de capacidade</td></tr>
+<tr><td>Lista encadeada</td><td>O(n)</td><td>O(1) na cabeça</td><td>ruim para cache</td></tr>
+<tr><td>BST balanceada</td><td>O(log n)</td><td>O(log n)</td><td>mantém ordem</td></tr>
+<tr><td>Heap binário</td><td>O(n)</td><td>O(log n)</td><td>fila de prioridade</td></tr>
+<tr><td>Tabela hash</td><td>O(1) médio</td><td>O(1) médio</td><td>sem ordem</td></tr>
+<tr><td>Trie</td><td>O(L)</td><td>O(L)</td><td>busca por prefixo</td></tr>
+</table>
+<div class="box key"><b>Em resumo</b> Toda escolha de estrutura troca tempo, espaço e complexidade de código. Saber que <code>x in lista</code> é O(n) e <code>x in conjunto</code> é O(1) é a otimização mais barata que existe.</div>
+
+<h2>De C a Python: tempo humano contra tempo de máquina</h2>
+<p>A aula <a href="https://www.youtube.com/watch?v=iIG8j9kWlIY">CS50x em Português - Aula 6 - Python</a> refaz em Python os exercícios feitos em C. O corretor ortográfico, que em C exige escrever a tabela hash à mão, cabe em cerca de 20 linhas com <code>set()</code> e rodou em 1,87 s contra 1,32 s em C: menos tempo humano, mais tempo de CPU. O preço da conveniência aparece na memória: cada <code>int</code> do CPython é um objeto de 28 bytes no heap.</p>
+<table>
+<tr><th>Conceito</th><th>C</th><th>Python</th></tr>
+<tr><td>Inteiros</td><td>tamanho fixo, overflow</td><td>precisão arbitrária</td></tr>
+<tr><td>Divisão</td><td><code>/</code> entre ints trunca</td><td><code>/</code> dá float, <code>//</code> é inteira</td></tr>
+<tr><td>Strings</td><td><code>char *</code>, <code>strcmp</code></td><td><code>str</code> imutável, <code>==</code></td></tr>
+<tr><td>Erros</td><td>valor de retorno (<code>NULL</code>, −1)</td><td>exceções</td></tr>
+<tr><td>Memória</td><td><code>malloc/free</code></td><td>contagem de referências + GC</td></tr>
+</table>
+
+<div class="box fact"><b>Você sabia?</b> Donald Knuth começou "The Art of Computer Programming" em 1962 e a obra ainda não terminou. Insatisfeito com a tipografia de uma reedição, ele parou para criar o TeX, usado até hoje em artigos científicos.</div>
+
+<h2>Problemas difíceis: NP, caixeiro-viajante e restrições</h2>
+<div class="box intro"><b>Para começar</b> Conferir um sudoku preenchido leva um minuto; resolvê-lo do zero pode levar uma hora. Muitos problemas práticos, como rotas de entrega e escalas de plantão, têm essa cara: fácil checar, difícil encontrar.</div>
+<p>A pergunta P = NP, um dos Problemas do Milênio do Clay Institute (prêmio de US$ 1 milhão), pergunta se todo problema fácil de <i>verificar</i> também é fácil de <i>resolver</i>. Um problema é <b>NP-completo</b> se está em NP e todo problema de NP se reduz a ele em tempo polinomial. Cook e Levin (1971) mostraram que SAT é NP-completo, e Karp (1972) listou outros 21, como a mochila e a coloração de grafos. Se um deles tiver algoritmo polinomial, todos terão.</p>
+<p>No <b>problema do caixeiro-viajante (TSP)</b>, busca-se o ciclo mais curto que passa por <i>n</i> cidades. Por força bruta há (n−1)!/2 rotas: 12 com 5 cidades, cerca de 6×10¹⁶ com 20.</p>
+<figure><img src="img/09_tsp.png"><figcaption>Número de rotas do TSP por força bruta comparado à programação dinâmica de Held-Karp (n²·2ⁿ) e a uma heurística polinomial típica (2-opt). Fonte: elaboração própria; tema de "A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3".</figcaption></figure>
+<p>No episódio <a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a>, Amir Husain resolve com uma GPU barata o TSP, uma escala de equipe médica por <i>satisfação de restrições</i> e a formação de times balanceados. O argumento é que a saída de um solver é <b>determinística e verificável</b>, ao contrário de pedir a escala a um LLM; um agente pode delegar o problema ao solver.</p>
+<table>
+<tr><th>Estratégia</th><th>Garante ótimo?</th><th>Exemplo</th></tr>
+<tr><td>Força bruta</td><td>sim</td><td>até ~10–12 cidades</td></tr>
+<tr><td>Programação dinâmica</td><td>sim</td><td>Held-Karp, cerca de 25 cidades</td></tr>
+<tr><td>Branch and bound</td><td>sim (exponencial no pior caso)</td><td>Concorde, dezenas de milhares de cidades</td></tr>
+<tr><td>Aproximação</td><td>fator conhecido</td><td>Christofides: ≤ 1,5× o ótimo</td></tr>
+<tr><td>Heurísticas</td><td>não</td><td>vizinho mais próximo, 2-opt</td></tr>
+<tr><td>Solvers genéricos</td><td>depende</td><td>CP-SAT (OR-Tools), MILP</td></tr>
+</table>
+<p>Antes do solver vem o <b>modelo matemático</b>. Em <a href="https://www.youtube.com/watch?v=jhSejeNslP8">Unlock the Power of Data-Driven Decision Making with Decision Optimization</a>, a IBM usa uma barraca de limonada: variáveis de decisão (preço, quantidade), um objetivo (lucro) e restrições (orçamento). Uma escala de enfermagem segue o mesmo formato, com variáveis booleanas "a pessoa p trabalha no turno t":</p>
+<pre><code># esboço com OR-Tools CP-SAT
+from ortools.sat.python import cp_model
+m = cp_model.CpModel()
+x = {(p, t): m.NewBoolVar(f"x_{p}_{t}") for p in pessoas for t in turnos}
+for t in turnos:
+    m.Add(sum(x[p, t] for p in enfermeiros) &gt;= MIN_ENF)    # cobertura mínima
+for p in pessoas:
+    m.Add(sum(x[p, t] for t in turnos) &lt;= MAX_TURNOS)      # carga máxima
+solver = cp_model.CpSolver(); solver.Solve(m)</code></pre>
+
+<h2>Programação dinâmica</h2>
+<div class="box intro"><b>Para começar</b> Se você acabou de calcular 1+1+1+1+1 = 5 e alguém pede mais um "+1", você não recomeça: soma 1 ao 5. <b>Programação dinâmica</b> é anotar respostas de subproblemas para não recalculá-las.</div>
+<p>A PD, termo de Richard Bellman, se aplica quando há <b>subestrutura ótima</b> e <b>subproblemas sobrepostos</b>. O Fibonacci recursivo ingênuo faz cerca de 1,618ⁿ chamadas (mais de 29 milhões para n = 35); com memoização, faz n.</p>
+<pre><code>from functools import lru_cache
+
+@lru_cache(maxsize=None)        # top-down: memoização
+def fib(n):
+    return n if n &lt; 2 else fib(n - 1) + fib(n - 2)
+
+def fib_tab(n):                 # bottom-up: tabulação, O(1) de espaço
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a</code></pre>
+<p>Roteiro: defina o <b>estado</b> (ex.: dp[i][w] = melhor valor com os i primeiros itens e capacidade w), escreva a <b>transição</b> (na mochila 0/1, dp[i][w] = max(dp[i−1][w], dp[i−1][w−p<sub>i</sub>] + v<sub>i</sub>)), fixe os <b>casos base</b> e calcule o custo como estados × custo por transição.</p>
+<table>
+<tr><th>Problema clássico</th><th>Estado</th><th>Complexidade</th></tr>
+<tr><td>Troco mínimo</td><td>dp[valor]</td><td>O(n·moedas)</td></tr>
+<tr><td>Mochila 0/1</td><td>dp[i][capacidade]</td><td>O(n·W), pseudo-polinomial</td></tr>
+<tr><td>Distância de edição, LCS (<code>diff</code>)</td><td>dp[i][j]</td><td>O(n·m)</td></tr>
+<tr><td>TSP (Held-Karp)</td><td>dp[subconjunto][último]</td><td>O(n²·2ⁿ)</td></tr>
+</table>
+<p>A mochila em O(n·W) não prova P = NP: o custo é polinomial no <i>valor</i> de W, não no número de bits que o representam.</p>
+
+<h2>LeetCode e entrevistas técnicas</h2>
+<div class="box intro"><b>Para começar</b> Entrevistas técnicas funcionam como uma prova prática de cozinha: um problema curto e alguém observando como você pensa. O <b>LeetCode</b> reúne milhares desses problemas para treinar.</div>
+<h3>Two Sum: a resposta depende do contexto</h3>
+<pre><code>def two_sum(nums, target):        # O(n) tempo, O(n) espaço
+    vistos = {}                   # valor -&gt; índice
+    for i, x in enumerate(nums):
+        if target - x in vistos:
+            return [vistos[target - x], i]
+        vistos[x] = i</code></pre>
+<p>A força bruta (O(n²) de tempo, O(1) de espaço) não está "errada": perde em escala e ganha em memória e em entradas minúsculas. O conselho de Augusto Galego é <b>perguntar ao entrevistador</b> o tamanho e o padrão dos dados; com o array ordenado, dois ponteiros resolvem em O(n) tempo e O(1) espaço.</p>
+<h3>Single Number e off-by-one</h3>
+<p>No problema tratado em <a href="https://www.youtube.com/watch?v=mVcGSzGxrYM">LeetCode 136 | Explicação em Português</a>, todo número aparece duas vezes exceto um, com espaço O(1). Como x ⊕ x = 0 e x ⊕ 0 = x, aplicar XOR em todos anula os pares e sobra o número sem par.</p>
+<pre><code>from functools import reduce
+from operator import xor
+def single_number(nums):
+    return reduce(xor, nums)      # O(n) tempo, O(1) espaço</code></pre>
+<p>Em <a href="https://www.youtube.com/watch?v=EQfcAeR2R6I">LeetCode: O erro mais comum</a>, o tema é o erro de "off-by-one". A pergunta a fazer sempre é "o intervalo é inclusivo ou exclusivo, e começa em 0 ou em 1?". Em Python, <code>range(a, b)</code> e fatias excluem o fim, mas <code>random.randint(a, b)</code> o inclui. Uma janela de tamanho k num array de tamanho n tem <code>n − k + 1</code> posições. Dijkstra defendia intervalos <b>semiabertos</b> [a, b): o tamanho é b − a e intervalos adjacentes se encaixam sem sobreposição.</p>
+<table>
+<tr><th>Padrão</th><th>Sinal no enunciado</th><th>Ferramenta</th></tr>
+<tr><td>Hash map / set</td><td>"já vi este valor?", contagens</td><td><code>dict</code>, <code>Counter</code></td></tr>
+<tr><td>Dois ponteiros</td><td>array ordenado, palíndromo</td><td>índices nas duas pontas</td></tr>
+<tr><td>Janela deslizante</td><td>"maior subarray contíguo com…"</td><td>expandir e contrair</td></tr>
+<tr><td>Busca binária</td><td>espaço ordenado ou monotônico</td><td><code>bisect</code></td></tr>
+<tr><td>BFS / DFS</td><td>grade, árvore, dependências</td><td>fila / recursão</td></tr>
+<tr><td>Heap</td><td>"k maiores", agendamento</td><td><code>heapq</code></td></tr>
+<tr><td>Programação dinâmica</td><td>"quantas formas", mínimo/máximo</td><td>tabela ou memo</td></tr>
+</table>
+<div class="box tip"><b>Dica: roteiro de entrevista</b> Repita o problema e pergunte os limites; diga a força bruta e seu custo; proponha a otimização e o trade-off; programe falando; teste os casos de fronteira; diga a complexidade final de tempo e espaço.</div>
+<p>Com IA gerando código, ainda vale estudar isso? Em <a href="https://www.youtube.com/watch?v=fv_B3FTXwxo">Como Browsers Funcionam?</a>, Augusto Galego pediu a um LLM que "criasse um browser" e recebeu só um invólucro de um componente pronto; a versão "avançada" nem rodou. Julgar se uma solução está certa, se escala e onde vai quebrar continua exigindo fundamentos.</p>
+<h3>Concorrência: o custo que Big-O não mostra</h3>
+<p>Em <a href="https://www.youtube.com/watch?v=74RLgpAV6LQ">Concorrência é DIFERENTE de Paralelismo!</a>, Augusto Galego separa <b>concorrência</b> (intercalar tarefas, ilusão de simultaneidade), <b>paralelismo</b> (executar ao mesmo tempo em vários núcleos) e <b>assincronia</b> (não bloquear à espera de um resultado). Três <code>await fetch</code> independentes em sequência desperdiçam tempo; <code>await Promise.all([...])</code> os torna concorrentes. Pela lei de Amdahl, se uma fração s do trabalho é sequencial, o ganho máximo com infinitos núcleos é 1/s.</p>
+
+<h2>Provas formais: quando testar não basta</h2>
+<div class="box intro"><b>Para começar</b> Testar uma ponte com dez caminhões mostra que ela aguentou aqueles dez; o cálculo estrutural garante qualquer carga dentro da especificação. Em software, o equivalente é a <b>prova formal</b>, conferida por um programa.</div>
+<p>Testes mostram a presença de bugs, nunca a ausência (Dijkstra). No post <a href="https://akitaonrails.com/2026/10/24/por-que-nao-fazemos-provas-formais-definitivas-de-codigo-sem-bug/">"Por que não fazemos provas formais definitivas pra ter código sem bug?"</a>, Fabio Akita discute a <b>verificação formal</b> no contexto dos agentes de IA. O exemplo canônico do custo é o microkernel <b>seL4</b>: cerca de 8.700 linhas de C exigiram cerca de 200 mil linhas de prova em Isabelle/HOL e uns 20 pessoas-ano. Em assistentes como Lean 4 e Coq, um programa que compila é uma prova da proposição expressa no seu tipo (correspondência de Curry-Howard).</p>
+<p>A virada vem das <b>provas geradas por IA</b>: um LLM pode alucinar, mas não engana um verificador. Se o Lean aceita a prova, ela vale. Escrever a prova, a parte cara, passa a ser automatizável; o humano fica com escrever a <i>especificação</i> certa.</p>
+<pre><code>-- Lean 4: a prova é verificada pelo compilador
+theorem soma_comm (a b : Nat) : a + b = b + a := by
+  omega</code></pre>
+<div class="box key"><b>Em resumo</b> Solvers de restrição, verificadores de prova e verificadores de tipos seguem o mesmo princípio: o resultado pode ser checado mecanicamente. Com agentes gerando código, o valor de um componente depende cada vez mais de quão barato é <i>verificar</i> o que ele produz.</div>
+
+<div class="box fact"><b>Você sabia?</b> Durante o pouso da Apollo 11, alarmes 1202 e 1201 indicaram sobrecarga do computador de bordo. O software da equipe de Margaret Hamilton, no MIT, descartou tarefas de baixa prioridade e manteve as essenciais, e o pouso seguiu.</div>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=eepzDoovmAw">CS50x em Português - Aula 1 - C</a></td><td>https://www.youtube.com/watch?v=eepzDoovmAw</td><td>CS50</td><td>Compilação, qualidade de código, overflow</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=1dV61IMUwIc">CS50x em Português - Aula 3 - Algoritmos</a></td><td>https://www.youtube.com/watch?v=1dV61IMUwIc</td><td>CS50</td><td>Buscas, O/Ω/Θ, ordenação, recursão</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=DweS4KseeDE">CS50x em Português - Aula 4 - Memória</a></td><td>https://www.youtube.com/watch?v=DweS4KseeDE</td><td>CS50</td><td>Hexadecimal, ponteiros, malloc/free, heap/stack</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pttqNxchp9k">CS50x em Português - Aula 5 - Estruturas de Dados</a></td><td>https://www.youtube.com/watch?v=pttqNxchp9k</td><td>CS50</td><td>Listas, árvores, tabelas hash e tries</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=iIG8j9kWlIY">CS50x em Português - Aula 6 - Python</a></td><td>https://www.youtube.com/watch?v=iIG8j9kWlIY</td><td>CS50</td><td>C versus Python: tempo humano e de máquina</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fFzWME39Mag">CS50 for Business - Lecture 1 - Analyzing Algorithms</a></td><td>https://www.youtube.com/watch?v=fFzWME39Mag</td><td>CS50</td><td>Definição de algoritmo e classes de complexidade</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=FR44uWofQ7o">Big O Notation fácil de entender! (Complexidade de Tempo e Espaço na Programação)</a></td><td>https://www.youtube.com/watch?v=FR44uWofQ7o</td><td>Attekita Dev</td><td>Complexidade de tempo e espaço</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=R1IivfF7cu8">Entenda FUNDAMENTOS do CURSO de CIÊNCIA da COMPUTAÇÃO</a></td><td>https://www.youtube.com/watch?v=R1IivfF7cu8</td><td>Fernanda Kipper</td><td>Máquina de Turing, complexidade e criptografia</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5Zmc6f420rg">Mentiram pra você sobre recursão...</a></td><td>https://www.youtube.com/watch?v=5Zmc6f420rg</td><td>Augusto Galego</td><td>Pilha de chamadas, Church-Turing e TCO</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=8Pkvm8r3nUQ">Finalmente aprenda PONTEIROS (C/Rust/Python)</a></td><td>https://www.youtube.com/watch?v=8Pkvm8r3nUQ</td><td>Augusto Galego</td><td>Mutabilidade, aliasing e borrow checker</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=vFBUWtrzz48">Por Que Você NUNCA Deve Usar FLOAT pra Representar Dinheiro no Código — Como Corrigir do Jeito Certo</a></td><td>https://www.youtube.com/watch?v=vFBUWtrzz48</td><td>Renato Augusto</td><td>IEEE 754, centavos inteiros e Decimal</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=r-tiD2MYnWE">Cache explicado - O que é e como funciona cache?</a></td><td>https://www.youtube.com/watch?v=r-tiD2MYnWE</td><td>Augusto Galego</td><td>Hierarquia de cache e invalidação</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=J4ELMYEGVS0">Implementando um hashmap do ZERO em Python</a></td><td>https://www.youtube.com/watch?v=J4ELMYEGVS0</td><td>Augusto Galego</td><td>Colisões, fator de carga e resize</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2ObVc2QvZG0">Quando um algoritmo ruim é melhor do que um bom...</a></td><td>https://www.youtube.com/watch?v=2ObVc2QvZG0</td><td>Augusto Galego</td><td>Big-O mede escalabilidade, não velocidade</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=mVcGSzGxrYM">LeetCode 136 | Explicação em Português</a></td><td>https://www.youtube.com/watch?v=mVcGSzGxrYM</td><td>Augusto Galego</td><td>Single Number com XOR</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=EQfcAeR2R6I">LeetCode: O erro mais comum</a></td><td>https://www.youtube.com/watch?v=EQfcAeR2R6I</td><td>Augusto Galego</td><td>Off-by-one e intervalos inclusivos/exclusivos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=74RLgpAV6LQ">Concorrência é DIFERENTE de Paralelismo!</a></td><td>https://www.youtube.com/watch?v=74RLgpAV6LQ</td><td>Augusto Galego</td><td>Concorrência, paralelismo e assincronia</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jhSejeNslP8">Unlock the Power of Data-Driven Decision Making with Decision Optimization</a></td><td>https://www.youtube.com/watch?v=jhSejeNslP8</td><td>IBM Technology</td><td>Modelagem: variáveis, objetivo, restrições, solvers</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fv_B3FTXwxo">Como Browsers Funcionam?</a></td><td>https://www.youtube.com/watch?v=fv_B3FTXwxo</td><td>Augusto Galego</td><td>IA não substitui os fundamentos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2ILc4WY86us">A $15 GPU Solves the Traveling Salesman Problem (and Your Staff Roster) | VectorFall Ep. 3</a></td><td>https://www.youtube.com/watch?v=2ILc4WY86us</td><td>Deep Tech with Amir Husain</td><td>TSP e escalas resolvidos por solver determinístico</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/24/por-que-nao-fazemos-provas-formais-definitivas-de-codigo-sem-bug/">Por que não fazemos provas formais definitivas pra ter código sem bug?</a> (24/10/2026)</td><td>https://akitaonrails.com/2026/10/24/por-que-nao-fazemos-provas-formais-definitivas-de-codigo-sem-bug/</td><td>Fabio Akita (blog AkitaOnRails)</td><td>Custo do seL4 e provas geradas por IA</td></tr>
+<tr><td>Patriot Missile Defense: Software Problem Led to System Failure at Dhahran, Saudi Arabia (GAO/IMTEC-92-26)</td><td>https://www.gao.gov/products/imtec-92-26</td><td>U.S. General Accounting Office</td><td>Erro de truncamento em ponto fixo</td></tr>
+</table>
+</section>

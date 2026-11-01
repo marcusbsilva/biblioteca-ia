@@ -1,0 +1,193 @@
+<section class="chapter" id="ch15"><h1><span class="num">Capítulo 15</span>Desenvolvimento seguro com IA e o futuro do Pull Request</h1>
+<p class="lead">A IA passou a escrever uma fatia enorme do código do mundo: ótimo para a velocidade, um problema novo para a segurança, a revisão e o aprendizado. Este capítulo mostra por que código gerado por IA traz riscos próprios, apresenta as normas e um pipeline de segurança, propõe um novo modelo de Pull Request e compara, com dados e limitações, o que acontece com tempo, qualidade e aprendizado com e sem IA.</p>
+<div class="box intro"><b>Para começar</b> Imagine um ajudante de obra dez vezes mais rápido que qualquer pedreiro, mas que às vezes esquece a viga ou usa um material que não existe. A obra anda, mas o mestre de obras precisa conferir muito mais. O ajudante é o agente de código (Capítulo 1 (Programando com IA)); o mestre de obras é o revisor do <b>Pull Request</b> (PR), o pedido formal para juntar uma alteração ao código principal.</div>
+
+<h2>Por que código gerado por IA traz riscos próprios</h2>
+<div class="box intro"><b>Para começar</b> Um modelo aprende lendo bilhões de linhas de código público, muitas antigas ou inseguras, e produz o que é <em>estatisticamente plausível</em>, não o que é seguro. Além disso, surgem riscos novos: pacotes inventados, senhas copiadas para o código e agentes enganados por instruções escondidas.</div>
+
+<h3>Vulnerabilidades: o que os estudos mediram</h3>
+<p>Uma <b>vulnerabilidade</b> é uma fraqueza explorável por um atacante. As fraquezas são catalogadas pelo <b>CWE</b> da MITRE (CWE-79 é XSS; CWE-89, injeção de SQL); um caso concreto num produto recebe um <b>CVE</b>.</p>
+<ul>
+<li><b>"Asleep at the Keyboard?" (Pearce et al., NYU, 2021)</b>: 89 cenários de risco, 1.689 programas gerados pelo Copilot, cerca de <b>40%</b> vulneráveis. Limitação: Copilot de 2021 e cenários feitos para provocar o erro.</li>
+<li><b>Perry et al. (Stanford, CCS 2023)</b>: com 47 participantes, quem usava IA escreveu código <b>menos seguro</b> em quatro de cinco tarefas e <b>tinha mais confiança</b> de que estava seguro. Limitação: amostra pequena, maioria de estudantes.</li>
+<li><b>Veracode 2025</b>: mais de 100 modelos, 80 tarefas com uma solução segura e outra insegura; em <b>45%</b> o modelo escolheu a insegura (Java acima de 70%; XSS 86%). Modelos maiores melhoraram em compilar, <b>não</b> em segurança.</li>
+<li><b>Veracode 2026</b>: taxa de aprovação em segurança praticamente parada em cerca de 55% a 56%.</li>
+</ul>
+<figure><img src="img/15_vulnerabilidades.png"><figcaption>Porcentagem de amostras ou tarefas com vulnerabilidade no código gerado por IA, por estudo. As metodologias diferem; as barras mostram ordem de grandeza e estabilidade ao longo de cinco anos. Fonte: elaboração própria com dados de Pearce et al. (2021) e Veracode 2025 e 2026.</figcaption></figure>
+<div class="box warn"><b>Atenção</b> "45% do código de IA é vulnerável" é uma simplificação errada. O correto: em 45% das <em>tarefas com armadilha de segurança</em>, o modelo caiu nela. O recado continua: código de IA passa pelos mesmos controles que código humano, e um pouco mais.</div>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a>, de Augusto Galego, mostra isso em miniatura: um app de tarefas gerado pelo Cursor sem controle de usuário, sem paginação, expondo o objeto de domínio inteiro e com JWT sem algoritmo fixo (porta para <em>algorithm confusion</em>). Quem define padrões e arquitetura é o humano.</p>
+
+<h3>Dívida técnica</h3>
+<p>A GitClear analisou 211 milhões de linhas alteradas entre 2020 e 2024: linhas <b>movidas</b> (sinal de refatoração) caíram de cerca de 25% para menos de 10%, linhas <b>coladas</b> subiram de 8,3% para 12,3% e blocos duplicados cresceram cerca de 8 vezes em 2024. É correlação, de uma empresa do setor, mas combina com PRs maiores e revisões mais longas.</p>
+
+<h3>Pacotes alucinados e slopsquatting</h3>
+<p>Modelos às vezes recomendam bibliotecas que <b>não existem</b>. Spracklen e colegas (USENIX Security 2025) testaram 16 modelos com 576 mil amostras: <b>19,7%</b> das referências a pacotes eram alucinações, e os nomes falsos se repetem. Daí o <b>slopsquatting</b>: o atacante registra com código malicioso os nomes que as IAs costumam inventar e espera alguém, ou um agente, rodar <code>npm install</code>.</p>
+<div class="box tip"><b>Dica</b> Pesquise todo pacote antes de instalar (idade, downloads, mantenedores); use registro interno com lista aprovada; trave versões com lockfile; rode SCA; e não deixe agentes instalarem dependências sem aprovação humana.</div>
+
+<h3>Segredos vazados</h3>
+<p>Segundo a GitGuardian, cerca de 29 milhões de segredos (senhas, chaves de API, tokens) vazaram no GitHub público em 2025 (+34%). Commits feitos com ajuda de IA vazaram a cerca do <b>dobro</b> da média, e mais de 24 mil segredos apareceram em configurações de servidores MCP (Livro 2, Capítulo 4 (Agentes e MCP)). As regras, lembradas em <a href="https://www.youtube.com/watch?v=aGVN6aHKkE0">O MÍNIMO que um dev precisa saber sobre segurança</a>: <code>.env</code> fora do Git, segredos num cofre e, se uma senha foi commitada, <b>trocá-la</b>, porque apagar o commit não a "desvaza".</p>
+
+<h3>Prompt injection em agentes</h3>
+<p>Num LLM, dados e instruções são o mesmo texto. <b>Prompt injection</b> é colocar, no texto que a IA vai ler, instruções que ela obedece; é o risco número 1 do OWASP Top 10 para LLMs. O vídeo <a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a>, da IBM Technology, separa a injeção <b>direta</b> da <b>indireta</b> (escondida numa página, PDF ou e-mail). Em <a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a>, um agente de compras paga o dobro por causa de texto preto sobre fundo preto.</p>
+<p>Agentes de código leem issues, comentários e READMEs, qualquer um deles com possíveis instruções maliciosas. No caso <b>s1ngularity</b> (agosto de 2025), uma versão maliciosa do pacote Nx usou as CLIs de IA instaladas na máquina da vítima para procurar credenciais, expondo 2.180 contas. Skills de terceiros também são porta de entrada, como alerta <a href="https://www.youtube.com/watch?v=qYNs80FKIVc">5 Best Practices for Building AI Agent Skills</a>.</p>
+
+<h2>Padrões e normas</h2>
+<div class="box intro"><b>Para começar</b> Software tem seus "códigos de obra", e a IA os torna mais importantes: viram o gabarito para conferir o que a máquina produziu e podem virar instruções ("siga o OWASP ASVS nível 2") no arquivo de regras do agente.</div>
+<table>
+<tr><th>Referência</th><th>O que é</th><th>Como usar com IA</th></tr>
+<tr><td><b>OWASP Top 10:2025</b></td><td>Os dez riscos web mais críticos; controle de acesso quebrado em 1.º, e duas novas: cadeia de suprimentos e tratamento de condições excepcionais</td><td>Checklist mínimo de revisão e base do prompt do agente revisor</td></tr>
+<tr><td><b>OWASP Top 10 for LLM 2025</b></td><td>Prompt injection, vazamento de dados, agência excessiva, consumo ilimitado e outros</td><td>Vale para o produto e para o próprio uso de agentes no desenvolvimento</td></tr>
+<tr><td><b>OWASP ASVS</b></td><td>Requisitos verificáveis em três níveis</td><td>Virar critérios de aceite e testes</td></tr>
+<tr><td><b>NIST SSDF</b> (SP 800-218) e <b>800-218A</b></td><td>Práticas de desenvolvimento seguro; perfil para IA generativa</td><td>Esqueleto do processo</td></tr>
+<tr><td><b>SLSA, SBOM, Sigstore</b></td><td>Proveniência do build, lista de ingredientes, assinatura de artefatos</td><td>Garantir que o que roda em produção veio do código revisado</td></tr>
+<tr><td><b>CWE Top 25</b></td><td>As fraquezas mais perigosas (XSS, SQLi, CSRF, falta de autorização no topo)</td><td>Priorizar regras de SAST</td></tr>
+<tr><td><b>ISO/IEC 27001</b></td><td>Gestão de segurança da informação, certificável</td><td>Governança: política de IA, fornecedores, auditorias</td></tr>
+</table>
+<p>No Brasil, a LGPD se soma a tudo isso: um agente que copia dados pessoais de produção para um modelo externo pode configurar tratamento indevido.</p>
+
+<h3>O pipeline seguro</h3>
+<p><b>SAST</b> lê o código sem executá-lo (Semgrep, CodeQL); <b>DAST</b> ataca a aplicação rodando (OWASP ZAP); <b>SCA</b> verifica dependências (Dependabot, OSV-Scanner); <b>secret scanning</b> bloqueia credenciais antes do push (gitleaks).</p>
+<figure><img src="img/15_pipeline_seguro.png"><figcaption>Pipeline de desenvolvimento seguro com IA: da spec e da modelagem de ameaças ao monitoramento, com verificações automáticas em cada etapa e revisão por agente e humano no PR. Fonte: elaboração própria.</figcaption></figure>
+<p>O princípio é a <b>defesa em profundidade</b>: várias camadas imperfeitas e independentes. É o espírito "verificar e depois confiar" de <a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a>: tratar a IA como componente não confiável. A camada mais barata é a mais cedo: um hook de pre-commit com gitleaks custa segundos.</p>
+<p><b>Checklist do agente:</b> sandbox sem credenciais de produção; token sem permissão de merge ou publicação; instalação de pacotes e rede com aprovação humana; skills e servidores MCP revisados como dependências; conteúdo externo tratado como dado, nunca como ordem.</p>
+<p><b>Checklist do código:</b> entradas validadas e consultas parametrizadas; autorização checada no servidor em cada operação; criptografia e JWT com bibliotecas consagradas e algoritmo fixo; saídas escapadas; toda dependência nova justificada; logs sem segredos nem dados pessoais; testes dos caminhos de falha.</p>
+
+<h2>O Pull Request precisa mudar</h2>
+<div class="box intro"><b>Para começar</b> O PR nasceu num mundo em que escrever era caro e ler era barato. A IA inverteu a equação: escrever ficou quase de graça, e ler com atenção continua caro. Quando o volume explode e os revisores não, a fila trava ou a revisão vira carimbo.</div>
+<h3>Os sintomas</h3>
+<p>Segundo o Octoverse de outubro de 2026, mais de 40% dos PRs no GitHub já começavam com rascunho de agente em setembro (eram 17% em março). O relatório da Faros AI (2025, mais de 10 mil desenvolvedores) achou nas equipes com alta adoção +98% de PRs integrados, mas <b>PRs 154% maiores</b>, <b>revisão 91% mais longa</b>, +9% de bugs e nenhum ganho de entrega no nível da empresa. O gargalo só mudou de lugar.</p>
+<p>Em código aberto, o <b>AI slop</b> (conteúdo genérico e frequentemente errado gerado em massa, explicado em <a href="https://www.youtube.com/watch?v=hl6mANth6oA">What is AI Slop? Low-Quality AI Content Causes, Signs, &amp; Fixes</a>) levou projetos a reagir:</p>
+<table>
+<tr><th>Projeto</th><th>Data</th><th>Reação</th></tr>
+<tr><td>Gentoo, NetBSD</td><td>2024</td><td>Proibiram ou restringiram código gerado por IA</td></tr>
+<tr><td>curl</td><td>jan/2026</td><td>Encerrou o bug bounty: relatos válidos caíram para menos de 5%, afogados em relatos fabricados</td></tr>
+<tr><td>Kernel Linux</td><td>2026</td><td>Agentes não assinam <code>Signed-off-by</code>; uso de IA declarado com <code>Assisted-by:</code></td></tr>
+<tr><td>LLVM</td><td>2026</td><td>IA proibida nas "good first issues" e em PRs sem aprovação humana</td></tr>
+<tr><td>Fedora</td><td>out/2025</td><td>Sem proibição: responsabilidade do autor, transparência e revisão humana</td></tr>
+<tr><td>GitHub</td><td>fev/2026</td><td>Controles para mantenedores limitarem PRs</td></tr>
+</table>
+<p>A tendência comum: <b>o tempo de revisão virou recurso escasso</b>. Como não há detector confiável de código gerado, as políticas que funcionam atacam o comportamento (PR sem issue, enorme, autor que não sabe explicar), não a ferramenta.</p>
+
+<h3>A proposta: um contrato de proveniência e de entendimento</h3>
+<p>O PR deve carregar <b>de onde veio</b> a mudança, <b>o que pretende</b>, a <b>evidência</b> de que funciona e a <b>prova de que o autor a entende</b>:</p>
+<ol>
+<li><b>Declaração de uso de IA</b> no template ou num trailer como <code>Assisted-by:</code>. É metadado, não confissão.</li>
+<li><b>Spec anexada e revisada antes do código.</b> Se gerar é barato, o erro caro é construir a coisa errada (Capítulo 3 (AI-Driven Engineer)).</li>
+<li><b>PRs pequenos e empilhados</b> (<em>stacked PRs</em>), com alerta no CI acima de cerca de 400 linhas.</li>
+<li><b>Evidência de testes</b>: testes novos, saída do CI e capturas para mudanças visuais. "A IA disse que está pronto" não conta.</li>
+<li><b>Rótulos de risco</b> (baixo, médio, alto), sugeridos pelos caminhos alterados via CODEOWNERS, que definem quem aprova.</li>
+<li><b>Revisão em dois papéis</b>: o agente faz a primeira passada (resumo, padrões inseguros, aderência à spec); o humano julga arquitetura, negócio e risco. Agente nunca aprova sozinho mudança de risco alto.</li>
+<li><b>O autor explica o código</b> com as próprias palavras nos PRs de risco médio e alto.</li>
+<li><b>Política clara</b> (<code>CONTRIBUTING.md</code>, <code>AI_POLICY.md</code>) e <b>métricas</b>: tamanho de PR, tempo até revisão, retrabalho, defeitos escapados.</li>
+</ol>
+<figure><img src="img/15_pr_futuro.png"><figcaption>Fluxo proposto para o Pull Request na era da IA: spec revisada antes do código, PRs pequenos com proveniência e evidências, triagem por CI e agente, e humano focado em design, segurança e entendimento. Fonte: elaboração própria.</figcaption></figure>
+<pre><code>## O que muda e por quê
+Issue: #123 · Spec: docs/specs/0042-reset-senha.md
+## Uso de IA
+Ferramenta / partes geradas / plano ou prompts principais
+## Risco
+[ ] baixo  [ ] médio  [x] alto (toca autenticação)
+## Evidências
+Testes novos: test_reset_token_expira, test_reset_token_uso_unico
+Saída do CI: (link)
+## Explicação do autor
+Por que esta abordagem? O que pode dar errado? O que NÃO foi testado?</code></pre>
+<p>O modelo também reduz a resistência à IA: declarar vira rotina neutra (o que tira o incentivo a esconder), a revisão volta a ser julgamento e não caça a <code>console.log</code>, e o valor do desenvolvedor (spec, arquitetura, risco, explicação) fica visível. Comece pequeno: campos "Uso de IA" e "Evidências" no template, alerta de tamanho no CI e um mês de medição.</p>
+<div class="box fact"><b>Você sabia?</b> O Pull Request não é invenção do GitHub. O Git traz o comando <code>git request-pull</code>, que gera um texto pedindo a outro mantenedor que "puxe" as mudanças; muitas contribuições ao kernel Linux ainda chegam assim, por e-mail. O GitHub transformou o pedido em página com comentários em 2008.</div>
+
+<h3>Um padrão para iniciantes: o "PR Aprendiz"</h3>
+<div class="box intro"><b>Para começar</b> Numa cozinha profissional, o estagiário começa descascando legumes, com uma ficha simples e um chef que corrige com paciência. O <b>PR Aprendiz</b> é essa cozinha aplicada ao código aberto: um formato para quem programa com vibe coding contribuir sem medo, com pedido pequeno, IA declarada e algo aprendido ao final.</div>
+<p><b>Princípios:</b> uma mudança por PR; declarar a IA e o prompt sem constrangimento; saber dizer com as próprias palavras o que o código faz; registrar o que aprendeu e o que não entendeu; máquina faz a triagem e humano faz a mentoria; quotas protegem o projeto.</p>
+<figure><img src="img/15v3_pr_aprendiz.png"><figcaption>Fluxo do PR Aprendiz: da escolha de uma issue rotulada até o merge com registro do aprendizado. Em laranja, etapas automáticas; em verde, humanas. Fonte: elaboração própria.</figcaption></figure>
+<pre><code>## PR Aprendiz
+### 1. O que eu queria (link da issue)
+### 2. O que mudou, em palavras simples
+### 3. Como testei
+### 4. Qual IA usei e o prompt (e o que eu mesmo alterei)
+### 5. O que eu aprendi
+### 6. Dúvidas (não há pergunta boba)
+- [ ] Li o CONTRIBUTING.md   - [ ] Muda uma coisa só   - [ ] Rodei os testes</code></pre>
+<p><b>Rótulos:</b> <code>good-first-ai-pr</code> marca issues pequenas e de baixo risco (documentação, mensagens de erro, testes); <code>needs-mentor</code> chama um mentor quando há dúvidas. <b>Agente revisor:</b> age como tutor, não juiz: explica o diff em linguagem simples, sugere testes, aponta o conceito por trás do ajuste, faz uma ou duas perguntas de entendimento e nunca aprova sozinho.</p>
+<p><b>Etiqueta:</b> o mentor responde em até uma semana, comenta o código e não a pessoa e fecha com motivo quando não dá para aproveitar; o aprendiz mantém um PR aberto por vez e responde com as próprias palavras, não colando a IA. <b>Progressão:</b> Aprendiz (só issues rotuladas, mentoria obrigatória) → Colaborador (após 3 PRs aceitos; risco baixo e médio, spec curta própria) → Revisor (após 10 PRs; mentora outros, que é a melhor forma de fixar o que se aprendeu).</p>
+<p><b>Exemplo.</b> Uma usuária que nunca programou resolve a issue "traceback quando o arquivo não existe": a IA trata a exceção e mostra "Arquivo 'x.csv' não encontrado"; ela adiciona um teste, registra que aprendeu o que é <code>try/except</code> e pergunta se seria melhor checar a existência antes. O agente explica que tratar a exceção é preferível, porque o arquivo pode sumir entre a checagem e a abertura (uma <em>condição de corrida</em>), e a mentora aprova.</p>
+<p><b>Contra o slop:</b> quotas por nível, triagem que devolve com explicação PRs sem issue, com campos vazios, grandes demais ou com CI quebrado, e escopo restrito a issues rotuladas. O campo "o que eu aprendi" e as perguntas do agente custam pouco a quem é sincero e muito a quem faz spam. Tudo cabe em três peças: uma seção no <code>CONTRIBUTING.md</code>, o template em <code>.github/PULL_REQUEST_TEMPLATE/aprendiz.md</code> e uma workflow de triagem.</p>
+<div class="box fact"><b>Você sabia?</b> Em 2020, o Hacktoberfest, que dava camisetas a quem abrisse PRs em outubro, gerou uma onda de PRs inúteis que sobrecarregou mantenedores. A regra mudou: só participam repositórios que optam pelo tópico <code>hacktoberfest</code>, e só contam PRs aceitos.</div>
+
+<h2>Com IA × sem IA: o que os fatos mostram</h2>
+<div class="box intro"><b>Para começar</b> "A IA me deixa 10 vezes mais produtivo" e "a IA só atrapalha" costumam ser impressões, e impressões enganam. Para responder com honestidade, olhamos experimentos com sorteio (<b>RCTs</b>) em três dimensões: tempo, qualidade e aprendizado.</div>
+<h3>Tempo e produtividade</h3>
+<ul>
+<li><b>Peng et al. (2023)</b>: com Copilot, um servidor HTTP saiu <b>55,8% mais rápido</b>. Tarefa única, pequena, estudo do fabricante.</li>
+<li><b>Cui, Demirer et al. (2025)</b>: três experimentos de campo com 4.867 desenvolvedores; <b>+26%</b> de tarefas por semana, mais entre os menos experientes. "Tarefa concluída" não mede qualidade.</li>
+<li><b>METR (2025)</b>: 16 veteranos de grandes projetos abertos, 246 issues reais sorteadas; com IA levaram <b>19% mais tempo</b>, mas acharam ter ganho 20%. Em fevereiro de 2026, o METR disse ser "provável" que as ferramentas atuais acelerem, com "evidência muito fraca" do tamanho.</li>
+<li><b>DORA</b>: em 2024, mais adoção de IA vinha com vazão −1,5% e estabilidade −7,2%; em 2025 a relação com a vazão ficou positiva, mas a instabilidade seguiu subindo. A IA é um <em>amplificador</em> dos fundamentos que o time já tem.</li>
+</ul>
+<figure><img src="img/15_produtividade_estudos.png"><figcaption>Efeito medido do uso de IA na velocidade em estudos diferentes. Verde: ganho; vermelho: perda; cinza: não significativo. Métricas, populações e ferramentas diferem. Fonte: elaboração própria com dados de Peng et al. (2023), Cui et al. (2025), Faros AI (2025), METR (2025) e Anthropic (2026).</figcaption></figure>
+<h3>Aprendizado</h3>
+<ul>
+<li><b>Anthropic (2026)</b>: 52 engenheiros, maioria júnior, aprendendo a biblioteca Trio. Com IA, 50% no quiz; sem IA, 67%, com tempo praticamente igual. Quem gerou e depois pediu explicações teve de 65% a 86%; quem só delegou ficou abaixo de 40%.</li>
+<li><b>Bastani et al. (PNAS, 2025)</b>: quase mil alunos de matemática; o ChatGPT comum melhorou os exercícios e piorou a prova sem IA em 17%; uma versão "tutora" eliminou a perda.</li>
+<li><b>MIT Media Lab (2025)</b>: preprint com 54 estudantes sugere "dívida cognitiva" ao escrever com ChatGPT. Sinal de alerta, não prova.</li>
+</ul>
+<table>
+<tr><th>Estudo</th><th>Tempo</th><th>Qualidade / segurança</th><th>Aprendizado</th><th>Limitação</th></tr>
+<tr><td>Peng 2023</td><td>55,8% mais rápido</td><td>—</td><td>—</td><td>tarefa única; fabricante</td></tr>
+<tr><td>Cui 2025</td><td>+26% tarefas</td><td>—</td><td>—</td><td>"tarefa" ≠ valor</td></tr>
+<tr><td>METR 2025</td><td>19% mais lento</td><td>—</td><td>—</td><td>16 devs</td></tr>
+<tr><td>Faros 2025</td><td>sem ganho na empresa</td><td>PRs 154% maiores; +9% bugs</td><td>—</td><td>observacional</td></tr>
+<tr><td>Veracode 2025/26</td><td>—</td><td>~45% das tarefas com falha</td><td>—</td><td>tarefas com armadilha</td></tr>
+<tr><td>Anthropic 2026</td><td>sem diferença</td><td>—</td><td>−17 pontos; preservado ao perguntar</td><td>52 pessoas; curto prazo</td></tr>
+<tr><td>Bastani 2025</td><td>—</td><td>—</td><td>−17% na prova; tutor anula</td><td>matemática</td></tr>
+</table>
+<p>Três padrões emergem: a IA acelera tarefas pequenas e novas e ajuda mais quem tem menos contexto; o ganho individual some em PRs maiores e instabilidade se o processo não muda; e delegar sem entender custa aprendizado, enquanto usar a IA para entender o preserva. Os modelos de 2026 são mais capazes que os desses estudos, mas a segurança (Veracode 2026) não melhorou no mesmo ritmo.</p>
+<h3>Recomendações</h3>
+<ul>
+<li><b>Quem aprende:</b> use a IA como tutora, não como ghostwriter; nada entra no projeto sem que você saiba explicar; reserve tempo sem IA para fundamentos.</li>
+<li><b>Profissionais:</b> use IA onde rende (protótipos, testes, migrações, documentação); escreva a spec antes do prompt; desconfie da sua sensação de velocidade.</li>
+<li><b>Líderes:</b> adote o PR com proveniência, risco e explicação; meça com DORA e retrabalho, não com linhas; proteja as tarefas de formação dos juniores; tenha uma política de IA curta, incluindo que dados nunca vão para modelo externo.</li>
+</ul>
+<div class="box key"><b>Em resumo</b> A IA é um amplificador. Com specs, testes, PRs pequenos, revisão por risco e pipeline de segurança, ela acelera a entrega sem cobrar em segurança e aprendizado. Sem isso, acelera também bugs, vulnerabilidades e desenvolvedores que não entendem o que entregam.</div>
+
+<h2>Fontes deste capítulo</h2>
+<h3>Vídeos</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor ou canal</th><th>Ponto principal</th><th>Data de acesso</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a></td><td>https://www.youtube.com/watch?v=u1nhcio8_iQ</td><td>Augusto Galego</td><td>Falhas de autorização e JWT em app gerado</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=aGVN6aHKkE0">O MÍNIMO que um dev precisa saber sobre segurança</a></td><td>https://www.youtube.com/watch?v=aGVN6aHKkE0</td><td>Augusto Galego</td><td>Menor privilégio e segredos fora do repositório</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a></td><td>https://www.youtube.com/watch?v=jrHRe9lSqqA</td><td>IBM Technology</td><td>Injeção direta e indireta</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a></td><td>https://www.youtube.com/watch?v=5ZA1lTxTH3c</td><td>IBM Technology</td><td>Agente enganado por texto oculto</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=qYNs80FKIVc">5 Best Practices for Building AI Agent Skills</a></td><td>https://www.youtube.com/watch?v=qYNs80FKIVc</td><td>IBM Technology</td><td>Skills de terceiros como dependências</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a></td><td>https://www.youtube.com/watch?v=_yO_Q7qo0HQ</td><td>IBM Technology</td><td>Verificar e depois confiar</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=hl6mANth6oA">What is AI Slop? Low-Quality AI Content Causes, Signs, &amp; Fixes</a></td><td>https://www.youtube.com/watch?v=hl6mANth6oA</td><td>IBM Technology</td><td>O que é AI slop</td><td>30/10/2026</td></tr>
+</table>
+<h3>Estudos, normas e reportagens</h3>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Autor ou veículo</th><th>Ponto principal</th><th>Data de acesso</th></tr>
+<tr><td><a href="https://www.veracode.com/press-release/ai-generated-code-poses-major-security-risks-in-nearly-half-of-all-development-tasks-veracode-research-reveals/">AI-Generated Code Poses Major Security Risks in Nearly Half of All Development Tasks</a></td><td>https://www.veracode.com/press-release/ai-generated-code-poses-major-security-risks-in-nearly-half-of-all-development-tasks-veracode-research-reveals/</td><td>Veracode</td><td>45% das tarefas com falha</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://thenextweb.com/news/veracode-2026-genai-code-security-56-percent-pass-rate">Veracode 2026 GenAI code security: 56 percent pass rate</a></td><td>https://thenextweb.com/news/veracode-2026-genai-code-security-56-percent-pass-rate</td><td>The Next Web</td><td>Aprovação em segurança estagnada</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2108.09293">Asleep at the Keyboard? Assessing the Security of GitHub Copilot's Code Contributions</a></td><td>https://arxiv.org/abs/2108.09293</td><td>Pearce et al. (NYU)</td><td>~40% dos programas vulneráveis</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2211.03622">Do Users Write More Insecure Code with AI Assistants?</a></td><td>https://arxiv.org/abs/2211.03622</td><td>Perry et al. (Stanford)</td><td>Menos segurança, mais confiança</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.gitclear.com/ai_assistant_code_quality_2025_research">AI Copilot Code Quality: 2025 Research</a></td><td>https://www.gitclear.com/ai_assistant_code_quality_2025_research</td><td>GitClear</td><td>Mais duplicação, menos refatoração</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.endorlabs.com/learn/hallucinated-packages-how-ai-invents-dependencies-attackers-exploit">Hallucinated packages: how AI invents dependencies attackers exploit</a></td><td>https://www.endorlabs.com/learn/hallucinated-packages-how-ai-invents-dependencies-attackers-exploit</td><td>Endor Labs</td><td>19,7% de pacotes alucinados</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.techradar.com/pro/security/over-29-million-secrets-were-leaked-on-github-in-2025-and-ai-really-isnt-helping">Over 29 million secrets were leaked on GitHub in 2025</a></td><td>https://www.techradar.com/pro/security/over-29-million-secrets-were-leaked-on-github-in-2025-and-ai-really-isnt-helping</td><td>TechRadar</td><td>Commits com IA vazam ~2× mais</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://bleepingcomputer.com/news/security/ai-powered-malware-hit-2-180-github-accounts-in-s1ngularity-attack">AI-powered malware hit 2,180 GitHub accounts in s1ngularity attack</a></td><td>https://bleepingcomputer.com/news/security/ai-powered-malware-hit-2-180-github-accounts-in-s1ngularity-attack</td><td>BleepingComputer</td><td>Pacote Nx malicioso usou CLIs de IA</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://owasp.org/Top10/2025/">OWASP Top 10:2025</a></td><td>https://owasp.org/Top10/2025/</td><td>OWASP</td><td>Lista oficial de 2025</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://genai.owasp.org/llm-top-10/">OWASP Top 10 for LLM Applications 2025</a></td><td>https://genai.owasp.org/llm-top-10/</td><td>OWASP GenAI Security Project</td><td>Riscos de aplicações com LLM</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://csrc.nist.gov/pubs/sp/800/218/a/final">NIST SP 800-218A</a></td><td>https://csrc.nist.gov/pubs/sp/800/218/a/final</td><td>NIST</td><td>SSDF para IA generativa</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://slsa.dev/spec/v1.1/levels">SLSA: Security levels</a></td><td>https://slsa.dev/spec/v1.1/levels</td><td>OpenSSF / SLSA</td><td>Níveis de garantia do build</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://securityweek.com/mitre-releases-2025-list-of-top-25-most-dangerous-software-vulnerabilities/">MITRE Releases 2025 List of Top 25 Most Dangerous Software Vulnerabilities</a></td><td>https://securityweek.com/mitre-releases-2025-list-of-top-25-most-dangerous-software-vulnerabilities/</td><td>SecurityWeek</td><td>CWE Top 25 de 2025</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://thenextweb.com/news/github-universe-copilot-fusion-octoverse-agents">GitHub launches Copilot Fusion as agents start 40% of pull requests</a></td><td>https://thenextweb.com/news/github-universe-copilot-fusion-octoverse-agents</td><td>The Next Web</td><td>Mais de 40% dos PRs começam com agente</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.faros.ai/blog/ai-software-engineering">The AI Productivity Paradox Report 2025</a></td><td>https://www.faros.ai/blog/ai-software-engineering</td><td>Faros AI</td><td>PRs maiores, revisão mais longa</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://codenote.net/en/posts/oss-ai-slop-contribution-policy-shift/">How OSS Contribution Policies Changed in Response to AI Slop</a></td><td>https://codenote.net/en/posts/oss-ai-slop-contribution-policy-shift/</td><td>codenote</td><td>Linha do tempo das políticas</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://redmonk.com/kholterhoff/2026/02/26/generative-ai-policy-landscape-in-open-source/">Generative AI Policy Landscape in Open Source</a></td><td>https://redmonk.com/kholterhoff/2026/02/26/generative-ai-policy-landscape-in-open-source/</td><td>RedMonk</td><td>Mapa das políticas de IA</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://simonwillison.net/b/8833">Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity (comentário)</a></td><td>https://simonwillison.net/b/8833</td><td>Simon Willison</td><td>METR: 19% mais lentos</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://birchtree.me/blog/an-update-from-the-study-that-said-devs-were-actually-slower-with-coding-agents/">An update from the study that said devs were actually slower</a></td><td>https://birchtree.me/blog/an-update-from-the-study-that-said-devs-were-actually-slower-with-coding-agents/</td><td>Birchtree</td><td>Atualização do METR, evidência fraca</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.microsoft.com/en-us/research/publication/the-impact-of-ai-on-developer-productivity-evidence-from-github-copilot">The Impact of AI on Developer Productivity: Evidence from GitHub Copilot</a></td><td>https://www.microsoft.com/en-us/research/publication/the-impact-of-ai-on-developer-productivity-evidence-from-github-copilot</td><td>Peng et al.</td><td>55,8% mais rápido em laboratório</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://papers.ssrn.com/abstract=4945566">The Effects of Generative AI on High-Skilled Work: Evidence from Three Field Experiments with Software Developers</a></td><td>https://papers.ssrn.com/abstract=4945566</td><td>Cui, Demirer et al.</td><td>+26% de tarefas concluídas</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://cloud.google.com/blog/products/devops-sre/announcing-the-2024-dora-report">Announcing the 2024 DORA report</a></td><td>https://cloud.google.com/blog/products/devops-sre/announcing-the-2024-dora-report</td><td>Google Cloud / DORA</td><td>Vazão e estabilidade em queda</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.infoq.com/news/2025/09/dora-state-of-ai-in-dev-2025">DORA State of AI-assisted Software Development 2025</a></td><td>https://www.infoq.com/news/2025/09/dora-state-of-ai-in-dev-2025</td><td>InfoQ</td><td>Vazão positiva, instabilidade em alta</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://www.anthropic.com/research/AI-assistance-coding-skills">How AI assistance impacts the formation of coding skills</a></td><td>https://www.anthropic.com/research/AI-assistance-coding-skills</td><td>Anthropic</td><td>Perguntar preserva o aprendizado</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://knowledge.wharton.upenn.edu/article/without-guardrails-generative-ai-can-harm-education">Without Guardrails, Generative AI Can Harm Education</a></td><td>https://knowledge.wharton.upenn.edu/article/without-guardrails-generative-ai-can-harm-education</td><td>Knowledge at Wharton</td><td>Tutor de IA anula a perda</td><td>30/10/2026</td></tr>
+<tr><td><a href="https://the-decoder.com/mit-study-shows-cognitive-debt-through-chatgpt-heres-what-it-means-in-real-world-practice/">MIT study shows cognitive debt through ChatGPT</a></td><td>https://the-decoder.com/mit-study-shows-cognitive-debt-through-chatgpt-heres-what-it-means-in-real-world-practice/</td><td>The Decoder</td><td>Dívida cognitiva; preprint</td><td>30/10/2026</td></tr>
+</table>
+</section>

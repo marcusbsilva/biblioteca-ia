@@ -1,0 +1,236 @@
+<section class="chapter" id="ch06"><h1><span class="num">Capítulo 06</span>Programando com IA: Claude Code, Codex, Cursor e cia</h1>
+<p class="lead">Em menos de dois anos, programar com IA deixou de ser “aceitar sugestões de autocomplete” e virou coordenar agentes que leem o repositório, rodam comandos, escrevem testes e abrem pull requests. Este capítulo explica o que é um <i>harness</i>, compara as principais ferramentas, apresenta os fluxos de trabalho que funcionam (plan mode, Spec-Driven Development, TDD, hooks, worktrees, CI), discute custos e separa “vibe coding” de engenharia. A tese que atravessa tudo vem do Akita: os modelos ficaram “competentes o suficiente”; o diferencial voltou a ser disciplina de engenharia.</p>
+
+<div class="box intro"><b>Para começar</b> Pense num estagiário muito rápido que leu quase todo o código já publicado, mas não conhece o seu projeto e às vezes inventa coisas com total confiança. Claude Code, Codex, Cursor e similares dão a esse estagiário acesso ao seu computador: ele lê arquivos, roda comandos e propõe mudanças. Os conceitos de LLM e de contexto estão no Livro 1, Capítulo 2 (LLMs e Transformers) e no Livro 2, Capítulo 2 (Engenharia de Contexto); agentes e MCP, no Livro 2, Capítulo 4 (Agentes e MCP).</div>
+
+<h2>De autocomplete a agente</h2>
+<div class="box intro"><b>Para começar</b> O GPS primeiro sugeria a próxima curva; hoje você diz o destino e ele planeja a rota. As ferramentas de IA para código seguiram o mesmo caminho: começaram completando palavras e hoje recebem um objetivo e executam vários passos sozinhas.</div>
+<p>Gerar código a partir de linguagem natural é mais um capítulo da história da <b>tradução</b> em computação: do compilador A-0 de Grace Hopper (1952), passando pelas IDEs com IntelliSense, até o GitHub Copilot (2021). O vídeo <a href="https://www.youtube.com/watch?v=oanQrXEiCy4">What is an AI Code Generator? LLM Coding, Productivity, &amp; Risk</a>, da IBM, resume: <i>a IA não aprendeu a escrever código, aprendeu a traduzi-lo</i> — inclusive no sentido inverso, explicando uma função legada ou migrando COBOL para Java.</p>
+<p>Na conversa <a href="https://www.youtube.com/watch?v=vLIDHi-1PVU">Designing Claude Code</a>, a designer-chefe do Claude Code descreve quatro degraus de abstração: <b>linha</b> (autocomplete), <b>tarefa</b> (chat na IDE que edita arquivos), <b>PR</b> (agente que planeja, edita, testa e entrega uma mudança revisável) e <b>projeto</b> (vários agentes em paralelo, tarefas longas, execução em CI). O vídeo <a href="https://www.youtube.com/watch?v=FgaBdwSvOGM">Agentic Engineering vs Software Engineering: Beyond Vibe Coding</a>, da IBM, mede o mesmo espectro pela agência delegada, terminando na <b>engenharia agêntica</b>: projetar o ambiente — regras, sensores, permissões — em que agentes operam. É legítimo prototipar no modo vibe e migrar para engenharia agêntica conforme o risco sobe.</p>
+<p>O Claude Code nasceu como CLI por pragmatismo, e a escolha virou vantagem: o terminal já está no fluxo de todo desenvolvedor e “texto entra, texto sai” é a forma natural de um LLM. Hoje o mesmo motor roda em terminal, IDE, desktop, web e celular.</p>
+
+<div class="box fact"><b>Você sabia?</b> Programar “conversando” com a máquina é um sonho antigo: em 1955 a equipe de Grace Hopper começou o FLOW-MATIC, linguagem com comandos em inglês que inspirou o COBOL. Os prompts em linguagem natural levam a ideia ao extremo.</div>
+
+<h2>Anatomia de um agente de código: modelo + harness</h2>
+<div class="box intro"><b>Para começar</b> Um cavalo forte não lavra um campo sozinho: precisa de arreio e de quem o guie. O <b>modelo</b> (o LLM) é o cavalo; o <b>harness</b> (“arreio”) é o programa ao redor que lê arquivos, roda comandos e devolve resultados. Essa divisão explica por que a mesma IA rende tão diferente em times diferentes.</div>
+<p>O modelo só decide o próximo passo: qual ferramenta chamar, com quais argumentos, ou que texto responder. Todo o resto é harness: ler e escrever arquivos, rodar comandos, aplicar permissões, salvar checkpoints, compactar a conversa, disparar hooks, conectar servidores MCP e montar a janela de contexto a cada volta do loop. Trocar de modelo muda as <i>decisões</i>, não as <i>ferramentas</i>.</p>
+<figure><img src="img/06_harness.png"><figcaption>O loop agêntico: o harness monta o contexto, o modelo escolhe uma ação, permissões e hooks filtram, ferramentas executam e sensores determinísticos devolvem evidências ao contexto. Fonte: elaboração própria.</figcaption></figure>
+<p>No workshop <a href="https://www.youtube.com/watch?v=yKLedmyUDMA">App do Zero com IA: Harness, Sub Agents, Spec-Driven, Novas Skills e Workflows</a>, Waldemar Neto amplia o termo: em sentido amplo, harness é tudo o que você põe ao redor do modelo — <b>guias</b> (AGENTS.md, skills, exemplos) e <b>sensores</b> determinísticos (testes, lint, tipos, CI, hooks). O Akita, em <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">“LLMs + Agentes = competente o suficiente”</a>, dá o pano de fundo: depois do o1 (2024) e do ano da eficiência (2025: MoE, <i>prompt caching</i>, janelas de 1M), o ganho recente veio do harness, não de modelos maiores. A distância entre o 1º e o 10º colocado no Chatbot Arena caiu de 12% para 5% em um ano, enquanto a METR mede que o horizonte de tarefas que agentes completam com 50% de confiabilidade dobra a cada ~7 meses. O corolário: <b>sem um “oráculo” (documentação, testes, compilador), o loop gira no vazio</b>.</p>
+
+<h3>Os mecanismos de extensão</h3>
+<p>Os harnesses convergiram para mecanismos quase idênticos. Na nomenclatura do Claude Code (Codex e OpenCode têm equivalentes):</p>
+<table>
+<tr><th>Mecanismo</th><th>O que é</th><th>Custo de contexto</th><th>Quando usar</th></tr>
+<tr><td>CLAUDE.md / AGENTS.md</td><td>Instruções sempre carregadas, aninháveis por diretório</td><td>Sempre, integral</td><td>Convenções, comandos de build/teste, decisões arquiteturais. Alvo ≤ ~200 linhas</td></tr>
+<tr><td>Rules por caminho</td><td>Regras ativadas por padrão de path (ex.: <code>api/**</code>)</td><td>Só quando o arquivo é tocado</td><td>Regras diferentes para front e back</td></tr>
+<tr><td>Skills (<code>SKILL.md</code>)</td><td>Procedimento em Markdown com frontmatter (name, description)</td><td>Só nome+descrição até ser acionada</td><td>“Se tem passos numerados, é skill”</td></tr>
+<tr><td>Subagentes</td><td>Instância com contexto, ferramentas e modelo próprios</td><td>Só a conclusão volta</td><td>Buscas amplas, revisão independente</td></tr>
+<tr><td>Hooks</td><td>Comandos de shell disparados em eventos</td><td>Zero (determinístico)</td><td>Formatar após edição, bloquear comando perigoso</td></tr>
+<tr><td>MCP</td><td>Protocolo para ferramentas externas (GitHub, Sentry, Figma, Playwright)</td><td>Schemas das ferramentas</td><td>Integrações com autenticação/estado</td></tr>
+</table>
+<p><b>Plugins</b> empacotam skills, agentes, hooks e MCPs. Uma skill mínima:</p>
+<pre><code>---
+name: summarize-changes
+description: Use quando o usuário pedir um resumo do que mudou no branch atual.
+---
+1. Rode `git diff main...HEAD --stat` e depois o diff completo.
+2. Agrupe as mudanças por módulo; aponte migrations e mudanças de API pública.
+3. Liste riscos de regressão e testes que faltam.</code></pre>
+<div class="box warn"><b>Atenção</b> Baixar “500 skills” do GitHub tem três problemas: cada descrição ocupa contexto permanentemente, skills genéricas não conhecem o seu negócio e fora da sua área você não reconhece “como é o bom”. Corey McClain, em <a href="https://www.youtube.com/watch?v=aRVqTkyx4IY">How To Build Claude Skills Better Than 99% of People</a>, propõe um teste: se você não consegue desenhar num guardanapo o fluxo da skill, não sabe o que ela faz. Leia toda skill de terceiros antes de instalar: é texto que entra no prompt com poder de executar comandos.</div>
+
+<h2>Comparativo das ferramentas</h2>
+<div class="box intro"><b>Para começar</b> Escolher uma ferramenta de IA para programar lembra escolher um carro: todos andam, mas mudam conforto, consumo e personalização. O objetivo aqui não é eleger uma vencedora, e sim mostrar critérios que continuam valendo quando a liderança muda.</div>
+<p>As ferramentas copiam recursos umas das outras em semanas. O quadro em outubro de 2026:</p>
+<table>
+<tr><th>Ferramenta</th><th>Forma</th><th>Modelos</th><th>Pontos fortes</th><th>Ressalvas</th></tr>
+<tr><td><b>Claude Code</b></td><td>CLI, IDE, desktop, web; <code>claude -p</code> headless</td><td>Família Claude</td><td>Ecossistema mais maduro: skills, hooks, plugins, worktrees, rotinas</td><td>Limites do plano estouram em uso intenso</td></tr>
+<tr><td><b>Codex</b> (OpenAI)</td><td>CLI, desktop, extensão, nuvem</td><td>GPT 5.x/6</td><td>Mais horas de uso pelo mesmo preço; bom em loops com revisores</td><td>Ecossistema de extensões um pouco atrás</td></tr>
+<tr><td><b>Cursor</b></td><td>IDE (fork do VS Code) + agente de terminal</td><td>Multiprovedor</td><td>Plan mode visual, navegador embutido para validar UI</td><td>Custos variáveis por modelo</td></tr>
+<tr><td><b>OpenCode 2.0</b></td><td>Open source; terminal, desktop, web, celular</td><td>Qualquer provedor, inclusive locais</td><td>Sessão única entre interfaces, subagentes multiprovedor, plugins como guarda-corpos</td><td>Guarda-corpos de shell não cobrem efeitos da própria aplicação</td></tr>
+<tr><td><b>GitHub Copilot</b></td><td>Extensões de IDE</td><td>Vários</td><td>Barato e onipresente; modo agente</td><td>Modelos gratuitos têm limitações (ex.: sem visão)</td></tr>
+</table>
+<p>O mesmo harness serve para além do código: o método CHIA, mostrado em <a href="https://www.youtube.com/watch?v=7btZsF-9UDA">transformei o Claude Code no SISTEMA OPERACIONAL da minha empresa (e mostrei como criar o teu)</a>, roda um negócio inteiro “em pastas e arquivos”, com dezenas de CLAUDE.md aninhados e skills.</p>
+<div class="box tip"><b>Dica</b> O critério que mais importa não é o benchmark do mês, e sim: (1) quanto você controla o contexto, (2) se há hooks e permissões para fechar o loop com sensores, (3) custo previsível. Um AGENTS.md bem escrito e uma boa suíte de testes migram com você de ferramenta. Desconfie de harnesses desconhecidos que pedem credenciais ou permissões amplas.</div>
+
+<h2>Contexto: o recurso mais escasso</h2>
+<div class="box intro"><b>Para começar</b> O <b>contexto</b> de um LLM é como uma mesa de trabalho: tudo o que o modelo “vê” de uma vez. É medido em <b>tokens</b> (pedaços de palavra; mil tokens ≈ 750 palavras em inglês) e tem tamanho limitado. Mesa cheia custa mais e piora o resultado.</div>
+<p>LLMs são <b>stateless</b>: a cada volta do loop, o harness reenvia a janela inteira — system prompt, ferramentas, CLAUDE.md, histórico, saídas de comandos. No vídeo <a href="https://www.youtube.com/watch?v=4vWd6z9zuCQ">Como EXTRAIR o MÁXIMO do seu plano Claude Code!</a>, um simples “oi” numa sessão nova consumiu 38 a 48 mil tokens só com skills, plugins e MCPs carregados.</p>
+<p>E quanto mais cheia a janela, pior a atenção do modelo (<i>context rot</i>). Os praticantes convergem: até ~40% de ocupação é seguro, até ~60% aceitável; acima disso paga-se em qualidade. Os sintomas: o agente esquece instruções, repete erros corrigidos e relê arquivos.</p>
+<figure><img src="img/06_contexto.png"><figcaption>Faixas de ocupação da janela relatadas por praticantes (curva ilustrativa, não medida). Fonte: elaboração própria.</figcaption></figure>
+<ul>
+<li><b><code>/clear</code> entre tarefas não relacionadas</b>; o CLAUDE.md garante que a orientação básica sobrevive.</li>
+<li><b>Subagentes para exploração</b>: leem dezenas de arquivos e devolvem só a conclusão.</li>
+<li><b>Handoff em vez de <code>/compact</code></b>: muitos preferem abrir sessão nova com objetivo, decisões e próximo passo escritos.</li>
+<li><b>Comece no menor diretório possível</b> (só o backend de um monorepo, por exemplo) e adicione outros quando precisar.</li>
+<li><b>Desligue o que não usa</b> (plugins, MCPs ociosos) e <b>filtre saídas</b>: logs de 300 linhas no contexto são desperdício.</li>
+</ul>
+<p>“Mais contexto” não é “melhor contexto”: o objetivo é o contexto <i>certo</i> — o padrão a imitar, o arquivo relevante, o teste que falha.</p>
+
+<h2>Fluxos de trabalho</h2>
+<div class="box intro"><b>Para começar</b> Um bom pedreiro olha a planta antes de assentar tijolo e confere o prumo a cada fiada. Com agentes é igual: planejar, especificar, testar e automatizar verificações. Começamos pelo fluxo mais simples e subimos degrau a degrau.</div>
+<p>A figura a seguir organiza os fluxos numa escada de maturidade. Não é progressão obrigatória: o erro é aplicar o degrau errado — burocracia de SDD num bug de float, ou vibe coding num módulo de pagamentos.</p>
+<figure><img src="img/06_escada.png"><figcaption>Escada de fluxos de trabalho com agentes, do vibe coding à spec enxuta com verificação independente. Fonte: elaboração própria.</figcaption></figure>
+
+<h3>Plan mode: o fluxo-base</h3>
+<p>O núcleo é <b>Research → Plan → Implement → Verify</b>. O plan mode deixa o agente apenas ler até você aprovar um plano, porque <i>“o erro mais caro não é o código errado, é o código certo para o problema errado”</i>. Em <a href="https://www.youtube.com/watch?v=fRoRAe8j8eo">ESCREVA PROMPTs MELHORES | Dicas simples para melhorar a qualidade do código gerado pela IA</a>, Fernanda Kipper mostra a diferença: “refatore para ficar mais organizado” só moveu arquivos de pasta; nomear o padrão (Strategy), citar arquivos e rotas e usar plan mode gerou perguntas, um plano em tarefas e a interface de pagamento esperada.</p>
+<ul>
+<li>Planeje num contexto zerado, com o modelo mais forte; implemente com um mais barato.</li>
+<li>Peça que o agente pergunte <b>uma coisa por vez</b> e comente o plano antes de aprovar.</li>
+<li>Explique o <b>porquê</b> e mostre em vez de descrever: <i>o modelo imita bem o que você mostra e inventa mal o que só descreve</i>.</li>
+</ul>
+<p>Para features maiores, Augusto Galego, em <a href="https://www.youtube.com/watch?v=LmUsdFWuaGg">O Workflow Correto para Desenvolver Software com IA</a>, propõe sete fases: ideia → pesquisa → protótipo → spec/PRD → tickets pequenos → execução → revisão. Sobre tamanho, os números se repetem: PRs de ~300 linhas; acima de ~500 linhas de lógica, quebre a tarefa com fronteiras explícitas.</p>
+
+<h3>Spec-Driven Development (SDD)</h3>
+<p>SDD responde às dores do vibe coding — intenção perdida no chat, “pronto” como opinião da IA — tornando a <b>especificação versionada no repositório</b> o contrato do qual derivam código, testes e validação. Ferramentas como GitHub Spec Kit (constitution → specify → plan → tasks → implement), AWS Kiro, OpenSpec e Traycer seguem variações desse fluxo. Uma boa spec tem critérios de aceite em <b>Dado/Quando/Então</b>, suposições e perguntas em aberto explícitas e tamanho proporcional à feature. Erros típicos, listados em <a href="https://www.youtube.com/watch?v=ZM8WW8_HEeE">SPEC Driven: A MELHOR FORMA De Usar IA em 2026!</a>: critério vago, suposições escondidas, tarefa concluída sem teste passando e spec sem auditor.</p>
+<p>A crítica vem do workshop de Waldemar Neto: spec → design → tasks atômicas ajuda modelos fracos, mas para modelos fortes vira <i>babysitting</i>, e a spec sofre <b>drift</b>. A alternativa “Spec Lean” funde spec e design num plano único, extrai dele um <b>checklist de verificação</b> rodado por subagente e deixa o modelo implementar.</p>
+<p>O defeito estrutural de SDD com um único agente é a <b>autoconcordância</b>: o mesmo modelo escreve e revisa, e a bajulação deixa buracos. O <b>Elephant Goldfish Model</b>, publicado por engenheiros do Google (apresentado em <a href="https://www.youtube.com/watch?v=xJwegOxj2sc">Spec Driven Development 2.0: O método do Google para engenharia com Agentes de IA</a>), separa os papéis: o “elefante”, com contexto total, escreve a spec; “peixinhos-dourados”, subagentes de contexto zero, a revisam por ângulos diferentes (simplicidade, escala, ambiguidade). É burocrático para tarefas pequenas, mas o princípio vale sempre: <b>quem implementa não valida o próprio trabalho</b>.</p>
+<p>Nas demonstrações publicadas, a revisão pelos “peixinhos” pegou bloqueios reais que o autor da spec não viu: um professor que só enxergava as aulas do dia e não conseguia cancelar a de quinta; lojistas que podiam apagar produtos já vendidos quando a regra era apenas ocultá-los. O EGM também gera um <b>drift report</b>, que compara spec e código depois das mudanças, atacando o problema de a especificação envelhecer em silêncio.</p>
+<div class="box tip"><b>Dica</b> Mesmo sem nenhuma ferramenta de SDD, um subagente revisor com contexto limpo e instruções adversariais (“procure o que falta, não o que está certo”) custa poucos tokens e quebra a autoconcordância.</div>
+
+<h3>TDD com agentes</h3>
+<p>A prática mais recomendada é dar ao agente um <b>método de verificação</b>; testes são o oráculo que faz o loop convergir:</p>
+<ol>
+<li>Peça os testes a partir dos critérios de aceite e confirme que falham pelo motivo certo.</li>
+<li>Faça commit dos testes — isso impede o atalho mais comum: alterar o teste para passar.</li>
+<li>Peça a implementação com “não modifique os testes”.</li>
+<li>Refatore com a suíte como rede de segurança.</li>
+</ol>
+<p>Para UI, valide comparando screenshot com o design (Playwright MCP, navegador embutido). E cada bug corrigido vira teste de regressão.</p>
+<div class="box warn"><b>Atenção</b> Teste verde não prova correção. Em <a href="https://www.youtube.com/watch?v=ydQ7HhnXUZk">Rust é a melhor linguagem pra IA?</a>, Daniel Bergholz mostra a troca de contagem de caracteres por <code>.len()</code>, que em Rust conta <b>bytes</b> (“ç” ocupa 2 em UTF-8): compila, passa no linter e nos testes, e está errado. Casos de borda continuam sendo responsabilidade humana.</div>
+
+<h3>Hooks: tornando o processo determinístico</h3>
+<p>Instruções em CLAUDE.md são <i>probabilísticas</i>; hooks são <i>determinísticos</i>. Regra prática: <b>se algo precisa acontecer toda vez, não peça — configure um hook</b>. Os eventos principais são <code>PreToolUse</code> (pode bloquear), <code>PostToolUse</code> (formatar e lintar) e <code>Stop</code> (exigir testes verdes ao encerrar).</p>
+<pre><code>// .claude/settings.json (trecho)
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "hooks": [{ "type": "command", "command": "npx prettier --write \"$CLAUDE_FILE_PATHS\"" }]
+    }],
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{ "type": "command", "command": ".claude/hooks/bloqueia-destrutivo.sh" }]
+    }]
+  }
+}</code></pre>
+<p>Fora do harness, os equivalentes clássicos são ainda mais robustos: pre-commit hooks, branch main protegida e CI obrigatória. Comandos úteis do Claude Code: <code>/init</code> (gera o CLAUDE.md), <code>/context</code> (uso da janela), <code>/clear</code> e <code>/rewind</code> (gestão de contexto), <code>/model</code> (modelo e esforço), Shift+Tab (plan mode) e <code>/code-review</code>.</p>
+
+<h3>Worktrees e paralelismo</h3>
+<p>Dois agentes editando a mesma pasta se atropelam. O <code>git worktree</code>, tema de <a href="https://www.youtube.com/watch?v=qZQwxeCLdN0">Você não pode se dar ao luxo de ignorar Git-Worktree</a>, resolve: um histórico, várias pastas de trabalho, cada uma numa branch.</p>
+<pre><code>git worktree add ../feat-login -b feat-login main   # nova pasta + branch
+claude --worktree feat-x                            # Claude Code cria a sua
+git worktree remove ../feat-login</code></pre>
+<figure><img src="img/06_worktrees.png"><figcaption>Um repositório, várias worktrees, um agente por worktree, e a CI como funil antes do merge. Fonte: elaboração própria.</figcaption></figure>
+<p>O limite não é técnico, é cognitivo: <b>1 agente é bom, 2 ótimo, 3 às vezes; com 4 ou mais, o humano vira o gargalo</b>. A reescrita do Bun de Zig para Rust com dezenas de agentes mostra o outro extremo e seu preço: regressões, milhares de blocos <code>unsafe</code> e críticas de código não revisado.</p>
+<div class="box fact"><b>Você sabia?</b> O <code>git worktree</code> existe desde o Git 2.5, de 2015, muito antes dos agentes de código. Ficou anos como recurso de nicho e virou peça central quando passou a ser comum rodar vários agentes no mesmo repositório.</div>
+
+<h3>Headless e CI</h3>
+<p>O mesmo agente roda sem interface (<code>claude -p</code>, <code>codex exec</code>, GitHub Actions), com permissões restritas a ferramentas pré-aprovadas. Isso abre revisão automática de PR, triagem de issues e migrações em lote. O vídeo <a href="https://www.youtube.com/watch?v=f84XbvASkk4">What Is AI Code Refactoring? Agentic AI &amp; Safe Code Changes</a>, da IBM, descreve o loop seguro: plano → relatório → <b>aprovação humana</b> → snapshot → patch → verificar → rollback se quebrar. Na revisão, o padrão emergente é o <b>review multiagente</b>: subagentes especializados em segurança, requisitos, testes e arquitetura, com severidades <i>blocker / should-fix / nit</i>. Há times que rodam um loop em que um agente revisor comenta o PR e o agente autor corrige até não restarem bloqueios, com o humano entrando só no final. A IBM, em <a href="https://www.youtube.com/watch?v=0-YCleDw-Po">What Is AI Code Review? Fixing Slow PRs &amp; Broken Workflows with AI</a>, lembra que a revisão automatizada combina camadas (análise estática, testes dinâmicos, linters, LLM contextual) e que se deve medir sinais — taxa de defeitos, tempo de revisão, vulnerabilidades — em vez de confiar na sensação.</p>
+
+<h2>Linguagem importa? O benchmark do Akita</h2>
+<div class="box intro"><b>Para começar</b> Para quem cozinha bem, o idioma da receita pouco importa. O experimento a seguir comparou sete linguagens e chegou a uma lição parecida: o que mais pesa é ter testes que digam ao agente se ele acertou.</div>
+<p>No post <a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs?</a>, o Akita rodou 7 linguagens × 4 modelos × 2 condições (sem testes e com 27 testes públicos) × 2 repetições num mesmo problema com 43 histórias de usuário.</p>
+<table>
+<tr><th>Linguagem</th><th>Tempo mediano (s)</th><th>Tokens medianos (mil)</th><th>Linhas (~)</th></tr>
+<tr><td>TypeScript</td><td>53</td><td>147,5</td><td>280</td></tr>
+<tr><td>C#</td><td>61</td><td>171,6</td><td>260</td></tr>
+<tr><td>Kotlin</td><td>65</td><td>170,6</td><td>210</td></tr>
+<tr><td>Haskell</td><td>75</td><td>184,7</td><td>265</td></tr>
+<tr><td>Python</td><td>77</td><td>138,2</td><td>300</td></tr>
+<tr><td>Rust</td><td>80</td><td>188,1</td><td>650</td></tr>
+<tr><td>Ruby</td><td>82</td><td>185,6</td><td>380</td></tr>
+</table>
+<figure><img src="img/06_linguagens.png"><figcaption>Tempo e tokens medianos por linguagem e tamanho aproximado da solução. Fonte: Akita, “Existem linguagens melhores pra programar com LLMs?”.</figcaption></figure>
+<ul>
+<li><b>Não há ranking geral.</b> TypeScript foi o mais rápido, Python o mais econômico em tokens, Rust gerou mais que o dobro de linhas.</li>
+<li><b>Tipagem forte não reduziu reparos.</b> Os erros restantes eram de <b>invariantes de domínio</b>, que nenhum sistema de tipos comum captura.</li>
+<li><b>A suíte de testes fez a diferença</b>: 24 artefatos corretos com testes contra 16 sem. Síntese: <i>“disciplina vence compilador e vence linguagem”</i>.</li>
+</ul>
+<p>Compiladores com mensagens claras, como o de Rust, ajudam o loop (“para um agente, não é erro, é instrução”), mas cobram em tempo de build e código difícil de revisar. Note a distinção: o Cursor migrou seu agente de terminal para Rust por motivos de distribuição (instalar sem Node.js, menos memória) — isso é “Rust para construir o agente”, não “agente escrevendo Rust”. Ao escolher a linguagem, pergunte: o erro aparece rápido e claro? existe um caminho padrão (framework opinativo)? o modelo conhece bem a linguagem e suas APIs atuais? e, antes de tudo, ela resolve o seu problema?</p>
+
+<h2>Custos, tokens e escolha de modelo</h2>
+<div class="box intro"><b>Para começar</b> Usar um modelo é como andar de táxi: você paga pelo que entra e pelo que sai, contado em tokens. Como o agente relê a conversa inteira a cada passo, o taxímetro corre mais rápido do que parece.</div>
+<p>Como cada turno reenvia o histórico, o custo de uma sessão cresce aproximadamente com o <b>quadrado</b> do número de turnos se nada for limpo. Duas consequências: <b>uma mensagem completa é mais barata que várias picadas</b>; e o <b>cache de prompt</b> muda a conta — dentro da janela de cache (5 minutos por padrão), o prefixo custa ~10% do preço de entrada. Com Opus a US$ 5 / US$ 25 por milhão de tokens (entrada/saída), uma sessão que relê 200k tokens 50 vezes custa ~US$ 50 sem cache e ~US$ 5 com cache, antes da saída.</p>
+<p>Assinaturas (US$ 20, 100, 200) têm limites por janelas de 5 horas e 7 dias; relatos convergem que o Codex rende mais horas pelo mesmo valor. Do lado aberto, o <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4</a> do Akita mostra modelos abertos (DeepSeek, GLM, Qwen) com 92,5 pontos, contra 100 dos fechados de topo. As lições: tamanho não garante qualidade, a configuração do <i>serving</i> pesa mais que a quantização e o ruído do benchmark é de ~10 pontos.</p>
+<table>
+<tr><th>Papel</th><th>Modelo típico</th><th>Esforço</th></tr>
+<tr><td>Arquitetura, plano grande, depuração difícil</td><td>O mais forte disponível</td><td>high</td></tr>
+<tr><td>Implementação, subagentes, headless</td><td>Modelo médio ou aberto bom</td><td>medium</td></tr>
+<tr><td>Buscas, resumos, tarefas mecânicas</td><td>Modelos pequenos ou locais</td><td>low</td></tr>
+</table>
+<p>Regra de ouro: <b>corrija o contexto antes de aumentar o esforço</b>. Se o agente erra porque não viu o arquivo certo, esforço máximo só erra mais caro. Escrever menos código também economiza: skills como a Ponytail, testada em <a href="https://www.youtube.com/watch?v=RcnnOS0YXak">LANÇOU Ponytail 5! Agora tua IA vai economizar MUITO TOKEN! (teste completo)</a>, forçam perguntas antes de codar (precisa existir? já existe no projeto?) e, num teste único, cortaram custo em 42% e linhas em dois terços. Um teste é anedótico; o princípio — YAGNI aplicado ao agente — é sólido.</p>
+
+<div class="box fact"><b>Você sabia?</b> O primeiro “bug” documentado era literal: em 9 de setembro de 1947, a equipe de Grace Hopper achou uma mariposa presa num relé do Harvard Mark II e a colou no diário de bordo. A palavra já existia no jargão de engenharia; a mariposa só lhe deu a foto mais famosa.</div>
+
+<h2>Vibe coding vs. engenharia</h2>
+<div class="box intro"><b>Para começar</b> Fazer bolo na intuição funciona em casa, não numa confeitaria. <i>Vibe coding</i> é programar com IA aceitando o que ela gera sem ler o código. Aqui vemos os erros típicos quando ninguém revisa e por que um agente pode ser enganado.</div>
+<p>O termo, cunhado por Andrej Karpathy em fevereiro de 2025, descreve “esquecer que o código existe”. A definição estrita importa: <b>vibe coding é não ler o código</b>. Tem lugar em POCs, protótipos e scripts descartáveis; é armadilha em produção e para quem está aprendendo.</p>
+<p>Em <a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a>, Augusto Galego revisa um to-do app gerado sem guia:</p>
+<table>
+<tr><th>Erro da IA</th><th>Por que importa</th><th>Correção</th></tr>
+<tr><td>Sem usuários: todos veem todos os to-dos</td><td>Falha de autorização</td><td>Requisitos na spec</td></tr>
+<tr><td><code>SELECT *</code> sem paginação</td><td>Desempenho e vazamento</td><td>Paginação obrigatória</td></tr>
+<tr><td>Router reinventado</td><td>Perde middlewares e headers de segurança</td><td>Prender a um framework validado</td></tr>
+<tr><td>Sem migrations</td><td>Quebrou ao adicionar autenticação</td><td>Ferramenta de migrations</td></tr>
+<tr><td>JWT sem fixar algoritmo; secret padrão</td><td>Tokens forjáveis</td><td>Fixar algoritmo, secret via ambiente</td></tr>
+</table>
+<p>A IBM, em <a href="https://www.youtube.com/watch?v=zAe-sau06io">How AI Coding Agents Understand Your Codebase &amp; Developer Tools</a>, mostra o mesmo em escala corporativa: um endpoint que consulta o banco direto funciona, mas pula a camada de serviço. <i>“O código funciona, mas o sistema piorou.”</i> Os números de segurança apontam na mesma direção: a Veracode (2025) encontrou vulnerabilidades em ~55% do código gerado nos testes — código limpo, bem nomeado e sutilmente errado, o que a IBM chama de <b>ilusão de correção</b>. Os exemplos são os de sempre: SQL por concatenação, senha em texto puro, segredos no código. Para uso corporativo, somam-se perguntas de governança: de onde vieram os dados de treino (risco de contaminação por licenças como GPL)? para onde vai o meu código? posso auditar? há opção on-premises para exigências regulatórias?</p>
+<p>Um agente com <b>dados sensíveis</b>, <b>exposição a conteúdo externo</b> e <b>capacidade de enviar dados para fora</b> reúne a “tríade letal” (Simon Willison): basta um PR, issue ou página com instruções maliciosas (<i>prompt injection</i>) para vazar credenciais. Defesas: modo de permissão adequado, com o modo sem confirmações <b>apenas em contêiner ou VM descartável</b>; ações irreversíveis (push, deploy, apagar dados) sempre com aprovação; segredos fora do alcance do agente; MCPs e skills de terceiros revisados como dependências.</p>
+
+<h2>Produtividade real</h2>
+<div class="box intro"><b>Para começar</b> “Parecer mais rápido” e “chegar antes” são coisas diferentes. Esta seção separa os números de produtividade pelo tipo de evidência.</div>
+<table>
+<tr><th>Afirmação</th><th>Fonte</th><th>Tipo de evidência</th></tr>
+<tr><td>+35% de produtividade</td><td>IBM</td><td>Autorrelato</td></tr>
+<tr><td>66% se frustram com soluções “quase certas”</td><td>Stack Overflow Developer Survey</td><td>Pesquisa de opinião</td></tr>
+<tr><td>Airbnb: 3.500 arquivos de teste migrados em 6 semanas (vs. 1,5 ano estimado)</td><td>Relato da empresa</td><td>Tarefa mecânica</td></tr>
+<tr><td>Testes: 24 vs. 16 artefatos corretos</td><td>Benchmark do Akita</td><td>Experimento (n pequeno)</td></tr>
+<tr><td>Devs experientes ~19% <b>mais lentos</b>, achando-se ~20% mais rápidos</td><td>METR (jul/2025)</td><td>Estudo controlado</td></tr>
+</table>
+<p>Os modelos melhoraram desde o estudo da METR, mas a lição permanece: <b>percepção de produtividade não é produtividade</b>. Meça lead time, defeitos e retrabalho. A síntese honesta: <i>IA acelera, mas não facilita</i>. O gargalo migrou da escrita para a <b>verificação</b>, por isso o agente deve produzir evidências (testes, análise de impacto) e não só código. O ganho é grande em tarefas mecânicas e bem especificadas; em código maduro, depende de quanto das invariantes você tornou explícito.</p>
+
+<h2>“Competente o suficiente”: um checklist</h2>
+<div class="box intro"><b>Para começar</b> Os modelos já são “competentes o suficiente”; o que separa resultado bom de ruim é a disciplina ao redor deles. Eis uma lista que cabe na parede.</div>
+<p>A tese do Akita amarra o capítulo: os modelos de fronteira convergiram (diferenças dentro do ruído dos benchmarks), modelos abertos chegaram ao tier A e os ganhos dos últimos 18 meses vieram do harness. Logo, o que separa resultado bom de ruim é a engenharia ao redor: testes, processo, invariantes explícitas.</p>
+<p>O contraexemplo do Akita reforça a tese: em <a href="https://akitaonrails.com/2026/10/14/treinei-meu-proprio-modelo-de-ia-spoiler-e-so-pra-estudo/">Treinei meu próprio modelo de IA</a>, um modelo de 337M parâmetros fez 58/100 em problemas isolados e <b>zero</b> em tarefas agênticas. É preciso escala de modelo <i>e</i> um bom loop; o ganho marginal agora está no loop.</p>
+<ol>
+<li><b>Contexto antes de prompt</b>: AGENTS.md curto, só com o que o modelo não descobre sozinho.</li>
+<li><b>Regras concretas</b>: “nunca use <code>any</code>; nunca delete testes sem aprovação” em vez de “use clean code”.</li>
+<li><b>Plano antes de código</b> em tudo que não for trivial.</li>
+<li><b>Tarefas pequenas</b>, com fronteiras e o “porquê”.</li>
+<li><b>Verificação</b>: testes commitados antes, hooks, CI obrigatória, branch protegida.</li>
+<li><b>Revisão independente</b>: quem implementa não valida; humano lê o que vai para produção.</li>
+<li><b>Higiene de contexto e modelo por alavancagem</b>: <code>/clear</code>, subagentes, modelo forte só para planejar.</li>
+<li><b>Paralelismo com moderação</b> e <b>segurança</b>: 2–3 agentes; permissões amplas só em sandbox.</li>
+<li><b>Meça</b> tempo até merge, defeitos e custo por tarefa, não a impressão de velocidade.</li>
+</ol>
+<div class="box tip"><b>Dica</b> Comece pequeno: um CLAUDE.md, um hook de testes e o hábito do plan mode resolvem a maior parte. Acrescente SDD e review multiagente quando a dor aparecer.</div>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=oanQrXEiCy4">What is an AI Code Generator? LLM Coding, Productivity, &amp; Risk</a></td><td>https://www.youtube.com/watch?v=oanQrXEiCy4</td><td>IBM Technology</td><td>IA como tradução; ilusão de correção</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=vLIDHi-1PVU">Designing Claude Code</a></td><td>https://www.youtube.com/watch?v=vLIDHi-1PVU</td><td>Anthropic</td><td>Terminal como produto; escada de abstração</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=FgaBdwSvOGM">Agentic Engineering vs Software Engineering: Beyond Vibe Coding</a></td><td>https://www.youtube.com/watch?v=FgaBdwSvOGM</td><td>IBM Technology</td><td>Espectro de agência delegada</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=yKLedmyUDMA">App do Zero com IA: Harness, Sub Agents, Spec-Driven, Novas Skills e Workflows</a></td><td>https://www.youtube.com/watch?v=yKLedmyUDMA</td><td>Waldemar Neto - Dev Lab</td><td>Harness amplo; crítica ao SDD clássico</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=aRVqTkyx4IY">How To Build Claude Skills Better Than 99% of People</a></td><td>https://www.youtube.com/watch?v=aRVqTkyx4IY</td><td>Corey McClain</td><td>Diagramar skills revela erros</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=7btZsF-9UDA">transformei o Claude Code no SISTEMA OPERACIONAL da minha empresa (e mostrei como criar o teu)</a></td><td>https://www.youtube.com/watch?v=7btZsF-9UDA</td><td>Ratos de IA</td><td>Empresa inteira operada via Claude Code</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=4vWd6z9zuCQ">Como EXTRAIR o MÁXIMO do seu plano Claude Code!</a></td><td>https://www.youtube.com/watch?v=4vWd6z9zuCQ</td><td>Dev Aprender | Jhonatan de Souza</td><td>Gestão de contexto, cache e modelo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fRoRAe8j8eo">ESCREVA PROMPTs MELHORES | Dicas simples para melhorar a qualidade do código gerado pela IA</a></td><td>https://www.youtube.com/watch?v=fRoRAe8j8eo</td><td>Fernanda Kipper</td><td>Prompt específico + plan mode vence vago</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=LmUsdFWuaGg">O Workflow Correto para Desenvolver Software com IA</a></td><td>https://www.youtube.com/watch?v=LmUsdFWuaGg</td><td>Augusto Galego</td><td>Sete fases do desenvolvimento com IA</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ZM8WW8_HEeE">SPEC Driven: A MELHOR FORMA De Usar IA em 2026!</a></td><td>https://www.youtube.com/watch?v=ZM8WW8_HEeE</td><td>O Novo Programador</td><td>Spec versionada como contrato central</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=xJwegOxj2sc">Spec Driven Development 2.0: O método do Google para engenharia com Agentes de IA</a></td><td>https://www.youtube.com/watch?v=xJwegOxj2sc</td><td>IA em 6 minutos</td><td>Elephant Goldfish Model contra autoconcordância</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=ydQ7HhnXUZk">Rust é a melhor linguagem pra IA?</a></td><td>https://www.youtube.com/watch?v=ydQ7HhnXUZk</td><td>Daniel Bergholz</td><td>Compilador ajuda o loop, mas não basta</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=qZQwxeCLdN0">Você não pode se dar ao luxo de ignorar Git-Worktree</a></td><td>https://www.youtube.com/watch?v=qZQwxeCLdN0</td><td>Augusto Galego</td><td>Worktrees para agentes em paralelo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=f84XbvASkk4">What Is AI Code Refactoring? Agentic AI &amp; Safe Code Changes</a></td><td>https://www.youtube.com/watch?v=f84XbvASkk4</td><td>IBM Technology</td><td>Refatoração agêntica com aprovação e rollback</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=RcnnOS0YXak">LANÇOU Ponytail 5! Agora tua IA vai economizar MUITO TOKEN! (teste completo)</a></td><td>https://www.youtube.com/watch?v=RcnnOS0YXak</td><td>Matheus Battisti - Hora de Codar</td><td>Menos código, menos custo</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=u1nhcio8_iQ">Revisei código gerado por I.A..... PREOCUPANTE</a></td><td>https://www.youtube.com/watch?v=u1nhcio8_iQ</td><td>Augusto Galego</td><td>Defeitos de um app gerado sem guia</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=zAe-sau06io">How AI Coding Agents Understand Your Codebase &amp; Developer Tools</a></td><td>https://www.youtube.com/watch?v=zAe-sau06io</td><td>IBM Technology</td><td>Código funciona, mas o sistema piora</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0-YCleDw-Po">What Is AI Code Review? Fixing Slow PRs &amp; Broken Workflows with AI</a></td><td>https://www.youtube.com/watch?v=0-YCleDw-Po</td><td>IBM Technology</td><td>Revisão automatizada em camadas; medir sinais</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente (12/10/2026)</a></td><td>https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/</td><td>AkitaOnRails (blog)</td><td>Ganho recente veio do harness</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/">Existem linguagens melhores pra programar com LLMs? (11/10/2026)</a></td><td>https://akitaonrails.com/2026/10/11/existem-linguagens-melhores-pra-programar-com-llms/</td><td>AkitaOnRails (blog)</td><td>Testes importam mais que tipagem</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4 — veredito open source (22/10/2026)</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/</td><td>AkitaOnRails (blog)</td><td>Abertos no tier A; serving pesa mais</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/14/treinei-meu-proprio-modelo-de-ia-spoiler-e-so-pra-estudo/">Treinei meu próprio modelo de IA (14/10/2026)</a></td><td>https://akitaonrails.com/2026/10/14/treinei-meu-proprio-modelo-de-ia-spoiler-e-so-pra-estudo/</td><td>AkitaOnRails (blog)</td><td>Modelo pequeno zera tarefas agênticas</td></tr>
+<tr><td><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity (jul/2025)</a></td><td>https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/</td><td>METR</td><td>Devs ~19% mais lentos, percebendo-se mais rápidos</td></tr>
+</table>
+</section>

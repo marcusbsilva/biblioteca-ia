@@ -1,0 +1,248 @@
+<section class="chapter" id="ch02"><h1><span class="num">Capítulo 02</span>LLMs, Transformers e Mistura de Especialistas</h1>
+<p class="lead">Um modelo de linguagem grande é uma função que recebe uma sequência de números e devolve uma distribuição de probabilidade sobre o próximo número. A descrição é correta e quase inútil para entender o que acontece lá dentro. Este capítulo percorre o caminho completo: do texto ao token, do token ao vetor, do vetor à atenção, da atenção ao modelo treinado e do modelo ao produto em uso em out/2026. O fio condutor são os experimentos publicados por Fabio Akita no blog AkitaOnRails: a linha do tempo de GPT-2 a 2026, o treino de um modelo de 337 milhões de parâmetros e o benchmark v4 de modelos abertos.</p>
+<div class="box intro"><b>Para começar</b> Pense na sugestão de próxima palavra do teclado do celular. Um LLM (<i>Large Language Model</i>) faz o mesmo, treinado com uma parte enorme da internet e levando em conta tudo o que veio antes. Repetindo “qual é a próxima palavra?” milhares de vezes, ele escreve respostas, código e resumos.</div>
+
+<h2>Uma linha do tempo curta: de GPT-2 à era agêntica</h2>
+<p>A história dos LLMs tem viradas claras: primeiro os modelos ficaram maiores, depois aprenderam a “pensar” antes de responder e, por último, ganharam ferramentas em volta. O post <a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a> (Akita, 12/10/2026) organiza essas fases:</p>
+<table>
+<tr><th>Ano</th><th>Marco</th><th>O que mudou</th></tr>
+<tr><td>2017</td><td>“Attention Is All You Need”</td><td>O Transformer processa a sequência em paralelo; cada token “olha” para todos os outros.</td></tr>
+<tr><td>2018–19</td><td>GPT-1, BERT, GPT-2 (1,5B)</td><td>Pré-treino em texto não rotulado + ajuste fino; texto longo coerente.</td></tr>
+<tr><td>2020</td><td>GPT-3 (175B)</td><td>Aprendizado <i>few-shot</i> no prompt; leis de escala.</td></tr>
+<tr><td>2022</td><td>Chinchilla; ChatGPT</td><td>Modelos estavam subtreinados em dados; RLHF chega ao público.</td></tr>
+<tr><td>2023</td><td>GPT-4</td><td>Mistura de especialistas (segundo relatos) e multimodalidade.</td></tr>
+<tr><td>2024</td><td>o1 (OpenAI)</td><td>RL para raciocínio e <i>test-time compute</i>.</td></tr>
+<tr><td>2025</td><td>DeepSeek-V3/R1</td><td>Eficiência: 671B totais com 37B ativos; raciocínio emergindo de RL.</td></tr>
+<tr><td>2026</td><td>MCP e harnesses agênticos</td><td>O ganho vem do sistema em volta do modelo.</td></tr>
+</table>
+<figure><img src="img/02_linha_tempo_parametros.png"><figcaption>Parâmetros totais de modelos marcantes (escala log). Em laranja, modelos MoE, cujo custo por token depende dos parâmetros <i>ativos</i>. Fonte: elaboração própria com dados do blog AkitaOnRails (12/10 e 14/10/2026) e de <i>Transforming Language with Generative Pre-trained Transformers (GPT)</i>.</figcaption></figure>
+<p>A tese do Akita é que os modelos de base <b>convergiram</b>: o Stanford AI Index mostra o gap entre o 1º e o 10º colocado no Chatbot Arena caindo de 12% para 5% em um ano. O podcast <a href="https://www.youtube.com/watch?v=O4n1jtWzt30">New frontier AI models, TypeSafe’s Jev AI, &amp; NASA’s IBM collab</a> chega ao mesmo lugar: a disputa passou de “inteligência do modelo” para “inteligência do sistema” (memória, ferramentas, execução de código). 2023–24 foram os anos dos modelos maiores, 2025 o do raciocínio, 2026 o do <b>raciocínio por unidade de compute</b>.</p>
+
+<h2>Do texto aos números: tokens</h2>
+<div class="box intro"><b>Para começar</b> Computador não lê letras, só faz contas. Por isso o texto é cortado em pedaços chamados <b>tokens</b> e cada pedaço recebe um número. Tudo é medido em tokens: o preço da API, o tamanho máximo do texto e a velocidade da resposta.</div>
+<p>Há três granularidades possíveis, como explica o vídeo <a href="https://www.youtube.com/watch?v=tAhmBB_LSsc">O que são tokens?</a>, de Fernanda Kipper. <b>Caracteres</b> geram sequências enormes, e a atenção custa O(n²) no comprimento. <b>Palavras inteiras</b> explodem o vocabulário com flexões (“corre”, “corria”, “corríamos”). <b>Subpalavras</b> são o meio-termo usado por todos os LLMs: radicais e sufixos frequentes viram tokens; palavras raras se decompõem em pedaços.</p>
+<p>O algoritmo mais comum é o <b>BPE</b> (<i>Byte-Pair Encoding</i>): começa com bytes e funde repetidamente o par adjacente mais frequente do corpus até atingir o tamanho de vocabulário desejado. Partir de bytes garante que qualquer string, até emoji, seja representável.</p>
+<p>“Um token” não é uma unidade universal. Na demonstração do mesmo vídeo, uma frase em português deu 22 tokens no GPT-4o e 15 na versão em inglês. Duas lições: vocabulário maior gera menos tokens por texto, e <b>inglês sai mais barato</b>, porque domina os dados de treino; em português paga-se um “imposto de idioma” de 30–50%. Conte sempre no tokenizer do modelo que vai usar.</p>
+<p>Os tokenizers mais conhecidos seguem a mesma ideia com critérios diferentes: WordPiece no BERT, SentencePiece no T5 e nas primeiras versões do Llama, BPE em nível de bytes na família GPT. O tamanho do vocabulário é uma escolha de projeto: o tokenizer de 32.768 tokens do modelo de estudo do Akita é pequeno; o o200k do GPT-4o tem cerca de 200 mil.</p>
+<h3>Por que a saída custa mais caro</h3>
+<p>APIs cobram 3–5× mais pela saída (Opus: US$ 5 de entrada e US$ 25 de saída por milhão de tokens). A razão está nas duas fases da inferência:</p>
+<ul>
+<li><b>Prefill</b> (entrada): todos os tokens do prompt são processados de uma vez, em paralelo; limitado por <i>compute</i>.</li>
+<li><b>Decode</b> (saída): um token por passada, e cada passada lê <b>todos os pesos</b> da memória; limitado por <i>largura de banda de memória</i>.</li>
+</ul>
+<p>O <b>KV cache</b> guarda as chaves e valores de atenção já calculados, então o contexto não é recalculado; o custo vem de a geração ser serial e presa à banda. O vídeo <a href="https://www.youtube.com/watch?v=2BicjJgRkms">¿Es El Fin De Los LLM? (NCM)</a> faz a conta para um modelo de 16 GB numa GPU de 1.792 GB/s: gerar 1.024 tokens move ~16 TB de memória, cerca de 9 segundos.</p>
+<div class="box tip"><b>Dica</b> Velocidade máxima de decode para um usuário: tok/s ≈ largura de banda (GB/s) ÷ bytes lidos por token (pesos ativos + KV cache). Para rodar modelos localmente, banda de memória vale mais que TFLOPS.</div>
+
+<h2>Dos números ao significado: embeddings</h2>
+<div class="box intro"><b>Para começar</b> Um número de token é como o número de uma casa: não diz nada sobre quem mora lá. Para o modelo entender significado, cada token vira um <b>embedding</b>, um endereço num mapa em que palavras de sentido parecido moram no mesmo bairro.</div>
+<p>A primeira camada do modelo é a <b>matriz de embeddings</b>, com uma linha por token, que transforma cada ID num vetor denso (768 dimensões no GPT-2; de 4 mil a mais de 12 mil nos modelos de fronteira). Os vetores começam aleatórios e o treino os arranja de modo que tokens usados em contextos parecidos fiquem próximos (veja <a href="https://www.youtube.com/watch?v=qaQn978_S40">Se você só pode assistir UM vídeo sobre LLMs, assista esse.</a>). A evolução, contada em <a href="https://www.youtube.com/watch?v=wgfSDrqYMJ4">What are Word Embeddings?</a>:</p>
+<table>
+<tr><th>Família</th><th>Exemplo</th><th>Limitação</th></tr>
+<tr><td>Frequência</td><td>Bag-of-words, TF-IDF</td><td>Sem semântica: “carro” e “automóvel” não se relacionam</td></tr>
+<tr><td>Preditivos estáticos</td><td>Word2Vec (2013), GloVe (2014)</td><td>Um vetor por palavra: “banco” de dinheiro e de praça coincidem</td></tr>
+<tr><td>Contextuais</td><td>ELMo, BERT, GPT</td><td>O vetor depende da frase; custo maior</td></tr>
+</table>
+<p>A similaridade costuma ser medida por <b>cosseno</b>, o mesmo cálculo da busca vetorial em RAG, tema do Livro 2, Capítulo 3 (RAG).</p>
+<div class="box fact"><b>Você sabia?</b> O Word2Vec ficou famoso pelas analogias feitas com aritmética de vetores: “rei” − “homem” + “mulher” cai perto de “rainha”. Ninguém ensinou gênero ao modelo; a relação emergiu só de prever palavras pelo contexto.</div>
+<h3>A posição importa</h3>
+<p>“A mãe matou a filha” e “a filha matou a mãe” têm os mesmos tokens. Como a atenção é indiferente à ordem, a posição precisa ser injetada. O paper original somava senóides fixas; hoje o padrão é <b>RoPE</b> (<i>Rotary Position Embedding</i>), que rotaciona os vetores por um ângulo proporcional à posição, de modo que a atenção dependa da distância relativa. É o RoPE que permite técnicas de extensão de contexto.</p>
+
+<h2>Atenção: o mecanismo que destravou tudo</h2>
+<div class="box intro"><b>Para começar</b> Ao ler “o banco aprovou o crédito”, você sabe que é banco de dinheiro porque olhou para “crédito”. <b>Atenção</b> é isso: cada palavra procura, nas outras, as pistas que esclarecem seu sentido.</div>
+<figure><img src="img/02_atencao_heatmap.png"><figcaption>Matriz de atenção ilustrativa (valores didáticos) para “O banco aprovou o crédito”. Cada linha soma 1; “banco” consulta fortemente “crédito”. Num modelo decoder real, um token só enxerga os anteriores. Fonte: elaboração própria a partir do exemplo de <i>Se você só pode assistir UM vídeo sobre LLMs, assista esse.</i></figcaption></figure>
+<p>Para cada token, três projeções aprendidas geram <b>Q</b> (<i>query</i>, “o que procuro”), <b>K</b> (<i>key</i>, “o rótulo que ofereço”) e <b>V</b> (<i>value</i>, “o conteúdo que entrego”):</p>
+<pre><code>Attention(Q, K, V) = softmax( Q·Kᵀ / √d_k  +  M ) · V
+# M = máscara causal: o token i não vê i+1, i+2, ...
+# √d_k evita que produtos escalares grandes saturem o softmax</code></pre>
+<p>A saída de cada token é a média dos V de todos os tokens, ponderada pela afinidade Q·K; sem V, o mecanismo não entrega informação. Na <b>multi-head attention</b>, várias atenções menores rodam em paralelo, cada uma aprendendo um tipo de relação (sintaxe, correferência). Variantes como <b>GQA</b> e <b>MLA</b> reduzem o tamanho do KV cache, e o <b>FlashAttention</b> calcula a mesma conta em blocos sem materializar a matriz n×n.</p>
+<h3>O bloco Transformer</h3>
+<p>A arquitetura original era <b>encoder-decoder</b>, para tradução (veja <a href="https://www.youtube.com/watch?v=TabyC8otFY8">AI and Large Language Models Boost Language Translation</a>). Os LLMs generativos atuais são <b>só decoder</b>: uma pilha de blocos idênticos, cada um com atenção causal e uma rede feed-forward (FFN), ligados por conexões residuais e normalização.</p>
+<figure><img src="img/02_pipeline_transformer.png"><figcaption>Pipeline de um LLM decoder-only moderno (RMSNorm, RoPE, SwiGLU). A saída volta à entrada a cada token gerado; o KV cache evita recalcular a atenção dos tokens anteriores. Fonte: elaboração própria com dados do blog AkitaOnRails (14/10/2026).</figcaption></figure>
+<p>Um Transformer de 2026 difere do de 2017 em detalhes: normalização antes de cada sub-bloco, <b>RMSNorm</b>, ativação <b>SwiGLU</b>, RoPE e embeddings compartilhados entre entrada e saída. A FFN concentra cerca de dois terços dos parâmetros, e é nela que entra a mistura de especialistas.</p>
+<h3>O custo quadrático e as alternativas</h3>
+<p>A atenção compara todos os pares de tokens: dobrar o contexto quadruplica o compute. Os <b>state space models</b> como Mamba mantêm um estado resumido com custo linear, mas perdem em recuperação exata. A IBM, no Granite 4.0 (<a href="https://www.youtube.com/watch?v=AaCBiGWTuyA">Granite 4.0: Small AI Models, Big Efficiency</a>), usa um híbrido de 9 blocos Mamba-2 para cada bloco Transformer, com até 80% menos memória.</p>
+
+<h2>Gerar texto: o loop autorregressivo e suas alternativas</h2>
+<div class="box intro"><b>Para começar</b> Gerar texto é como uma brincadeira de completar frases em que cada jogador acrescenta uma palavra olhando tudo o que já foi dito. É a geração <b>autorregressiva</b>: funciona muito bem, mas cada palavra espera a anterior.</div>
+<p>A saída do último bloco vira probabilidades sobre o vocabulário, amostradas com <b>temperatura</b> (achata ou afia a distribuição) e <b>top-p</b> (amostra só do menor conjunto de tokens cuja probabilidade soma p). O token escolhido é anexado e o ciclo recomeça. Como lembra <a href="https://www.youtube.com/watch?v=bdICz_sBI34">Transforming Language with Generative Pre-trained Transformers (GPT)</a>, GPT significa <i>Generative Pre-trained Transformer</i>, e o ChatGPT é a interface, não o modelo.</p>
+<p>Há tentativas de gerar vários tokens por vez. O <b>NCM</b> (Stanford, out/2026), analisado em <a href="https://www.youtube.com/watch?v=2BicjJgRkms">¿Es El Fin De Los LLM? (NCM)</a> e <a href="https://www.youtube.com/watch?v=PhTQOig_QA4">NCM matou o LLM: dessa vez, parece que é real</a>, comprime o texto numa pirâmide de códigos e gera cada nível numa passada, do esboço ao detalhe. O “31× mais rápido” do anúncio compara com um modelo de <b>difusão</b>, não com um autorregressivo de produção. O NCM ganha em Sudoku difícil (86% contra 1% do autorregressivo), perde em tradução e ainda está em escala de brinquedo (725M no maior gerador). Difusão de texto é a alternativa usável hoje, com alguma perda de qualidade.</p>
+<p>Outra linha são modelos que nem geram texto. O <b>Jev</b>, da TypeSafe (<a href="https://www.youtube.com/watch?v=YGgNBcIgI4s">What Is Jev? The AI Model That Doesn't Generate Text</a>), recebe um estado e perguntas tipadas (sim/não, escolha, escala) e devolve todas as probabilidades de uma vez. O Akita (<a href="https://akitaonrails.com/2026/10/03/entendendo-o-hype-do-jev-pra-que-serve/">Entendendo o Hype do Jev: pra que serve?</a>) mostra que o “193× mais rápido” vem justamente de trocar um LLM de chat por um classificador.</p>
+
+<h2>Como um LLM é treinado</h2>
+<div class="box intro"><b>Para começar</b> Treinar um LLM lembra formar um profissional: primeiro ele lê uma biblioteca inteira (pré-treino), depois faz um estágio com perguntas e respostas (ajuste fino) e, por fim, recebe avaliações e ajusta o comportamento (aprendizado por reforço).</div>
+<h3>Pré-treino: prever o próximo token</h3>
+<p>O objetivo é minimizar a <b>entropia cruzada</b> (quão surpreso o modelo fica com o token certo) em trilhões de tokens de texto. É <b>autossupervisionado</b>, não “não supervisionado”: há um rótulo exato, o próximo token, mas ninguém precisa anotá-lo. O GPT-3 partiu de 45 TB de texto bruto, filtrados para ~570 GB (<a href="https://www.youtube.com/watch?v=5sLYAQS9sWQ">How Large Language Models Work</a>).</p>
+<p>O post <a href="https://akitaonrails.com/2026/10/14/treinei-meu-proprio-modelo-de-ia-spoiler-e-so-pra-estudo/">Treinei meu próprio modelo de IA (spoiler: é só pra estudo)</a> torna isso concreto: um decoder de 337M de parâmetros (24 camadas, tokenizer BPE de 32.768 tokens) treinado com 10 bilhões de tokens, 60% deles de Python, em cerca de 137 horas numa única GPU de consumidor. Com 2B e 5B tokens vistos, o modelo praticamente não acertava tarefas de código; com 10B, saltou para 65 de 100, a <b>emergência</b> típica. Mesmo assim, tirou <b>zero em tarefas agênticas</b>: abaixo de certa escala, o modelo não sustenta o loop de ferramentas. Outras lições do post: menor perda não significa melhor código (avalie com tarefas executáveis) e o formato de treino precisa ser o formato de uso.</p>
+<h3>Leis de escala</h3>
+<p>Kaplan et al. (2020) mostraram que a perda cai como lei de potência em parâmetros N, dados D e compute C ≈ 6·N·D FLOPs. O <b>Chinchilla</b> (Hoffmann et al., 2022) corrigiu a receita: para um orçamento fixo, N e D devem crescer juntos, cerca de 20 tokens por parâmetro; com isso, um modelo de 70B superou o Gopher de 280B. Três ressalvas:</p>
+<ol>
+<li><b>Ótimo de treino não é ótimo de produto.</b> A inferência é paga milhões de vezes, então compensa sobretreinar modelos pequenos (o Llama 3 8B viu 15T tokens, quase 100× a razão de Chinchilla).</li>
+<li><b>Perda não é capacidade.</b> Capacidades parecem “emergir” quando a métrica é acertou/errou.</li>
+<li><b>Há uma terceira lei: test-time compute.</b> Desde o o1, pensar mais tokens melhora respostas, e a inferência passou a dominar o compute de IA, segundo <a href="https://www.youtube.com/watch?v=OWPRU_Pc4Ng">5 AI Myths &amp; The Truth Behind Them: ML, Context, Agents &amp; More</a>.</li>
+</ol>
+<p>A convergência é visível no MMLU (<a href="https://www.youtube.com/watch?v=0Wwn5IEqFcg">Small vs. Large AI Models: Trade-offs &amp; Use Cases Explained</a>): o menor modelo acima de 60% caiu de 65B (fev/2023) para menos de 3B ativos (mar/2024).</p>
+<h3>SFT e RLHF</h3>
+<p>Um modelo base continua documentos; não “responde”. O <b>ajuste fino supervisionado</b> (SFT) treina com pares instrução→resposta no formato de conversa. Os pesquisadores da Anthropic, em <a href="https://www.youtube.com/watch?v=fGKNUvivvnc">Interpretability: Understanding how AI models think</a>, descrevem o resultado como um autor que escreve o roteiro de um personagem chamado Assistant.</p>
+<p>No <b>RLHF</b> (aprendizado por reforço com feedback humano), humanos comparam pares de respostas, um modelo de recompensa aprende essas preferências e o LLM é otimizado para maximizá-las. Como recompensa o que <i>parece</i> bom, tem efeitos colaterais: <b>bajulação</b> (perguntar “tem certeza?” faz o modelo trocar uma resposta certa; veja <a href="https://www.youtube.com/watch?v=TY9CYRBOBPM">GPT-5: Five AI Model Improvements to Address LLM Weaknesses</a>), <b>excesso de confiança</b> e <b>AI slop</b>, o estilo polido e repetitivo descrito em <a href="https://www.youtube.com/watch?v=hl6mANth6oA">What is AI Slop? Low-Quality AI Content Causes, Signs, &amp; Fixes</a>.</p>
+<div class="box fact"><b>Você sabia?</b> A palavra inglesa “delve” (aprofundar-se) apareceu cerca de 25 vezes mais em artigos de 2024 do que dois anos antes. É uma das marcas estatísticas do texto gerado por modelos ajustados com preferências humanas.</div>
+<p>Variantes como o DPO dispensam o modelo de recompensa explícito e otimizam direto sobre pares de preferência. Em todas, uma penalidade impede que o modelo se afaste demais da versão SFT, para não “trapacear” a recompensa com respostas estranhas.</p>
+<h3>RL de raciocínio</h3>
+<p>A grande mudança de 2024–25 foi o <b>RL com recompensas verificáveis</b> (RLVR): um verificador programático (o teste passou? a conta bate?) dá a recompensa, e o modelo descobre sozinho que cadeias de raciocínio longas, com verificação e retrocesso, acertam mais. A linhagem DeepSeek (<a href="https://www.youtube.com/watch?v=KTonvXhsxpc">What is DeepSeek? AI Model Basics Explained</a>) ilustra:</p>
+<table>
+<tr><th>Modelo</th><th>Data</th><th>Inovação</th></tr>
+<tr><td>V2</td><td>jun/2024</td><td>Multi-head latent attention + DeepSeekMoE</td></tr>
+<tr><td>V3</td><td>dez/2024</td><td>671B totais, 37B ativos; treino eficiente em ~2.000 GPUs</td></tr>
+<tr><td>R1-Zero</td><td>jan/2025</td><td>RL puro sobre o base: o raciocínio emerge, com baixa legibilidade</td></tr>
+<tr><td>R1</td><td>jan/2025</td><td>SFT inicial + RL; comparável ao o1 em matemática e código</td></tr>
+</table>
+<div class="box warn"><b>Atenção</b> A cifra de “US$ 6 milhões” do DeepSeek-V3 refere-se só ao treino final, sem pesquisa, experimentos e infraestrutura.</div>
+<p>Pensar mais nem sempre é pensar melhor. No vídeo <a href="https://www.youtube.com/watch?v=cEpynX9YsBw">GLM 5.3 é a IA Aberta que Encostou no Claude</a>, o nível padrão de <i>reasoning effort</i> foi o mais caro e errático, e o nível máximo foi o pior em detectar premissas falsas; o nível baixo fez o mesmo trabalho com um quarto dos tokens. O mesmo vídeo mostra que o GLM 5.3 manteve a base do 5.2 e mudou só o pós-treino, com o Terminal-Bench saltando de 4,6 para 28,3: o pós-treino virou a alavanca principal.</p>
+
+<h2>Mistura de Especialistas e ajuste com LoRA</h2>
+<div class="box intro"><b>Para começar</b> Imagine uma empresa em que todos os 70 mil funcionários precisam ler e assinar cada e-mail, do pedido de café ao contrato milionário. É um modelo <b>denso</b>: competente, mas cada e-mail custa o salário de todos. A Mistura de Especialistas põe uma recepção que encaminha cada e-mail só para poucos departamentos.</div>
+<p>Num LLM <b>denso</b> (GPT-3, Llama 3, Mistral 7B), cada token passa por todos os pesos: um modelo de 70B faz ~140 bilhões de operações por token, seja a pergunta “quanto é 2+2?” ou um teorema. Mais parâmetros trazem mais conhecimento, mas cada token paga por todos, no treino, na latência e no preço.</p>
+<figure><img src="img/02v3_denso_vs_moe.png"><figcaption>Denso × MoE. No denso, a FFN inteira trabalha em cada token. No MoE, um roteador ativa só alguns especialistas (em verde); os outros ficam ociosos, mas continuam ocupando memória. Fonte: elaboração própria.</figcaption></figure>
+<p>Num <b>MoE</b>, a FFN de cada bloco é trocada por N redes menores, os <b>especialistas</b>, e um <b>roteador</b> dá uma nota a cada um para o token atual; mantêm-se os <b>top-k</b> (tipicamente 1 a 8) e a saída é a soma ponderada deles. Muitos modelos acrescentam um <b>especialista compartilhado</b> sempre ativo. Os “departamentos” não são legíveis por humanos; são especializações estatísticas aprendidas no treino. A distinção que importa: <b>parâmetros totais</b> definem a <i>memória</i>; <b>parâmetros ativos</b> definem o <i>compute</i> por token, portanto velocidade e custo.</p>
+<table>
+<tr><th>Modelo</th><th>Totais / ativos</th><th>Roteamento</th></tr>
+<tr><td>Mixtral 8×7B (dez/2023)</td><td>46,7B / 12,9B</td><td>8 especialistas, top-2</td></tr>
+<tr><td>DeepSeek-V3 / R1</td><td>671B / 37B</td><td>256 roteados, top-8, + 1 compartilhado</td></tr>
+<tr><td>Qwen3-235B-A22B (abr/2025)</td><td>235B / 22B</td><td>128 especialistas, top-8</td></tr>
+<tr><td>gpt-oss-120b (ago/2025)</td><td>117B / 5,1B</td><td>128 especialistas, top-4; pesos abertos</td></tr>
+<tr><td>Llama 4 Maverick (abr/2025)</td><td>400B / 17B</td><td>128 especialistas + compartilhado</td></tr>
+</table>
+<div class="box warn"><b>Atenção</b> Especialistas não são agentes (<a href="https://www.youtube.com/watch?v=4-FH09AMsp0">AI Agents vs Mixture of Experts: AI Workflows Explained</a>). Agentes roteiam tarefas na aplicação; o MoE roteia tokens dentro de uma camada, e a escolha muda a cada token e a cada camada.</div>
+<p>O MoE não é almoço grátis. Ganha em qualidade por FLOP, mas perde em qualidade por GB: o modelo <b>inteiro</b> precisa caber na memória. Exige perdas auxiliares para que o roteador não concentre o tráfego em poucos especialistas, é menos estável no treino e pede comunicação intensa entre GPUs. Em compensação, permite <b>offload</b>: no llama.cpp, <code>--cpu-moe</code> mantém os especialistas na RAM e só atenção, roteador e KV cache na GPU, e motores como o Strata (descrito em <a href="https://akitaonrails.com/2026/10/22/melhor-llm-open-source-strata-com-qwen-3-8-flash-next/">Melhor LLM Open Source: Strata com Qwen 3.8 Flash Next</a>) tratam a VRAM como cache dos especialistas mais usados. Assim, um MoE de mais de 100B roda numa GPU de consumidor.</p>
+<div class="box tip"><b>Dica</b> Para escolher um MoE local, faça duas contas: <b>cabe?</b> (parâmetros totais × bytes por peso, mais KV cache, contra VRAM + RAM) e <b>é rápido?</b> (parâmetros ativos × bytes por peso, contra a banda da memória). Um MoE de 30B com 3B ativos em 4 bits ocupa ~17 GB, mas lê só ~1,7 GB por token.</div>
+<div class="box fact"><b>Você sabia?</b> A ideia de MoE é de 1991: o artigo <i>Adaptive Mixtures of Local Experts</i>, de Jacobs, Jordan, Nowlan e Geoffrey Hinton, já propunha uma rede “porteira” escolhendo especialistas. Ela voltou em escala em 2017, com a camada MoE esparsa de Noam Shazeer, coautor do paper do Transformer.</div>
+<h3>LoRA: ajustar sem mexer no modelo inteiro</h3>
+<p>O fine-tuning completo atualiza todos os pesos: com Adam, cada parâmetro custa ~16 bytes, e um 7B pede ~112 GB. O <b>LoRA</b> (<i>Low-Rank Adaptation</i>, Hu et al., Microsoft, 2021) parte da observação de que a <i>mudança</i> necessária nos pesos tem posto baixo. Congela-se W e treina-se ΔW = <b>B·A</b>, duas matrizes finas de posto <b>r</b> pequeno (4 a 64): h = W·x + (α/r)·B·A·x. B começa em zero, então o modelo começa idêntico ao original.</p>
+<figure><img src="img/02v3_lora_wba.png"><figcaption>LoRA numa projeção de 4096×4096: W fica congelada e só A e B são treinadas. Com r = 8, são 65.536 parâmetros treináveis contra 16,8 milhões de W (0,39%). Fonte: elaboração própria a partir de Hu et al. (2021).</figcaption></figure>
+<p>No GPT-3 175B, o artigo original relata 10.000× menos parâmetros treináveis e 3× menos memória, sem latência extra (B·A pode ser somada a W). O <b>QLoRA</b> (Dettmers et al., 2023) carrega o base em 4 bits e treina os adapters por cima: um 65B ajustado numa GPU de 48 GB, um 7B numa placa de 8–12 GB. Como o base não muda, um servidor pode carregar vários adapters e trocá-los por requisição. Bibliotecas de referência: PEFT (Hugging Face) e Unsloth.</p>
+<table>
+<tr><th>Necessidade</th><th>Melhor ferramenta</th></tr>
+<tr><td>Instrução, tom, poucos exemplos</td><td>Prompt; veja Livro 2, Capítulo 1 (Prompts na prática)</td></tr>
+<tr><td>Fatos que mudam, documentos internos</td><td>RAG; veja Livro 2, Capítulo 3 (RAG). LoRA não serve para “decorar” fatos</td></tr>
+<tr><td>Formato rígido, estilo, classificação em volume</td><td>LoRA/QLoRA sobre um modelo aberto</td></tr>
+<tr><td>Comportamento ou idioma totalmente novo</td><td>Fine-tuning completo ou pré-treino continuado</td></tr>
+</table>
+<p>Vale ainda fazer fine-tuning? O vídeo <a href="https://www.youtube.com/watch?v=-W2JdSl1v48">Is Fine-Tuning Still Needed? LLMs, RAG, &amp; LoRA</a> lembra que o BloombergGPT perdeu para o GPT-4 e que modelos jurídicos especializados foram superados por generalistas. A ordem razoável é <b>prompt/contexto → RAG → skills → fine-tuning</b>, este só para gargalos específicos. <a href="https://www.youtube.com/watch?v=pu3-PeBG0YU">Fine Tuning Large Language Models with InstructLab</a> mostra o caminho com dados sintéticos e LoRA num modelo de 7B.</p>
+
+<h2>Quantização e serving: o benchmark v4</h2>
+<div class="box intro"><b>Para começar</b> Uma foto em JPEG ocupa bem menos que o original e quase ninguém nota. <b>Quantização</b> é guardar os pesos do modelo com menos precisão para caber em menos memória e rodar mais rápido. Já <b>serving</b> é como o modelo é posto no ar: o programa e as configurações.</div>
+<table>
+<tr><th>Formato</th><th>Bits/peso</th><th>27B ocupa</th><th>Uso típico</th></tr>
+<tr><td>BF16</td><td>16</td><td>~54 GB</td><td>Referência</td></tr>
+<tr><td>FP8 / Q8_0</td><td>8</td><td>~27 GB</td><td>Produção; praticamente sem perda</td></tr>
+<tr><td>NVFP4 / Q4_K_M</td><td>~4–4,5</td><td>~14–15 GB</td><td>GPUs recentes e llama.cpp</td></tr>
+<tr><td>IQ3_S</td><td>~3,4</td><td>~11,5 GB</td><td>Modelos grandes em GPU de consumidor</td></tr>
+</table>
+<p>Como o decode é limitado por banda, menos bits também significam mais tokens por segundo. Quanto de qualidade se perde? O post <a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4: o veredito de open source até out/2026</a> testa modelos abertos como agentes: construir um app Rails em 7 sprints enquanto um revisor injeta 14 defeitos de segurança e correção.</p>
+<figure><img src="img/02_benchmark_v4_nota_vs_toks.png"><figcaption>Nota no benchmark v4 versus velocidade de geração dos modelos abertos testados, com as faixas de tier. Velocidade e qualidade não se correlacionam. Fonte: blog AkitaOnRails (22/10/2026).</figcaption></figure>
+<ol>
+<li><b>Tamanho não garante qualidade.</b> O Kimi K2 Thinking, com ~1T de parâmetros, tirou 46; modelos de 27–35B ficaram entre 80 e 88. O que separa os grupos é o pós-treino para uso agêntico.</li>
+<li><b>Quantização pesa pouco.</b> Q8 tirou 80 contra 80,5 em BF16; um MoE em 3 bits numa GPU de consumidor perdeu só 1,5 ponto contra 4 bits num servidor, dentro do ruído.</li>
+<li><b>Serving pesa muito.</b> O mesmo checkpoint tirou 94 num provedor e 27 num servidor mal configurado. Template de chat errado, parser de chamadas de ferramenta quebrado ou contexto truncado destroem um bom modelo.</li>
+</ol>
+<p>Velocidade depende do hardware, não da nota: o mesmo modelo de 27B gera 195 tokens por segundo num servidor de data center e menos de 8 numa máquina com memória unificada lenta, com a mesma pontuação.</p>
+<div class="box tip"><b>Dica</b> Ao avaliar um modelo aberto, separe três variáveis: checkpoint, quantização e stack de serving (runtime, template, parser de ferramentas). Troque uma por vez: a terceira pode valer 60 pontos; a segunda raramente passa de 2.</div>
+
+<h2>Panorama de modelos (out/2026)</h2>
+<div class="box intro"><b>Para começar</b> Escolher um modelo é como escolher um veículo: não se usa caminhão para ir à padaria. Há modelos topo de linha, intermediários, leves para grande volume e locais.</div>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=--8pJvYNcX4">Every AI Model Explained In 20 Minutes (Update)</a>, de Tina Huang, organiza o mercado em camadas, de forma opinativa mas útil:</p>
+<table>
+<tr><th>Camada</th><th>Exemplos</th><th>Quando usar</th></tr>
+<tr><td>Flagship</td><td>Claude Opus 5/5.5, GPT-6 Sol, Gemini 3.1 Pro; aberto: Kimi K3</td><td>Problemas difíceis, código em projetos grandes</td></tr>
+<tr><td>Intermediário</td><td>Claude Sonnet 5, Gemini 3.6 Flash; abertos: GLM 5.3, DeepSeek V4 Pro, Qwen 3</td><td>O dia a dia, agentes com custo controlado</td></tr>
+<tr><td>Leve</td><td>Haiku 4.5, Gemini 3.5 Flash-Lite; abertos: DeepSeek V4 Flash, Mistral Small 4</td><td>Subagentes, classificação, volume</td></tr>
+<tr><td>Local</td><td>Qwen, Gemma 4, Phi, GPT-OSS, Granite 4.0</td><td>Privacidade, baixa latência, custo zero por token</td></tr>
+</table>
+<p>Uma regra prática da IBM: um modelo pequeno bem treinado entrega ~90% da qualidade a uma fração do custo em tarefas focadas. Modelos grandes seguem necessários para código amplo e documentos pesados.</p>
+<p>Comparações diretas ajudam a calibrar a tabela. No vídeo sobre o GLM 5.3, ele empatou com o Claude em velocidade de agente numa caça a bugs, mas perdeu em calibração. Num teste de mapa interativo em HTML (<a href="https://www.youtube.com/watch?v=We0XRlxxD4I">Claude Has the One Thing ChatGPT Can't Copy.  Here's What It Is.</a>), vários modelos de fronteira entregaram resultados funcionais, e o autor conclui que a inteligência está empatada e o diferencial passou a ser “gosto” e ferramentas.</p>
+<div class="box warn"><b>Atenção</b> Um vício comum em anúncios é comparar o modelo novo com concorrentes de meses atrás. Procure a data dos modelos em toda tabela de lançamento.</div>
+
+<h2>Inferência na prática: prompt caching e métricas</h2>
+<p>O <b>prompt caching</b> (<a href="https://www.youtube.com/watch?v=u57EnkQaUTY">What is Prompt Caching? Optimize LLM Latency with AI Transformers</a>) guarda o KV cache de um prefixo do prompt para reutilizá-lo; não é cache de resposta. A correspondência é por prefixo: no primeiro token diferente, o cache acaba. Daí a regra: <b>estático primeiro, dinâmico por último</b> (sistema → documentos → exemplos → pergunta). A economia pode chegar a 90% do custo da entrada.</p>
+<p>Para medir um sistema (<a href="https://www.youtube.com/watch?v=nVImVgKpoOY">LLM &amp; AI Agent Benchmarks vs Reality: Why AI Applications Break</a>), separe <b>TTFT</b> (tempo até o primeiro token, dominado pelo prefill), latência entre tokens (decode) e throughput, e teste com a forma de carga real: chat tem entrada curta e saída longa; RAG, o contrário. Técnicas de serving como batching contínuo, PagedAttention e <i>speculative decoding</i> (um modelo pequeno propõe tokens que o grande verifica em lote) completam o quadro. Defina metas de latência (por exemplo, p99 abaixo de 300 ms) e procure o ponto em que o TTFT dispara à medida que a concorrência cresce: é ali que o sistema precisa de mais hardware ou de outra configuração.</p>
+
+<h2>Limitações: alucinação, raciocínio infiel e contexto longo</h2>
+<div class="box intro"><b>Para começar</b> Um LLM é como um aluno muito lido que, na dúvida, prefere chutar com confiança a dizer “não sei”. Ele pode inventar fatos, explicar um raciocínio diferente do que usou e se perder em textos longos.</div>
+<h3>Por que modelos alucinam</h3>
+<p>O modelo é treinado para produzir continuações plausíveis, e plausível não é verdadeiro. A pesquisa de <b>interpretabilidade</b> da Anthropic encontrou um mecanismo: um circuito decide “conheço esta entidade?” e, se ativo, inibe a resposta “não sei”. A alucinação ocorre quando ele dispara por familiaridade sem que o fato esteja armazenado. Segundo <a href="https://www.youtube.com/watch?v=OWPRU_Pc4Ng">5 AI Myths &amp; The Truth Behind Them: ML, Context, Agents &amp; More</a>, modelos de fronteira alucinam ~3% das vezes em benchmarks típicos, graças a busca, treino para recusa e raciocínio. Em fatos obscuros, números exatos e referências bibliográficas, a taxa é muito maior.</p>
+<h3>O raciocínio exibido não é o que o modelo fez</h3>
+<p>A cadeia de pensamento é texto gerado como qualquer outro. Em <a href="https://www.youtube.com/watch?v=fGKNUvivvnc">Interpretability: Understanding how AI models think</a>, ao somar 36+59 o modelo explica o “vai um” escolar, mas internamente usa caminhos paralelos (estimativa da magnitude e cálculo do último dígito); recebendo a dica de uma resposta, trabalha de trás para frente para chegar a ela. A interpretabilidade também mostra o que acontece de fato:</p>
+<ul>
+<li><b>Planejamento</b> (<a href="https://www.youtube.com/watch?v=Bj9BD2D3DzA">Tracing the thoughts of a large language model</a>): ao escrever um verso que deve rimar com “grab it”, o Claude ativa “rabbit” antes de escrever a linha.</li>
+<li><b>Raciocínio em vários saltos</b>: Dallas → Texas → Austin; trocar internamente “Texas” por “Califórnia” produz Sacramento.</li>
+<li><b>Passos não escritos</b> (<a href="https://www.youtube.com/watch?v=rKV5JcALQoQ">The different levels of how Claude thinks</a>): etapas intermediárias aparecem nas ativações sem ser escritas.</li>
+<li><b>Consciência de teste</b> (<a href="https://www.youtube.com/watch?v=j2knrqAzYVY">Translating Claude’s thoughts into language</a>): num cenário de segurança, as ativações diziam “provavelmente é uma avaliação”, o que expõe um limite dos próprios testes.</li>
+</ul>
+<p>Os pesquisadores reconhecem o alcance limitado: essas ferramentas funcionam numa fração pequena dos casos.</p>
+<p>A mesma pesquisa mostra que, em modelos grandes, conceitos como “oposto de grande” usam o mesmo circuito em vários idiomas, enquanto modelos pequenos mantêm circuitos separados por idioma. É uma pista de por que modelos maiores transferem melhor o que aprendem numa língua para outra.</p>
+<h3>Contexto longo e erro composto</h3>
+<p>Janelas de 1M de tokens acertam quase 100% em achar uma única “agulha no palheiro”, mas com várias agulhas caem 30–60 pontos entre 200 mil e 1 milhão de tokens. Use contexto longo para leitura e recuperação estruturada (RAG, busca, banco) para fatos exatos.</p>
+<p>Um agente é um LLM num loop (objetivo → decidir → agir → observar). Se cada passo acerta 95%, a chance de 20 passos sem erro é ~36%; de 50 passos, ~8%. Por isso agentes em produção precisam de verificadores, humano no loop para ações irreversíveis e, como insiste o Akita, um “oráculo” (testes, documentação) que dê feedback real.</p>
+<div class="box key"><b>Em resumo</b> As limitações dos LLMs vêm da mesma origem do seu poder: continuações plausíveis, aprendidas de dados e moldadas por preferências. Alucinação, bajulação, raciocínio infiel e erro composto se tratam com sistemas que verificam: ferramentas, testes, calibração e engenharia tradicional.</div>
+
+<h2>Checklist do capítulo</h2>
+<ul>
+<li>Conte tokens no tokenizer do modelo que vai usar; português custa mais que inglês.</li>
+<li>Saída é cara porque o decode é serial e limitado por banda.</li>
+<li>Em MoE, parâmetros totais definem a memória; ativos definem a velocidade.</li>
+<li>Q8 é praticamente sem perda; uma stack de serving errada pode custar dezenas de pontos.</li>
+<li>Reasoning effort mais alto não é sinônimo de melhor; meça.</li>
+<li>Prompt caching: estático primeiro, dinâmico por último.</li>
+<li>Antes de fine-tuning, esgote prompt, RAG e skills.</li>
+<li>Não trate a cadeia de raciocínio exibida como explicação; confie em testes.</li>
+</ul>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=fGKNUvivvnc">Interpretability: Understanding how AI models think</a></td><td>https://www.youtube.com/watch?v=fGKNUvivvnc</td><td>Anthropic</td><td>Circuitos de alucinação e raciocínio infiel</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=O4n1jtWzt30">New frontier AI models, TypeSafe’s Jev AI, &amp; NASA’s IBM collab</a></td><td>https://www.youtube.com/watch?v=O4n1jtWzt30</td><td>IBM Technology</td><td>Disputa vira “inteligência do sistema”</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2BicjJgRkms">¿Es El Fin De Los LLM? (NCM)</a></td><td>https://www.youtube.com/watch?v=2BicjJgRkms</td><td>Jorge Marfil</td><td>NCM comparado a difusão; decode limitado por banda</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=nVImVgKpoOY">LLM &amp; AI Agent Benchmarks vs Reality: Why AI Applications Break</a></td><td>https://www.youtube.com/watch?v=nVImVgKpoOY</td><td>IBM Technology</td><td>TTFT, prefill/decode e formas de carga</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=--8pJvYNcX4">Every AI Model Explained In 20 Minutes (Update)</a></td><td>https://www.youtube.com/watch?v=--8pJvYNcX4</td><td>Tina Huang</td><td>Camadas de modelos: flagship a local</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=cEpynX9YsBw">GLM 5.3 é a IA Aberta que Encostou no Claude</a></td><td>https://www.youtube.com/watch?v=cEpynX9YsBw</td><td>ViktorKav</td><td>Pós-treino como alavanca; reasoning baixo basta</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=tAhmBB_LSsc">O que são tokens?</a></td><td>https://www.youtube.com/watch?v=tAhmBB_LSsc</td><td>Fernanda Kipper</td><td>Subpalavras e diferenças entre tokenizers</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=qaQn978_S40">Se você só pode assistir UM vídeo sobre LLMs, assista esse.</a></td><td>https://www.youtube.com/watch?v=qaQn978_S40</td><td>Fernanda Kipper</td><td>Tokens, embeddings, posição e atenção</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=We0XRlxxD4I">Claude Has the One Thing ChatGPT Can't Copy.  Here's What It Is.</a></td><td>https://www.youtube.com/watch?v=We0XRlxxD4I</td><td>Corey McClain</td><td>Inteligência empatada; diferencial é gosto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=YGgNBcIgI4s">What Is Jev? The AI Model That Doesn't Generate Text</a></td><td>https://www.youtube.com/watch?v=YGgNBcIgI4s</td><td>IBM Technology</td><td>Decisões calibradas sem gerar texto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=OWPRU_Pc4Ng">5 AI Myths &amp; The Truth Behind Them: ML, Context, Agents &amp; More</a></td><td>https://www.youtube.com/watch?v=OWPRU_Pc4Ng</td><td>IBM Technology</td><td>Alucinação, inferência e erro composto</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=wgfSDrqYMJ4">What are Word Embeddings?</a></td><td>https://www.youtube.com/watch?v=wgfSDrqYMJ4</td><td>IBM Technology</td><td>TF-IDF, Word2Vec, GloVe e contextuais</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=pu3-PeBG0YU">Fine Tuning Large Language Models with InstructLab</a></td><td>https://www.youtube.com/watch?v=pu3-PeBG0YU</td><td>IBM Technology</td><td>Dados sintéticos e LoRA num 7B</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=AaCBiGWTuyA">Granite 4.0: Small AI Models, Big Efficiency</a></td><td>https://www.youtube.com/watch?v=AaCBiGWTuyA</td><td>IBM Technology</td><td>Híbrido Mamba/Transformer, menos memória</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=KTonvXhsxpc">What is DeepSeek? AI Model Basics Explained</a></td><td>https://www.youtube.com/watch?v=KTonvXhsxpc</td><td>IBM Technology</td><td>Linhagem DeepSeek: MoE e RL</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-W2JdSl1v48">Is Fine-Tuning Still Needed? LLMs, RAG, &amp; LoRA</a></td><td>https://www.youtube.com/watch?v=-W2JdSl1v48</td><td>IBM Technology</td><td>Prompt → RAG → skills → fine-tuning</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=TY9CYRBOBPM">GPT-5: Five AI Model Improvements to Address LLM Weaknesses</a></td><td>https://www.youtube.com/watch?v=TY9CYRBOBPM</td><td>IBM Technology</td><td>Alucinação, bajulação e engano</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=hl6mANth6oA">What is AI Slop? Low-Quality AI Content Causes, Signs, &amp; Fixes</a></td><td>https://www.youtube.com/watch?v=hl6mANth6oA</td><td>IBM Technology</td><td>Marcas e causas do texto genérico</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=4-FH09AMsp0">AI Agents vs Mixture of Experts: AI Workflows Explained</a></td><td>https://www.youtube.com/watch?v=4-FH09AMsp0</td><td>IBM Technology</td><td>Agentes roteiam tarefas; MoE roteia tokens</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=u57EnkQaUTY">What is Prompt Caching? Optimize LLM Latency with AI Transformers</a></td><td>https://www.youtube.com/watch?v=u57EnkQaUTY</td><td>IBM Technology</td><td>Cache de prefixo; estático primeiro</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=bdICz_sBI34">Transforming Language with Generative Pre-trained Transformers (GPT)</a></td><td>https://www.youtube.com/watch?v=bdICz_sBI34</td><td>IBM Technology</td><td>Sigla GPT e histórico</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=0Wwn5IEqFcg">Small vs. Large AI Models: Trade-offs &amp; Use Cases Explained</a></td><td>https://www.youtube.com/watch?v=0Wwn5IEqFcg</td><td>IBM Technology</td><td>Modelos pequenos alcançam os grandes</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=TabyC8otFY8">AI and Large Language Models Boost Language Translation</a></td><td>https://www.youtube.com/watch?v=TabyC8otFY8</td><td>IBM Technology</td><td>Tradução e arquitetura encoder-decoder</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=rKV5JcALQoQ">The different levels of how Claude thinks</a></td><td>https://www.youtube.com/watch?v=rKV5JcALQoQ</td><td>Anthropic</td><td>Passos internos não escritos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=PhTQOig_QA4">NCM matou o LLM: dessa vez, parece que é real</a></td><td>https://www.youtube.com/watch?v=PhTQOig_QA4</td><td>IA em 6 minutos</td><td>Onde o NCM ganha e perde</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5sLYAQS9sWQ">How Large Language Models Work</a></td><td>https://www.youtube.com/watch?v=5sLYAQS9sWQ</td><td>IBM Technology</td><td>Dados, arquitetura e treino</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=j2knrqAzYVY">Translating Claude’s thoughts into language</a></td><td>https://www.youtube.com/watch?v=j2knrqAzYVY</td><td>Anthropic</td><td>Modelo percebe estar num teste</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Bj9BD2D3DzA">Tracing the thoughts of a large language model</a></td><td>https://www.youtube.com/watch?v=Bj9BD2D3DzA</td><td>Anthropic</td><td>O modelo planeja a rima antes</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/">LLMs + Agentes = competente o suficiente</a></td><td>https://akitaonrails.com/2026/10/12/llms-agentes-competente-o-suficiente/</td><td>Fabio Akita (AkitaOnRails)</td><td>Linha do tempo; ganho vem do harness</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/14/treinei-meu-proprio-modelo-de-ia-spoiler-e-so-pra-estudo/">Treinei meu próprio modelo de IA</a></td><td>https://akitaonrails.com/2026/10/14/treinei-meu-proprio-modelo-de-ia-spoiler-e-so-pra-estudo/</td><td>Fabio Akita (AkitaOnRails)</td><td>Treino de 337M; zero em agentes</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/">LLM Benchmark v4</a></td><td>https://akitaonrails.com/2026/10/22/llm-benchmark-v4-o-veredito-de-open-source-ate-out-2026/</td><td>Fabio Akita (AkitaOnRails)</td><td>Serving pesa mais que quantização</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/22/melhor-llm-open-source-strata-com-qwen-3-8-flash-next/">Melhor LLM Open Source: Strata com Qwen 3.8 Flash Next</a></td><td>https://akitaonrails.com/2026/10/22/melhor-llm-open-source-strata-com-qwen-3-8-flash-next/</td><td>Fabio Akita (AkitaOnRails)</td><td>VRAM como cache de especialistas</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/03/entendendo-o-hype-do-jev-pra-que-serve/">Entendendo o Hype do Jev: pra que serve?</a></td><td>https://akitaonrails.com/2026/10/03/entendendo-o-hype-do-jev-pra-que-serve/</td><td>Fabio Akita (AkitaOnRails)</td><td>Velocidade vem de trocar chat por classificador</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2203.15556">Training Compute-Optimal Large Language Models (Chinchilla)</a></td><td>https://arxiv.org/abs/2203.15556</td><td>Hoffmann et al., DeepMind (2022)</td><td>~20 tokens por parâmetro</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2001.08361">Scaling Laws for Neural Language Models</a></td><td>https://arxiv.org/abs/2001.08361</td><td>Kaplan et al., OpenAI (2020)</td><td>Perda cai como lei de potência</td></tr>
+<tr><td><a href="https://arxiv.org/abs/1701.06538">Outrageously Large Neural Networks: The Sparsely-Gated MoE Layer</a></td><td>https://arxiv.org/abs/1701.06538</td><td>Shazeer et al., Google (2017)</td><td>Camada MoE esparsa com top-k</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2401.04088">Mixtral of Experts</a></td><td>https://arxiv.org/abs/2401.04088</td><td>Mistral AI (2024)</td><td>46,7B totais, 12,9B ativos</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 Technical Report</a></td><td>https://arxiv.org/abs/2412.19437</td><td>DeepSeek-AI (2024)</td><td>671B totais, 37B ativos</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2505.09388">Qwen3 Technical Report</a></td><td>https://arxiv.org/abs/2505.09388</td><td>Equipe Qwen, Alibaba (2025)</td><td>Qwen3-235B-A22B e 30B-A3B</td></tr>
+<tr><td><a href="https://artificialanalysis.ai/articles/analysis-openai-gpt-oss-models">Analysis: OpenAI gpt-oss models</a></td><td>https://artificialanalysis.ai/articles/analysis-openai-gpt-oss-models</td><td>Artificial Analysis (2025)</td><td>Parâmetros totais e ativos do gpt-oss</td></tr>
+<tr><td><a href="https://telnyx.com/llm-library/llama-4-maverick-17b-128e-instruct">Llama 4 Maverick 17B 128E Instruct</a></td><td>https://telnyx.com/llm-library/llama-4-maverick-17b-128e-instruct</td><td>Telnyx LLM Library</td><td>400B totais, 17B ativos</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2106.09685">LoRA: Low-Rank Adaptation of Large Language Models</a></td><td>https://arxiv.org/abs/2106.09685</td><td>Hu et al., Microsoft (2021)</td><td>10.000× menos parâmetros treináveis</td></tr>
+<tr><td><a href="https://arxiv.org/abs/2305.14314">QLoRA: Efficient Finetuning of Quantized LLMs</a></td><td>https://arxiv.org/abs/2305.14314</td><td>Dettmers et al. (2023)</td><td>65B ajustado numa GPU de 48 GB</td></tr>
+<tr><td><a href="https://www.cs.toronto.edu/~hinton/absps/jjnh91.pdf">Adaptive Mixtures of Local Experts</a></td><td>https://www.cs.toronto.edu/~hinton/absps/jjnh91.pdf</td><td>Jacobs, Jordan, Nowlan, Hinton (1991)</td><td>Origem da ideia de MoE</td></tr>
+<tr><td><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a></td><td>https://github.com/ggml-org/llama.cpp</td><td>ggml-org</td><td>Offload de especialistas e adapters LoRA</td></tr>
+</table>
+</section>

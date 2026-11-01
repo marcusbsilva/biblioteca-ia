@@ -1,0 +1,200 @@
+<section class="chapter" id="ch11"><h1><span class="num">Capítulo 11</span>Engenharia Reversa e Segurança</h1>
+<p class="lead">Engenharia reversa e segurança são duas faces da mesma disciplina: entender um sistema melhor do que seu autor esperava. Este capítulo apresenta, em nível conceitual, o que é engenharia reversa, para que a indústria a usa e como a IA mudou sua velocidade. Depois passa ao lado defensivo: falhas clássicas de aplicações, senhas e criptografia, phishing, segurança de agentes de IA e governança.</p>
+<div class="box intro"><b>Para começar</b> Imagine receber um bolo pronto e tentar descobrir a receita. Engenharia reversa é isso aplicado a programas. Segurança é o outro lado: saber como alguém descobriria a receita, ou estragaria o bolo, para impedir que isso aconteça.</div>
+
+<h2>O que é engenharia reversa e por que ela voltou à moda</h2>
+<div class="box intro"><b>Para começar</b> Compilar um programa é traduzi-lo para uma língua que quase ninguém lê. Engenharia reversa é traduzir de volta o suficiente para entender o que ele faz. É assim que se analisam vírus, se auditam fornecedores e se preserva software antigo.</div>
+<p>Engenharia reversa (RE, de <i>reverse engineering</i>) é reconstruir conhecimento de projeto a partir de um artefato pronto: um binário compilado, um bytecode Java ou .NET, um pacote JavaScript minificado, um aplicativo móvel ou um firmware. Seus usos legítimos são antigos e comuns na indústria:</p>
+<ul>
+<li><b>Análise de malware</b>: empresas de antivírus e equipes de resposta a incidentes estudam amostras para criar detecções.</li>
+<li><b>Interoperabilidade</b>: formatos de arquivo e protocolos não documentados (o LibreOffice lendo arquivos do Office, o Samba falando com redes Windows).</li>
+<li><b>Auditoria</b>: verificar o que um software de terceiros realmente faz antes de implantá-lo.</li>
+<li><b>Preservação</b>: manter jogos e programas antigos funcionando quando o fabricante já não existe (Livro 6, Capítulo 2 (IA e games: preservação)).</li>
+</ul>
+<p>Nada disso é novo: disassemblers existem desde os anos 1980, e decompiladores de bytecode Java e C# tornam esses binários quase legíveis há mais de vinte anos. O que mudou em 2025–2026, segundo o debate em <a href="https://www.youtube.com/watch?v=-soAkLdbNfY">A NOVA ONDA DE CLONES DE SOFTWARE | COMO O REA FUNCIONA</a> (Código Fonte TV), foi a <b>velocidade</b>: modelos de código leem saída de decompilador, nomeiam funções e documentam comportamentos. Daí a onda viral de “clones” de produtos comerciais feitos com IA.</p>
+
+<h3>A tese “a Adobe morreu?” e seus limites</h3>
+<p>No post <a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/"><i>Engenharia reversa com IA: a Adobe morreu?</i></a>, Fabio Akita contesta a ideia de que agentes vão substituir qualquer software comercial. As ferramentas “de IA para RE” continuam dependendo de ferramental clássico, como o Ghidra, para o trabalho pesado; a IA é uma camada de interpretação. Reescritas grandes continuam caras, porque décadas de casos de borda não cabem numa interface parecida. E o valor de produtos como Photoshop ou Excel está também em ecossistema, compatibilidade e suporte. Reimplementações abertas como LibreOffice e GIMP mostram que alternativas são possíveis, mas clones idênticos ou feitos a partir do binário de terceiros entram em terreno jurídico arriscado.</p>
+
+<h3>O que pode (e o que não pode) ser revertido</h3>
+<p>Uma classificação útil, apresentada no canal Gabriel Kendy, olha para <b>onde fica a lógica</b> de uma solução. Quando ela está toda no dispositivo (jogos, apps desktop), quase tudo é recuperável. Quando o app é local mas a lógica valiosa roda na nuvem, o analista vê só o cliente e o protocolo. Quando tudo é web, resta apenas o front-end.</p>
+<figure><img src="img/11_reversibilidade.png"><figcaption>Reversibilidade conforme a localização da lógica. Quanto mais lógica no servidor, menos o binário revela. Fonte: elaboração própria com base no canal Gabriel Kendy.</figcaption></figure>
+<p>A lição defensiva é direta: <b>lógica de negócio valiosa, segredos e decisões de autorização pertencem ao servidor</b>. Ofuscação eleva o custo, mas não muda a classe de reversibilidade. O Livro 3, Capítulo 5 (Segurança cloud-first) desenvolve essa ideia como arquitetura.</p>
+
+<h3>Legalidade e sala limpa</h3>
+<p>A legalidade varia por país. Muitos ordenamentos admitem RE para interoperabilidade, pesquisa de segurança e correção de erros, mas licenças frequentemente a proíbem, e leis anticircunvenção (como a DMCA nos EUA) restringem quebrar proteções técnicas. Os termos de uso dos provedores de IA também vedam usos que infrinjam direitos de terceiros. O padrão histórico para reimplementações defensáveis é a <b>sala limpa</b>: uma equipe documenta o comportamento observado; outra, que nunca viu o código original, implementa a partir da especificação. A regra profissional é simples: <i>analise apenas o que você tem autorização para analisar</i>.</p>
+
+<div class="box fact"><b>Você sabia?</b> Nos anos 1980, a Phoenix Technologies recriou a BIOS do IBM PC com uma equipe de sala limpa: engenheiros que nunca tinham lido o código da IBM implementaram a partir de uma especificação escrita por outro grupo. Isso viabilizou legalmente a indústria de PCs compatíveis.</div>
+
+<h2>Formatos executáveis e ferramentas</h2>
+<div class="box intro"><b>Para começar</b> Um executável tem uma “ficha de identificação” no começo e compartimentos definidos, como uma caixa de remédio com rótulo e bula. Conhecer esse arranjo é o primeiro passo de qualquer análise.</div>
+<p>Os formatos nativos dominantes são <b>PE</b> (Windows: .exe, .dll), <b>ELF</b> (Linux, Android nativo, sistemas embarcados) e <b>Mach-O</b> (macOS e iOS). Todos têm um cabeçalho que declara arquitetura, ponto de entrada, seções de código e dados e bibliotecas importadas. Para quem defende, esses campos alimentam detecção: assinaturas digitais, listas de hashes e regras YARA usadas por antivírus. Outros ecossistemas têm formatos próprios, como APK (Android), assemblies .NET, pacotes Electron e WebAssembly.</p>
+<p>As ferramentas se agrupam por camada: <b>disassembly</b> (bytes → instruções), <b>decompilação</b> (instruções → pseudocódigo), <b>análise dinâmica</b> (observar a execução) e bibliotecas de apoio.</p>
+<table>
+<tr><th>Ferramenta</th><th>Tipo</th><th>Licença</th></tr>
+<tr><td>Ghidra</td><td>Suíte completa (disassembler + decompilador)</td><td>Open source (NSA)</td></tr>
+<tr><td>IDA Pro</td><td>Suíte completa, padrão histórico da indústria</td><td>Comercial (Hex-Rays)</td></tr>
+<tr><td>Binary Ninja</td><td>Suíte completa</td><td>Comercial</td></tr>
+<tr><td>radare2 / Rizin</td><td>Framework de linha de comando</td><td>Open source</td></tr>
+<tr><td>JADX / ILSpy</td><td>Decompiladores de bytecode Android e .NET</td><td>Open source</td></tr>
+<tr><td>Capstone / LIEF</td><td>Bibliotecas de disassembly e de leitura de formatos</td><td>Open source</td></tr>
+</table>
+<div class="box fact"><b>Você sabia?</b> O Ghidra foi desenvolvido internamente pela NSA e liberado como software livre em 2019, na conferência RSA. Hoje é a principal alternativa gratuita ao IDA Pro e base de muitas ferramentas de RE assistida por IA.</div>
+
+<h2>Análise estática versus dinâmica</h2>
+<div class="box intro"><b>Para começar</b> Uma encomenda suspeita pode ser examinada por fora (raio-X, peso) ou aberta num local seguro. Na análise de software, o primeiro jeito é a análise estática; o segundo, a dinâmica.</div>
+<p><b>Análise estática</b> examina o artefato sem executá-lo. É segura e cobre, em tese, todos os caminhos de código, mas sofre com ofuscação e código gerado em tempo de execução. <b>Análise dinâmica</b> executa o alvo em ambiente isolado e observa chamadas de sistema, rede e arquivos. Vê o que de fato acontece, mas só nos caminhos exercitados, e exige isolamento rigoroso, porque o alvo pode ser malicioso.</p>
+<figure><img src="img/11_estatica_dinamica.png"><figcaption>Fluxo típico de investigação combinando análise estática e dinâmica, com hipóteses circulando entre as duas. Fonte: elaboração própria.</figcaption></figure>
+<table>
+<tr><th>Critério</th><th>Estática</th><th>Dinâmica</th></tr>
+<tr><td>Executa o alvo?</td><td>Não</td><td>Sim, em sandbox</td></tr>
+<tr><td>Cobertura</td><td>Todos os caminhos, em teoria</td><td>Só os exercitados</td></tr>
+<tr><td>Ofuscação</td><td>Atrapalha muito</td><td>Atrapalha menos</td></tr>
+<tr><td>Risco</td><td>Baixo</td><td>Alto se o isolamento falhar</td></tr>
+<tr><td>Saída típica</td><td>Estrutura, hipóteses</td><td>Comportamento observado, indicadores de comprometimento</td></tr>
+</table>
+<p>Na prática, as duas se alimentam: a análise estática levanta hipóteses (“esta função parece cifrar dados”), e a dinâmica as confirma ou descarta observando o comportamento real. Equipes de resposta a incidentes fazem esse ciclo diariamente para extrair indicadores de comprometimento e criar regras de detecção que protegem outras empresas.</p>
+<p>Uma terceira família, a <b>execução simbólica</b>, trata entradas como variáveis e calcula que condições levam a cada caminho; a indústria a usa em <i>fuzzing</i> defensivo para encontrar bugs antes do lançamento.</p>
+
+<h2>IA aplicada à engenharia reversa</h2>
+<div class="box intro"><b>Para começar</b> O decompilador entrega código com nomes sem sentido, como num livro em que todos os personagens se chamam “Pessoa 1”. Modelos de linguagem são bons em sugerir o que cada trecho faz, mas também inventam com convicção (veja Livro 1, Capítulo 2 (LLMs, Transformers e MoE)).</div>
+<p>Os modelos ajudam a <b>nomear e explicar</b> funções, <b>recuperar tipos</b>, <b>resumir</b> grandes volumes de código e <b>correlacionar</b> evidências de várias ferramentas. A arquitetura comum é um agente de código conectado por MCP (Livro 2, Capítulo 4 (Agentes e MCP)) a ferramentas como Ghidra ou IDA. Três dificuldades permanecem:</p>
+<ul>
+<li><b>Alucinação</b>: uma explicação sem evidência rastreável é só hipótese.</li>
+<li><b>Contexto</b>: binários grandes geram milhões de linhas de pseudocódigo.</li>
+<li><b>Conteúdo hostil</b>: strings dentro do alvo podem conter instruções para o agente (prompt injection).</li>
+</ul>
+<p>Projetos maduros respondem com <b>proveniência</b>: cada afirmação aponta para a ferramenta e o trecho que a sustentam, o que não foi provado fica registrado como incógnita, o conteúdo do alvo é marcado como não confiável e o agente opera com privilégio mínimo. Com essa disciplina, até um modelo modesto produz resultados auditáveis.</p>
+
+<h2>Segurança de aplicações: falhas clássicas e defesas corretas</h2>
+<div class="box intro"><b>Para começar</b> Mudamos de lado da mesa. A maioria dos problemas de uma aplicação acontece quando ela confia demais no que o usuário entrega, como um bilhete que, em vez de pedido, contém uma ordem para o caixa.</div>
+<p>A referência canônica é o <b>OWASP Top 10</b>, que lista controle de acesso quebrado, falhas criptográficas, injeção, configuração incorreta e componentes vulneráveis, entre outros. A OWASP mantém também um Top 10 para aplicações com LLM, liderado por prompt injection.</p>
+
+<h3>SQL injection</h3>
+<p>SQL injection ocorre quando dados do usuário são <b>concatenados</b> no texto de uma consulta: o banco não distingue comando de dado. A defesa recomendada pela OWASP são as <b>consultas parametrizadas</b>, em que valores seguem separados do SQL.</p>
+<pre><code># ERRADO: concatenação
+cur.execute(f"SELECT id FROM users WHERE email = '{email}'")
+
+# CERTO: parâmetros
+cur.execute("SELECT id FROM users WHERE email = ?", (email,))</code></pre>
+<div class="box warn"><b>Atenção</b> ORMs protegem porque usam parametrização por baixo, e voltam a ser vulneráveis se você concatenar SQL bruto. “Sanitizar” strings manualmente é frágil; bibliotecas como <i>bleach</i> tratam HTML (XSS), não SQL. Nomes de tabela e colunas de ORDER BY devem vir de uma lista de permissões, como mostra <a href="https://www.youtube.com/watch?v=JqCH1uUntuQ">COMO AUMENTAR A SEGURANÇA DO SEU BACKEND? | Conhecendo ataques mais comuns</a>.</div>
+<p>Camadas complementares: usuário de banco com privilégios mínimos, banco acessível só pelo back-end e erros de SQL nunca exibidos ao usuário.</p>
+
+<h3>CSRF</h3>
+<p><i>Cross-Site Request Forgery</i> explora o fato de o navegador anexar cookies automaticamente: um site malicioso dispara uma requisição ao seu banco e ela chega com sua sessão. Defesas: cookies <code>SameSite=Lax</code> ou <code>Strict</code>; token anti-CSRF aleatório vinculado à sessão; header customizado em APIs, que força preflight CORS; e verificação do header <code>Origin</code> em ações sensíveis. Erros comuns: colocar o token na URL, onde vaza em logs e histórico; confiar só no <i>double submit cookie</i>, que tem contornos conhecidos; e desabilitar CORS “para funcionar”. Em operações financeiras, vale exigir reautenticação ou MFA. Se houver XSS, o script roda dentro da sua origem e lê o token, por isso escape de saída e Content Security Policy continuam necessários.</p>
+
+<h3>ReDoS: quando uma regex derruba o servidor</h3>
+<p>Motores de regex com <b>backtracking</b> (Python, JavaScript, Java, PCRE) podem levar tempo exponencial em padrões com quantificadores aninhados, como <code>(a+)+$</code>. Em <a href="https://www.youtube.com/watch?v=wuVXBiJoIKU">Regex pode TRAVAR o seu servidor! CUIDADO!</a>, cerca de 30 caracteres bastam para travar uma máquina por segundos.</p>
+<figure><img src="img/11_redos.png"><figcaption>Crescimento ilustrativo do tempo de matching de <code>(a+)+$</code> num motor com backtracking versus um motor linear. Fonte: elaboração própria, ordem de grandeza de “Regex pode TRAVAR o seu servidor!”.</figcaption></figure>
+<p>Mitigações: evitar quantificadores aninhados, preferir motores lineares (RE2, Go, a crate <code>regex</code> do Rust), limitar o tamanho da entrada e impor timeout.</p>
+
+<h3>Princípios de engenharia segura</h3>
+<p>O vídeo <a href="https://www.youtube.com/watch?v=aGVN6aHKkE0">O MÍNIMO que um dev precisa saber sobre segurança</a>, de Augusto Galego, resume: <b>minimizar a superfície de ataque</b>, <b>menor privilégio</b>, <b>defaults seguros</b>, <b>criptografia com padrões estabelecidos</b> e <b>atualizações rápidas</b>. Some a isso: segredos nunca no repositório (um segredo commitado deve ser revogado, não só apagado) e comparação de tokens em tempo constante (<code>hmac.compare_digest</code>), para não vazar informação pelo tempo de resposta.</p>
+
+<h3>Rede: VPN e Tor</h3>
+<p>HTTPS cifra o conteúdo, mas o provedor de internet ainda vê com quem você fala. Segundo <a href="https://www.youtube.com/watch?v=2fCTrjmDqyg">Personal VPNs: Encryption Myths and Data Security Explained</a>, uma VPN é <b>transferência de confiança</b>: o provedor da VPN passa a ver o que o ISP via, e não há anonimato se você faz login. O <b>Tor</b> usa três saltos cifrados, nenhum dos quais conhece a rota inteira; é melhor para anonimato e pior para velocidade, e o trecho final até o site depende de HTTPS. O podcast <a href="https://www.youtube.com/watch?v=VoSQZBguB1A">The PHP bug threatening the web. Plus, who's auditing AI?</a> lembra que nós de saída já foram comprometidos em massa: assuma que podem ser hostis.</p>
+<table>
+<tr><th>Caso de uso</th><th>VPN</th><th>Tor</th></tr>
+<tr><td>Esconder tráfego do provedor de internet</td><td>Sim</td><td>Sim</td></tr>
+<tr><td>Anonimato</td><td>Fraco (confiança no provedor)</td><td>Forte</td></tr>
+<tr><td>Velocidade</td><td>Boa</td><td>Ruim</td></tr>
+<tr><td>Wi-Fi público</td><td>Adequada</td><td>Exagero</td></tr>
+</table>
+<p>Outras ameaças de rede seguem a mesma lógica de camadas. <b>Man-in-the-middle</b> em Wi-Fi público é neutralizado por TLS em tudo e HSTS. <b>DDoS</b> pede CDN com filtragem do provedor, rate limiting no gateway e banco aceitando conexões só do back-end.</p>
+
+<div class="box fact"><b>Você sabia?</b> Em 1988, o Morris Worm infectou cerca de 10% dos computadores da internet de então. Robert Tappan Morris foi o primeiro condenado pela lei americana de fraude por computador, e o episódio levou à criação do CERT/CC.</div>
+
+<h2>Senhas, hashing e criptografia</h2>
+<div class="box intro"><b>Para começar</b> O site precisa conferir sua senha sem guardar uma cópia que um ladrão possa usar. Para isso existe o <b>hash</b>, uma impressão digital de mão única. Já a <b>criptografia</b> é um cofre: quem tem a chave abre.</div>
+<p>A aula <a href="https://www.youtube.com/watch?v=9KoYnFuHYL8">CS50 for Business - Lecture 8 - Securing Systems</a> separa <b>autenticação</b> (quem você é) de <b>autorização</b> (o que pode fazer). O espaço de busca de uma senha cresce exponencialmente com o comprimento: alfabeto <i>A</i> e comprimento <i>L</i> dão <i>A</i><sup><i>L</i></sup> combinações.</p>
+<figure><img src="img/11_espaco_senhas.png"><figcaption>Número de combinações para diferentes políticas de senha (escala logarítmica). Fonte: elaboração própria com dados de “CS50 for Business — Securing Systems”.</figcaption></figure>
+<p>Num <b>ataque online</b>, rate limiting e MFA tornam a força bruta impraticável. Num <b>ataque offline</b>, após vazamento do banco, GPUs testam bilhões de hashes rápidos por segundo, e por isso o algoritmo importa. Comprimento vence complexidade: uma frase-senha longa num gerenciador é melhor que oito caracteres “complexos”.</p>
+
+<h3>Como armazenar senhas</h3>
+<p><a href="https://www.youtube.com/watch?v=SZb7yyhTWBg">Password Hashing, Salting e Peppering</a> e <a href="https://www.youtube.com/watch?v=sC-rrOdwsIs">A Forma Correta de Criptografar Senhas: O Guia que Todo Dev Precisa Ver!</a> convergem: nunca texto puro nem criptografia reversível; <b>salt</b> único por usuário; e algoritmo <b>lento e caro em memória</b>, como <b>Argon2id</b> (recomendação da OWASP), scrypt ou bcrypt. MD5 e SHA-256 puros são rápidos demais. Use a biblioteca do ecossistema ou um provedor de identidade, nunca uma função caseira.</p>
+<pre><code>from argon2 import PasswordHasher
+ph = PasswordHasher()               # Argon2id, salt automático
+h = ph.hash("frase-senha longa e única")
+ph.verify(h, tentativa)             # lança exceção se não confere</code></pre>
+<div class="box warn"><b>Atenção</b> É comum ouvir que o SHA-256 é “inquebrável”. Para colisões, na prática, é. Para <b>senhas</b>, não: um SHA-256 sem salt de uma senha comum é descoberto em instantes por dicionário, porque o atacante não inverte a função, apenas testa candidatos prováveis. O que importa para senhas é o hash ser <i>lento</i>. Se um site lhe envia a senha original por e-mail, ele a guarda de forma recuperável; sistemas corretos só permitem <i>redefinir</i>.</div>
+<p>O <b>pepper</b>, um segredo da aplicação guardado fora do banco, é uma camada opcional: protege contra vazamento só do banco, mas perdê-lo invalida todas as senhas.</p>
+
+<h3>Criptografia simétrica e assimétrica</h3>
+<p><b>Simétrica</b> (AES, ChaCha20): a mesma chave cifra e decifra; é rápida, mas exige compartilhar a chave. <b>Assimétrica</b> (RSA, curvas elípticas): cada parte tem um par de chaves.</p>
+<table>
+<tr><th>Objetivo</th><th>Quem usa qual chave</th></tr>
+<tr><td>Confidencialidade</td><td>Cifra-se com a <b>pública do destinatário</b>; só a <b>privada</b> dele decifra</td></tr>
+<tr><td>Assinatura digital</td><td>Assina-se com a <b>própria privada</b>; qualquer um verifica com a pública</td></tr>
+</table>
+<p>No <b>TLS 1.3</b>, uma troca Diffie-Hellman efêmera combina uma chave simétrica de sessão, e o servidor assina a troca para provar identidade. Nos <b>passkeys</b>, o dispositivo guarda uma chave privada por site e assina desafios; não há segredo para ser digitado num site falso, o que os torna resistentes a phishing. Na criptografia <b>ponta a ponta</b> (Signal, WhatsApp), só os aparelhos das pontas têm as chaves. A aula do CS50 lembra a diferença entre segurança e privacidade: com HTTPS o trajeto até o Gmail está protegido, mas o servidor lê seus e-mails; com ponta a ponta, não.</p>
+<p>Dizer que se “cifra com a chave privada” para assinar é uma simplificação do RSA de livro-texto que confunde; o termo correto é <i>assinar</i>. O vídeo <a href="https://www.youtube.com/watch?v=5ve4MkHmALc">Privacidade em Risco? Entendendo Criptografia e Algoritmos Hash</a>, de Fernanda Kipper, troca os papéis das chaves num trecho e depois se corrige; a tabela acima é a forma correta. Dois corolários práticos: com <b>criptografia de disco completo</b>, “apagar” um aparelho é descartar a chave; e o ransomware usa a mesma criptografia contra você, por isso a resposta é backup.</p>
+<div class="box tip"><b>Dica</b> Base64 é codificação (reversível sem chave); AES é criptografia (reversível com chave); SHA-256 é hash (não reversível, mas testável); Argon2 é hash de senha (lento de propósito).</div>
+
+<h2>Engenharia social: phishing na era da IA</h2>
+<p>Phishing explora a confiança humana com promessas ou medo, por e-mail, SMS, voz ou QR code. Segundo o relatório IBM Cost of a Data Breach 2024, citado em <a href="https://www.youtube.com/watch?v=nSGQkE67jcg">Phishing Defenses: Top Cybersecurity Strategies to Protect Your Data</a>, foi o 2º vetor mais comum. A IA permite mensagens personalizadas e sem erros, então procurar erros de português deixou de ser defesa. O que funciona: não clicar em links de mensagens, MFA e sobretudo passkeys, DNS filtrante e SPF/DKIM/DMARC no domínio.</p>
+
+<h2>Segurança de agentes de IA</h2>
+<div class="box intro"><b>Para começar</b> Um agente de IA é como um estagiário prestativo que obedece a qualquer bilhete que encontra, inclusive um bilhete escondido numa página. Esse é o problema da <b>prompt injection</b>.</div>
+<p>Em sistemas tradicionais, código e dados viajam por canais separados, e é isso que consultas parametrizadas garantem. Em LLMs, <b>tudo é token</b>: instruções, pedido do usuário, conteúdo de uma página. Segundo <a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a>, há <b>injeção direta</b> (o usuário manipula o modelo), <b>indireta</b> (a instrução está nos dados lidos, como o agente de compras que pagou caro por um livro por causa de texto oculto na página) e <b>jailbreak</b>.</p>
+<p>Bruce Schneier e coautores descrevem o <b>promptware</b> (<a href="https://www.youtube.com/watch?v=K68sqG18270">The Promptware Kill Chain: How Prompt Injection Becomes AI Malware</a>) como nova classe de malware, com uma kill chain de sete elos. Os mais traiçoeiros são a <b>persistência</b> (instrução gravada na memória do agente) e o <b>movimento lateral</b> (um assistente de e-mail que reencaminha o payload).</p>
+<figure><img src="img/11_promptware.png"><figcaption>Kill chain de promptware e um controle defensivo associado a cada elo. Fonte: elaboração própria com base em “The Promptware Kill Chain”, IBM Technology.</figcaption></figure>
+<table>
+<tr><th>Camada</th><th>Controle</th></tr>
+<tr><td>Entrada</td><td>Rotular conteúdo não confiável; classificadores de injeção</td></tr>
+<tr><td>Capacidades</td><td>Menor privilégio, sandbox, rede de saída restrita</td></tr>
+<tr><td>Ações</td><td>Humano no loop para compras, envios e exclusões</td></tr>
+<tr><td>Memória</td><td>Proveniência em cada item; não promover conteúdo externo a instrução</td></tr>
+<tr><td>Observabilidade</td><td>Trilha de auditoria de prompts, ferramentas e decisões</td></tr>
+</table>
+<p>Vale também a lição de <a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a>: “sim, 97%” é <i>confiança</i>, não <i>evidência</i>. Decisões de alto risco pedem perguntas menores e verificáveis, sinais independentes e registro de tudo. Agentes com terminal, navegador e mensageiro devem rodar isolados, com acesso restrito a usuários autorizados.</p>
+<p>No caso do agente de compras, discutido em <a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a>, a proposta é um AI gateway que inspeciona três pontos: o pedido do usuário, as requisições do agente e o conteúdo devolvido pelos sites. Um estudo da Meta citado no vídeo registrou sucesso parcial dos ataques em 86% dos casos, mas os agentes muitas vezes não conseguiam concluir o objetivo do atacante: uma “segurança por incompetência” que tende a desaparecer conforme os agentes melhoram.</p>
+
+<div class="box fact"><b>Você sabia?</b> Em “Reflections on Trusting Trust” (1984), Ken Thompson descreveu um compilador que inseria um backdoor e escondia o truque até de quem lesse seu código-fonte. É a raiz das discussões atuais sobre cadeia de suprimentos e builds reprodutíveis.</div>
+
+<h2>Vulnerabilidades, zero-days e a corrida com a IA</h2>
+<p>Um <b>zero-day</b> é uma falha explorada antes de o fabricante corrigi-la. Separe <b>vulnerabilidade</b> (a fraqueza), <b>exploit</b> (o código que a aproveita) e <b>ataque</b> (o uso, que continua até o patch ser <i>aplicado</i>). Um experimento citado em <a href="https://www.youtube.com/watch?v=w5MV1Jeo76g">What is a Zero Day Threat?</a> mostrou o GPT-4 gerando exploits a partir de descrições de CVE em cerca de 87% dos casos, contra quase zero do GPT-3.5. A consequência é que <b>velocidade de patch virou controle de segurança número um</b>: o WannaCry atingiu mais de 100 mil sistemas explorando uma falha cuja correção já existia. A contrapartida otimista é usar os mesmos modelos para auditar e corrigir antes do lançamento.</p>
+<p>O podcast da IBM Technology citado acima traz um exemplo: vulnerabilidades no PHP, que sustenta boa parte da web, encontradas com IA numa auditoria externa. A lição é organizacional: saber onde cada componente roda, ter gestão ágil de patches e aceitar janelas de manutenção planejadas. Casos históricos lembram o impacto: Stuxnet usou vários zero-days, Heartbleed vazou chaves da memória de servidores OpenSSL e o Pegasus foi usado contra jornalistas. As defesas são as de sempre, combinadas: patch rápido, defesa em profundidade, segmentação e monitoramento (EDR, SIEM).</p>
+
+<h2>Governança, resiliência e estratégia</h2>
+<div class="box intro"><b>Para começar</b> Uma casa segura não depende só de uma tranca: precisa de plano, rotina e cópia das chaves em outro lugar. Governança é esse plano.</div>
+<p>O <b>NIST Cybersecurity Framework 2.0</b> (2024), apresentado em <a href="https://www.youtube.com/watch?v=Ula3TG8QS7g">Building a Cybersecurity Framework</a>, organiza um programa em seis funções: <b>Governar</b> (risco, papéis, políticas), <b>Identificar</b> (inventário de ativos), <b>Proteger</b> (criptografia, MFA, backup), <b>Detectar</b> (EDR, SIEM), <b>Responder</b> (playbooks) e <b>Recuperar</b> (restauração e comunicação, no Brasil conforme a LGPD).</p>
+<p>A regra de backup <b>3-2-1-1-0</b> (<a href="https://www.youtube.com/watch?v=WJzsX32qMJY">3‑2‑1 Backup Rule Explained: Protect Your Data from Disaster</a>) pede 3 cópias, em 2 mídias, 1 fora do local, 1 imutável e 0 erros em testes de restauração. Um backup nunca restaurado é uma hipótese. E, como lembra <a href="https://www.youtube.com/watch?v=kr6fc869Ugs">Disaster Recovery vs Operational Resilience: Protecting Your Data</a>, recuperação de desastres não é resiliência a ataques: num ataque, infectar os backups faz parte da estratégia, por isso são necessárias cópias imutáveis e uma “cópia limpa conhecida”.</p>
+<figure><img src="img/11_noves.png"><figcaption>Indisponibilidade máxima anual por meta de disponibilidade (escala log). Cada “nove” adicional reduz o tempo tolerado em 10×. Fonte: cálculo próprio.</figcaption></figure>
+<p>Por fim, <a href="https://www.youtube.com/watch?v=kjoQPn--F7A">An Ancient Guide to Cybersecurity: 8 Lessons from The Art of War</a> traduz Sun Tzu para a defesa: conhecer os próprios ativos e o adversário, vencer pela prevenção e usar o engano a favor do defensor, com <b>honey tokens</b> (credenciais falsas que disparam alarme quando usadas). O engano se conecta à engenharia reversa: atacantes, humanos ou agentes, vasculham configurações e binários atrás de segredos, e um segredo falso bem posicionado transforma essa curiosidade em alarme.</p>
+<p>Vale ainda o princípio da <b>auditoria independente</b>. O mesmo podcast discute avaliadores externos com acesso privilegiado a laboratórios de IA e sugere revisão cruzada entre empresas, nos moldes das grandes auditorias contábeis. Para qualquer organização, olhos de fora desafiam suposições internas.</p>
+
+<div class="box key"><b>Em resumo</b>
+<ul>
+<li>Tudo que roda no cliente pode ser lido; a IA só tornou isso mais rápido. Proteja lógica e segredos no servidor.</li>
+<li>RE com IA confiável exige proveniência, autorização e alvo tratado como hostil.</li>
+<li>Injeção (SQL ou prompt) nasce de misturar instrução e dado; para SQL, parametrização resolve; para LLMs, defesa em camadas.</li>
+<li>Senhas: Argon2id com salt, ou melhor, passkeys. Governança, backups testados e patch rápido decidem a maioria dos incidentes.</li>
+</ul></div>
+
+<h2>Fontes deste capítulo</h2>
+<table class="src">
+<tr><th>Título</th><th>URL</th><th>Canal / autor</th><th>Ponto principal</th></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=9KoYnFuHYL8">CS50 for Business - Lecture 8 - Securing Systems</a></td><td>https://www.youtube.com/watch?v=9KoYnFuHYL8</td><td>CS50</td><td>Autenticação, senhas, criptografia, passkeys</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=iCAtSC2CrVw">Engenharia Reversa Black: copie qlqer aplicativo. Ghidra, IDA, frida, análise binária+ REA.</a></td><td>https://www.youtube.com/watch?v=iCAtSC2CrVw</td><td>Gabriel Kendy</td><td>Reversibilidade conforme localização da lógica</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=2fCTrjmDqyg">Personal VPNs: Encryption Myths and Data Security Explained</a></td><td>https://www.youtube.com/watch?v=2fCTrjmDqyg</td><td>IBM Technology</td><td>VPN é transferência de confiança</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-soAkLdbNfY">A NOVA ONDA DE CLONES DE SOFTWARE | COMO O REA FUNCIONA</a></td><td>https://www.youtube.com/watch?v=-soAkLdbNfY</td><td>Código Fonte TV</td><td>IA acelera RE; sala limpa, termos de uso</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=wuVXBiJoIKU">Regex pode TRAVAR o seu servidor! CUIDADO!</a></td><td>https://www.youtube.com/watch?v=wuVXBiJoIKU</td><td>Augusto Galego</td><td>Backtracking exponencial; motores lineares e timeout</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=_yO_Q7qo0HQ">The Problem with Jev: Can You Trust AI Decisions?</a></td><td>https://www.youtube.com/watch?v=_yO_Q7qo0HQ</td><td>IBM Technology</td><td>Confiança não é evidência; verificar antes</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=jrHRe9lSqqA">What Is a Prompt Injection Attack?</a></td><td>https://www.youtube.com/watch?v=jrHRe9lSqqA</td><td>IBM Technology</td><td>Injeção direta, indireta e jailbreak</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=K68sqG18270">The Promptware Kill Chain: How Prompt Injection Becomes AI Malware</a></td><td>https://www.youtube.com/watch?v=K68sqG18270</td><td>IBM Technology</td><td>Sete elos do malware baseado em prompts</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5ZA1lTxTH3c">Securing AI Agents: How to Prevent Hidden Prompt Injection Attacks</a></td><td>https://www.youtube.com/watch?v=5ZA1lTxTH3c</td><td>IBM Technology</td><td>Texto oculto engana agente; AI gateway</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=5ve4MkHmALc">Privacidade em Risco? Entendendo Criptografia e Algoritmos Hash</a></td><td>https://www.youtube.com/watch?v=5ve4MkHmALc</td><td>Fernanda Kipper</td><td>Hash, simétrica vs. assimétrica (com correção)</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=VoSQZBguB1A">The PHP bug threatening the web. Plus, who's auditing AI?</a></td><td>https://www.youtube.com/watch?v=VoSQZBguB1A</td><td>IBM Technology</td><td>Falhas achadas por IA; patch ágil; auditoria</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=WJzsX32qMJY">3‑2‑1 Backup Rule Explained: Protect Your Data from Disaster</a></td><td>https://www.youtube.com/watch?v=WJzsX32qMJY</td><td>IBM Technology</td><td>Cópia imutável e restauração testada</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=Ula3TG8QS7g">Building a Cybersecurity Framework</a></td><td>https://www.youtube.com/watch?v=Ula3TG8QS7g</td><td>IBM Technology</td><td>NIST CSF 2.0 com a função Governar</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=kr6fc869Ugs">Disaster Recovery vs Operational Resilience: Protecting Your Data</a></td><td>https://www.youtube.com/watch?v=kr6fc869Ugs</td><td>IBM Technology</td><td>Ataques miram backups; snapshots imutáveis</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=kjoQPn--F7A">An Ancient Guide to Cybersecurity: 8 Lessons from The Art of War</a></td><td>https://www.youtube.com/watch?v=kjoQPn--F7A</td><td>IBM Technology</td><td>Prevenção, engano e risco</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=sC-rrOdwsIs">A Forma Correta de Criptografar Senhas: O Guia que Todo Dev Precisa Ver!</a></td><td>https://www.youtube.com/watch?v=sC-rrOdwsIs</td><td>Attekita Dev</td><td>Hash lento com salt; só redefinir senha</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=SZb7yyhTWBg">Password Hashing, Salting e Peppering</a></td><td>https://www.youtube.com/watch?v=SZb7yyhTWBg</td><td>Augusto Galego</td><td>Ataque online vs. offline; Argon2id</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=aGVN6aHKkE0">O MÍNIMO que um dev precisa saber sobre segurança</a></td><td>https://www.youtube.com/watch?v=aGVN6aHKkE0</td><td>Augusto Galego</td><td>Superfície mínima, menor privilégio, segredos</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=JqCH1uUntuQ">COMO AUMENTAR A SEGURANÇA DO SEU BACKEND? | Conhecendo ataques mais comuns</a></td><td>https://www.youtube.com/watch?v=JqCH1uUntuQ</td><td>Fernanda Kipper</td><td>Consultas parametrizadas e mitigação em camadas</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=nSGQkE67jcg">Phishing Defenses: Top Cybersecurity Strategies to Protect Your Data</a></td><td>https://www.youtube.com/watch?v=nSGQkE67jcg</td><td>IBM Technology</td><td>Tipos de phishing; passkeys, DMARC</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=w5MV1Jeo76g">What is a Zero Day Threat?</a></td><td>https://www.youtube.com/watch?v=w5MV1Jeo76g</td><td>IBM Technology</td><td>Vulnerabilidade, exploit, patch; IA gera exploits</td></tr>
+<tr><td><a href="https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/">Engenharia reversa com IA: a Adobe morreu?</a> (13/10/2026)</td><td>https://akitaonrails.com/2026/10/13/engenharia-reversa-com-ia-a-adobe-morreu/</td><td>Fabio Akita (AkitaOnRails)</td><td>Ferramentas dependem de Ghidra; reescritas seguem caras</td></tr>
+</table>
+</section>
